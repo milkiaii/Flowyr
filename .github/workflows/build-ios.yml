@@ -53,6 +53,13 @@ jobs:
             echo "No optional dynarmic patch found; skipping."
           fi
 
+      - name: Fix Capstone CPack Unquoted Variable
+        run: |
+          # Fixes the CMake syntax error where an unquoted variable causes an "Unknown arguments specified" failure
+          if [ -f "external/capstone/CPackConfig.txt" ]; then
+            sed -i '' 's/if (STREQUAL/if ("" STREQUAL/g' external/capstone/CPackConfig.txt || true
+          fi
+
       - name: Show Apple toolchain info
         run: |
           xcodebuild -version
