@@ -53,12 +53,24 @@ jobs:
             echo "No optional dynarmic patch found; skipping."
           fi
 
-      - name: Fix Capstone CPack Unquoted Variable
+      - name: Fix Capstone CPack Error
         run: |
-          # Fixes the CMake syntax error where an unquoted variable causes an "Unknown arguments specified" failure
-          if [ -f "external/capstone/CPackConfig.txt" ]; then
-            sed -i '' 's/if (STREQUAL/if ("" STREQUAL/g' external/capstone/CPackConfig.txt || true
-          fi
+          python3 -c '
+          import os, glob
+          for path in glob.glob("external/capstone/**/CPackConfig.txt", recursive=True) + ["external/capstone/CPackConfig.txt"]:
+              if os.path.exists(path):
+                  with open(path, "w") as f:
+                      f.write("# Empty CPackConfig to prevent empty variable STREQUAL error\n")
+          cm_lists = glob.glob("external/capstone/**/CMakeLists.txt", recursive=True) + ["external/capstone/CMakeLists.txt"]
+          for path in cm_lists:
+              if os.path.exists(path):
+                  with open(path, "r") as f:
+                      content = f.read()
+                  content = content.replace("include(CPackConfig.txt)", "# include(CPackConfig.txt)")
+                  content = content.replace("include(\"CPackConfig.txt\")", "# include(\"CPackConfig.txt\")")
+                  with open(path, "w") as f:
+                      f.write(content)
+          '
 
       - name: Show Apple toolchain info
         run: |
