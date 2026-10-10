@@ -188,6 +188,7 @@ using PhysicalKeyCode = input::PhysicalKeyCode;
     code(bool, "cpu-opt", true, cpu_opt)                                                                \
     code(int, "cpu-jit-cache-mib", 16, cpu_jit_cache_mib)                                                \
     code(int, "cpu-jit-arena-mib", jit_config::default_arena_mib, cpu_jit_arena_mib)                       \
+    code(bool, "force-software-page-table", false, force_software_page_table)                          \
     code(std::string, "pref-path", std::string{}, vita_fs_path)                                         \
     code(bool, "discord-rich-presence", true, discord_rich_presence)                                    \
     code(bool, "wait-for-debugger", false, wait_for_debugger)                                           \

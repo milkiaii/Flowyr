@@ -26,6 +26,15 @@ struct MemState;
 
 typedef std::function<bool(uint8_t *addr, bool write)> AccessViolationHandler;
 
+// How guest memory is backed on the host.
+//  - Fastmem: one contiguous 4 GiB host reservation (guest address = base + offset).
+//  - SoftwarePageTable: no 4 GiB reservation; every allocation gets its own host
+//    backing region and is reached through the (Dynarmic) page table.
+enum class MemoryMode : uint8_t {
+    Fastmem,
+    SoftwarePageTable,
+};
+
 constexpr Address user_main_memory_start = 0x80000000U;
 
 // Permission when protecting a memory range
@@ -47,7 +56,14 @@ constexpr MemPerm most_restrictive_perm(MemPerm a, MemPerm b) {
     return MemPerm::ReadWrite;
 }
 
-bool init(MemState &state, const bool use_page_table);
+bool init(MemState &state, const bool use_page_table, const bool force_software_page_table = false);
+// Mode-aware guest <-> host translation. Use these instead of indexing
+// MemState::memory directly: it is null in SoftwarePageTable mode.
+uint8_t *guest_memory_pointer(const MemState &state, Address address);
+Address guest_memory_address(const MemState &state, const uint8_t *pointer);
+// Page-chunked copies; fail (return false) on an unmapped/invalid range.
+bool read_guest_memory(const MemState &state, Address address, void *destination, size_t size);
+bool write_guest_memory(MemState &state, Address address, const void *source, size_t size);
 void deinit_mem(MemState &state);
 Address alloc(MemState &state, uint32_t size, const char *name, Address start_addr = user_main_memory_start);
 Address alloc_aligned(MemState &state, uint32_t size, const char *name, unsigned int alignment, Address start_addr = user_main_memory_start);

@@ -244,6 +244,9 @@ static Config::CurrentConfig get_runtime_current_config_after_save(
             runtime_current.killzone_vpck_workaround = previous_current.killzone_vpck_workaround;
             runtime_current.resistance_f16_workaround = previous_current.resistance_f16_workaround;
             break;
+        case config::RestartRequiredSetting::MemoryMode:
+            runtime_current.force_software_page_table = previous_current.force_software_page_table;
+            break;
         }
     }
 
@@ -589,7 +592,7 @@ bool late_init(EmuEnvState &state) {
         LOG_INFO("Killzone PCSA00107 1.00: VPCK compatibility workaround enabled");
 
     const bool need_page_table = state.renderer->mapping_method == MappingMethod::PageTable || state.renderer->mapping_method == MappingMethod::NativeBuffer;
-    if (!init(state.mem, need_page_table)) {
+    if (!init(state.mem, need_page_table, state.cfg.current_config.force_software_page_table)) {
         LOG_ERROR("Failed to initialize memory for emulator state!");
         return false;
     }

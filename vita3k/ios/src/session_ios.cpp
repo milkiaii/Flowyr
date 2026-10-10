@@ -980,6 +980,7 @@ int vita3k_ios_game_config_get(const char *app_path, char *out, size_t out_size)
     report += fmt::format("cpu_opt={}\n", cc.cpu_opt ? 1 : 0);
     report += fmt::format("cpu_jit_cache_mib={}\n", cc.cpu_jit_cache_mib);
     report += fmt::format("cpu_jit_cache_auto_mib={}\n", config::get_default_cpu_jit_cache_mib(tmp, app_path));
+    report += fmt::format("force_software_page_table={}\n", cc.force_software_page_table ? 1 : 0);
     report += fmt::format("high_accuracy={}\n", cc.high_accuracy ? 1 : 0);
     report += fmt::format("disable_surface_sync={}\n", cc.disable_surface_sync ? 1 : 0);
     report += fmt::format("async_pipeline_compilation={}\n", cc.async_pipeline_compilation ? 1 : 0);
@@ -1008,7 +1009,7 @@ int vita3k_ios_game_config_set(const char *app_path, const char *key, const char
 
     // Per-game keys: persist to this game's custom config (applied on its
     // next launch by the core's set_current_config).
-    if (k == "cpu_opt" || k == "cpu_jit_cache_mib" || k == "high_accuracy" || k == "disable_surface_sync" || k == "async_pipeline_compilation" ||
+    if (k == "cpu_opt" || k == "cpu_jit_cache_mib" || k == "force_software_page_table" || k == "high_accuracy" || k == "disable_surface_sync" || k == "async_pipeline_compilation" ||
         k == "resolution_multiplier" || k == "anisotropic_filtering" || k == "shader_cache" ||
         k == "fps_hack" || k == "texture_cache" || k == "log_level" || k == "log_compat_warn") {
         if (!app_path || app_path[0] == '\0')
@@ -1020,6 +1021,8 @@ int vita3k_ios_game_config_set(const char *app_path, const char *key, const char
         try {
             if (k == "cpu_opt")
                 cc.cpu_opt = b;
+            else if (k == "force_software_page_table")
+                cc.force_software_page_table = b;
             else if (k == "cpu_jit_cache_mib") {
                 const std::string cache = value;
                 const int mib = std::stoi(cache);

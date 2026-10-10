@@ -14,6 +14,7 @@ struct GameConfigView: View {
 
     // Per-game (this game's custom config).
     @State private var cpuOpt = true
+    @State private var forceSoftwarePageTable = false
     @State private var jitCacheMiB = 0
     @State private var jitCacheAutoMiB = 16
     @State private var highAccuracy = false
@@ -89,6 +90,8 @@ struct GameConfigView: View {
         Section {
             Toggle("Enable CPU Optimizations", isOn: $cpuOpt)
                 .onChange(of: cpuOpt) { _, on in guard !loading else { return }; set("cpu_opt", on ? "1" : "0") }
+            Toggle("Force Software Page Table", isOn: $forceSoftwarePageTable)
+                .onChange(of: forceSoftwarePageTable) { _, on in guard !loading else { return }; set("force_software_page_table", on ? "1" : "0") }
             Picker("Cache JIT por thread", selection: Binding(
                 get: { jitCacheMiB },
                 set: { size in
@@ -250,6 +253,7 @@ struct GameConfigView: View {
         message = ""
         hasCustom = (d["has_custom"] == "1")
         cpuOpt = (d["cpu_opt"] == "1")
+        forceSoftwarePageTable = (d["force_software_page_table"] == "1")
         jitCacheMiB = Int(d["cpu_jit_cache_mib"] ?? "0") ?? 0
         jitCacheAutoMiB = Int(d["cpu_jit_cache_auto_mib"] ?? "16") ?? 16
         highAccuracy = (d["high_accuracy"] == "1")

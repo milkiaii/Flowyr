@@ -17,6 +17,9 @@
 
 #include <list>
 #include <mem/allocator.h>
+#include <mem/state.h>
+#include <mem/ptr.h>
+#include <mem/functions.h>
 #include <mem/util.h>
 
 #include <gtest/gtest.h>
@@ -242,4 +245,72 @@ TEST(bitmap_allocator, count_unaligned) {
 
     // 4 valid bits + 12 bits + 5 valid bits = 21
     ASSERT_EQ(alloc.free_slot_count(22, 92), 21);
+}
+
+TEST(memory_state, software_page_table_handles_unaligned_cross_page_access) {
+    MemState state;
+    ASSERT_TRUE(init(state, false, true));
+    ASSERT_EQ(state.memory_mode, MemoryMode::SoftwarePageTable);
+    ASSERT_EQ(state.memory.get(), nullptr);
+
+    const Address address = alloc(state, 2 * KiB(4), "fallback-test");
+    ASSERT_NE(address, 0);
+    ASSERT_NE(state.page_table[address / KiB(4)], nullptr);
+    // both pages of one allocation share a single backing region (same entry)
+    ASSERT_EQ(state.page_table[(address + KiB(4)) / KiB(4)], state.page_table[address / KiB(4)]);
+
+    // write-protect fault -> handler -> callback -> unprotected
+    int protection_callbacks = 0;
+    ASSERT_TRUE(add_protect(state, address, sizeof(uint32_t), MemPerm::ReadOnly,
+        [&protection_callbacks](Address, bool) {
+            ++protection_callbacks;
+            return true;
+        }));
+    ASSERT_TRUE(handle_access_violation(state, guest_memory_pointer(state, address), true));
+    EXPECT_EQ(protection_callbacks, 1);
+    EXPECT_FALSE(is_protecting(state, address));
+
+    // unaligned access straddling a 4 KiB boundary
+    constexpr uint32_t expected = 0xA5C37E19;
+    uint32_t actual = 0;
+    ASSERT_TRUE(write_guest_memory(state, address + KiB(4) - 2, &expected, sizeof(expected)));
+    ASSERT_TRUE(read_guest_memory(state, address + KiB(4) - 2, &actual, sizeof(actual)));
+    EXPECT_EQ(actual, expected);
+
+    // Ptr round-trip (guest -> host -> guest)
+    const Ptr<uint32_t> ptr(address + KiB(4));
+    *ptr.get(state) = expected;
+    EXPECT_EQ(*ptr.get(state), expected);
+    EXPECT_EQ(Ptr<uint32_t>(ptr.get(state), state).address(), address + KiB(4));
+
+    free(state, address);
+    EXPECT_EQ(state.page_table[address / KiB(4)], nullptr);
+    EXPECT_EQ(state.backing_regions.size(), 0);
+
+    // alloc_aligned drops the unaligned front pages but keeps one backing region
+    const Address blocker = alloc(state, KiB(4), "fallback-alignment-blocker");
+    const Address aligned = alloc_aligned(state, KiB(4), "fallback-aligned", KiB(16));
+    ASSERT_NE(blocker, 0);
+    ASSERT_NE(aligned, 0);
+    EXPECT_EQ(aligned % KiB(16), 0);
+    free(state, aligned);
+    free(state, blocker);
+    EXPECT_EQ(state.backing_regions.size(), 0);
+    deinit_mem(state);
+}
+
+TEST(memory_state, fastmem_mode_is_unchanged_by_default) {
+    MemState state;
+    ASSERT_TRUE(init(state, false));
+    ASSERT_EQ(state.memory_mode, MemoryMode::Fastmem);
+    ASSERT_NE(state.memory.get(), nullptr);
+    EXPECT_EQ(state.backing_regions.size(), 0);
+
+    const Address address = alloc(state, KiB(4), "fastmem-test");
+    ASSERT_NE(address, 0);
+    // contiguous arena: host pointer is exactly base + guest address
+    EXPECT_EQ(guest_memory_pointer(state, address), state.memory.get() + address);
+    EXPECT_EQ(guest_memory_address(state, state.memory.get() + address), address);
+    free(state, address);
+    deinit_mem(state);
 }

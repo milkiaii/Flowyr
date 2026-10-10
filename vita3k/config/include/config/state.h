@@ -62,6 +62,7 @@ struct Config {
         bool cpu_opt = true;
         int cpu_jit_cache_mib = 16;
         int cpu_jit_arena_mib = jit_config::default_arena_mib;
+        bool force_software_page_table = false;
         int modules_mode = ModulesMode::AUTOMATIC;
         std::vector<std::string> lle_modules = {};
         std::string audio_backend = "SDL";

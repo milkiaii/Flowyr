@@ -162,7 +162,19 @@ public:
     template <typename T>
     T MemoryRead(Dynarmic::A32::VAddr addr) {
         Ptr<T> ptr{ addr };
-        if (!ptr || !ptr.valid(*parent->mem) || ptr.address() < parent->mem->host_page_size) {
+        T ret{};
+        bool ok = ptr && ptr.address() >= parent->mem->host_page_size;
+        if (ok) {
+            if (parent->mem->memory_mode == MemoryMode::SoftwarePageTable) {
+                // Guest memory is not contiguous on the host: copy page by page.
+                ok = read_guest_memory(*parent->mem, addr, &ret, sizeof(ret));
+            } else {
+                ok = ptr.valid(*parent->mem);
+                if (ok)
+                    ret = *ptr.get(*parent->mem);
+            }
+        }
+        if (!ok) {
             LOG_ERROR("Invalid read of uint{}_t at address: 0x{:x}\n{}", sizeof(T) * 8, addr, this->cpu->save_context().description());
 
             auto pc = this->cpu->get_pc();
@@ -173,7 +185,6 @@ public:
             return 0;
         }
 
-        T ret = *ptr.get(*parent->mem);
         if (cpu->log_mem) {
             LOG_TRACE("Read uint{}_t at address: 0x{:x}, val = 0x{:x}", sizeof(T) * 8, addr, ret);
         }
@@ -199,7 +210,17 @@ public:
     template <typename T>
     void MemoryWrite(Dynarmic::A32::VAddr addr, T value) {
         Ptr<T> ptr{ addr };
-        if (!ptr || !ptr.valid(*parent->mem) || ptr.address() < parent->mem->host_page_size) {
+        bool ok = ptr && ptr.address() >= parent->mem->host_page_size;
+        if (ok) {
+            if (parent->mem->memory_mode == MemoryMode::SoftwarePageTable) {
+                ok = write_guest_memory(*parent->mem, addr, &value, sizeof(value));
+            } else {
+                ok = ptr.valid(*parent->mem);
+                if (ok)
+                    *ptr.get(*parent->mem) = value;
+            }
+        }
+        if (!ok) {
             LOG_ERROR("Invalid write of uint{}_t at addr: 0x{:x}, val = 0x{:x}\n{}", sizeof(T) * 8, addr, value, this->cpu->save_context().description());
 
             auto pc = this->cpu->get_pc();
@@ -210,7 +231,6 @@ public:
             return;
         }
 
-        *ptr.get(*parent->mem) = value;
         if (cpu->log_mem) {
             LOG_TRACE("Write uint{}_t at addr: 0x{:x}, val = 0x{:x}", sizeof(T) * 8, addr, value);
         }
@@ -235,7 +255,11 @@ public:
     template <typename T>
     bool MemoryWriteExclusive(Dynarmic::A32::VAddr addr, T value, T expected) {
         Ptr<T> ptr{ addr };
-        if (!ptr || !ptr.valid(*parent->mem) || ptr.address() < parent->mem->host_page_size) {
+        // A host CAS needs one contiguous naturally-aligned cell; with scattered
+        // backing, a page-crossing or misaligned exclusive access can't be honoured.
+        const bool unsupported_exclusive = parent->mem->memory_mode == MemoryMode::SoftwarePageTable
+            && ((addr % alignof(T)) != 0 || (addr % KiB(4)) + sizeof(T) > KiB(4));
+        if (!ptr || !ptr.valid(*parent->mem) || ptr.address() < parent->mem->host_page_size || unsupported_exclusive) {
             LOG_ERROR("Invalid exclusive write of uint{}_t at addr: 0x{:x}, val = 0x{:x}, expected = 0x{:x}\n{}", sizeof(T) * 8, addr, value, expected, this->cpu->save_context().description());
 
             auto pc = this->cpu->get_pc();
@@ -345,7 +369,15 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
     Dynarmic::A32::UserConfig config{};
     config.arch_version = Dynarmic::A32::ArchVersion::v7;
     config.callbacks = cb.get();
-    if (parent->mem->use_page_table) {
+    if (parent->mem->memory_mode == MemoryMode::SoftwarePageTable) {
+        // No contiguous guest arena (so no fastmem): Dynarmic walks the software page
+        // table; unmapped entries and misaligned/page-crossing accesses fall back to
+        // the memory callbacks, which copy page by page.
+        config.page_table = (log_mem || !cpu_opt) ? nullptr : reinterpret_cast<decltype(config.page_table)>(parent->mem->page_table.get());
+        config.absolute_offset_page_table = true;
+        config.detect_misaligned_access_via_page_table = 8 | 16 | 32 | 64;
+        config.only_detect_misalignment_via_page_table_on_page_boundary = false;
+    } else if (parent->mem->use_page_table) {
         config.page_table = (log_mem || !cpu_opt) ? nullptr : reinterpret_cast<decltype(config.page_table)>(parent->mem->page_table.get());
         config.absolute_offset_page_table = true;
     } else if (!log_mem && cpu_opt) {

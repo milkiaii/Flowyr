@@ -271,6 +271,7 @@ int vita3k_ios_session_firmware_mask(void);
 ///   title, has_custom (0/1), then per-game effective values (global
 ///   defaults + title profile + this game's overrides): cpu_opt, cpu_jit_cache_mib (0 = Auto),
 ///   cpu_jit_cache_auto_mib (core title profile or global default),
+///   force_software_page_table (0/1),
 ///   high_accuracy (0 = Standard, 1 = High), disable_surface_sync,
 ///   async_pipeline_compilation, resolution_multiplier, anisotropic_filtering,
 ///   shader_cache, fps_hack, texture_cache, log_level, log_compat_warn;
@@ -284,7 +285,7 @@ int vita3k_ios_game_config_get(const char *app_path, char *out, size_t out_size)
 /// decimal string for numbers (resolution_multiplier is a float such as
 /// "1.5"; cpu_jit_cache_mib is 0 for Auto or 8..32 MiB per thread, in steps of 4;
 /// anisotropic_filtering a power of two; log_level 0..6 =
-/// trace..critical/off). Per-game keys (cpu_opt, cpu_jit_cache_mib, high_accuracy, disable_surface_sync,
+/// trace..critical/off). Per-game keys (cpu_opt, cpu_jit_cache_mib, force_software_page_table, high_accuracy, disable_surface_sync,
 /// async_pipeline_compilation, resolution_multiplier, anisotropic_filtering,
 /// shader_cache, fps_hack, texture_cache, log_level, log_compat_warn) are saved
 /// to the game's custom config (requires a non-empty app_path), applied next
