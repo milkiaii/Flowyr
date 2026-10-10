@@ -4,8 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - main
-      - master
+      - software-page-table-fallback
     paths:
       - "CMakeLists.txt"
       - "vcpkg.json"
@@ -15,6 +14,8 @@ on:
       - ".ci/package-ios.sh"
       - ".github/workflows/build-ios.yml"
   pull_request:
+    branches:
+      - software-page-table-fallback
     paths:
       - "CMakeLists.txt"
       - "vcpkg.json"
@@ -155,7 +156,6 @@ jobs:
               --configuration Release \
               --output artifacts/Veeb-SE-iOS-unsigned.ipa
           else
-            # Fallback packaging if package-ios.sh is structured differently
             cd build-ios-veeb/Release-iphoneos
             mkdir -p Payload
             mv Vita3KiOS.app Payload/
