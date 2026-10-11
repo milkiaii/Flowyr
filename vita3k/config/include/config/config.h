@@ -163,7 +163,6 @@ using PhysicalKeyCode = input::PhysicalKeyCode;
     code(bool, "v-sync", true, v_sync)                                                                  \
     code(int, "anisotropic-filtering", 1, anisotropic_filtering)                                        \
     code(bool, "texture-cache", true, texture_cache)                                                    \
-    code(bool, "native-pvrtc", false, native_pvrtc)                                                     \
     code(bool, "half-res-textures", false, half_res_textures)                                           \
     code(bool, "async-pipeline-compilation", true, async_pipeline_compilation)                          \
     code(bool, "show-compile-shaders", true, show_compile_shaders)                                      \
@@ -213,6 +212,7 @@ using PhysicalKeyCode = input::PhysicalKeyCode;
     code(bool, "shader-cache", true, shader_cache)                                                      \
     code(bool, "spirv-shader", false, spirv_shader)                                                     \
     code(bool, "fps-hack", false, fps_hack)                                                             \
+    code(bool, "frame-cap-30", false, frame_cap_30)                                                     \
     code(uint64_t, "current-ime-lang", 4, current_ime_lang)                                             \
     code(int, "psn-signed-in", false, psn_signed_in)                                                    \
     code(bool, "http-enable", true, http_enable)                                                        \

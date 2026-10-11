@@ -84,6 +84,8 @@ struct DisplayState {
     // however this is not always the case, some games may not be affected (if they look at the Vcount)
     // or run twice as fast (if they only rely on these function calls for their timings)
     bool fps_hack = false;
+    // never run faster than 30 fps: waits at least 2 vblanks per frame (saves CPU/GPU work and heat)
+    bool frame_cap_30 = false;
 
     // should contain the list of sync objects / swapchain images (in the order they appear in the cycle)
     std::vector<PredictedDisplayFrame> predicted_frames;

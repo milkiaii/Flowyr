@@ -56,7 +56,6 @@
 "Emulador experimental de PlayStation Vita para iOS. Compatibilidade e desempenho variam por jogo." = "Emulador experimental de PlayStation Vita para iOS. Compatibilidade e desempenho variam por jogo.";
 "Enable CPU Optimizations" = "Ativar otimizações da CPU";
 "Force Software Page Table" = "Forçar tabela de páginas por software";
-"Native PVRTC Textures" = "Texturas PVRTC nativas";
 "Half-Resolution Textures" = "Texturas em meia resolução";
 "Enable Shader Cache" = "Ativar cache de shaders";
 "Enable Texture Cache" = "Ativar cache de texturas";
@@ -73,6 +72,7 @@
 "Exibir em grade" = "Exibir em grade";
 "Exibir em lista" = "Exibir em lista";
 "FPS Hack" = "Hack de FPS";
+"Limit to 30 FPS" = "Limitar a 30 FPS";
 "FPS, tempo por quadro e memória. No iPhone, CPU e GPU compartilham RAM; as alocações da GPU são mostradas separadamente, sem somar ao total." = "FPS, tempo por quadro e memória. No iPhone, CPU e GPU compartilham RAM; as alocações da GPU são mostradas separadamente, sem somar ao total.";
 "FPS, tempo por quadro e memória. RAM inclui o uso contabilizado da GPU. “GPU aloc.” mostra as alocações gráficas na memória compartilhada; não é somado à RAM. Tempo por quadro não mede o atraso do toque até a tela." = "FPS, tempo por quadro e memória. RAM inclui o uso contabilizado da GPU. “GPU aloc.” mostra as alocações gráficas na memória compartilhada; não é somado à RAM. Tempo por quadro não mede o atraso do toque até a tela.";
 "Falha ao iniciar o jogo. Consulte o diagnóstico." = "Falha ao iniciar o jogo. Consulte o diagnóstico.";

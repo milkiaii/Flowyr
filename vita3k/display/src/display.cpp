@@ -249,6 +249,7 @@ void DisplayState::deinit() {
     last_setframe_vblank_count = 0;
 
     fps_hack = false;
+    frame_cap_30 = false;
     // pretty sure we set this on game boot
     fullscreen = false;
 }

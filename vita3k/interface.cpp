@@ -558,7 +558,6 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv, const
 void toggle_texture_replacement(EmuEnvState &emuenv) {
     emuenv.cfg.current_config.import_textures = !emuenv.cfg.current_config.import_textures;
     emuenv.renderer->get_texture_cache()->set_replacement_state(emuenv.cfg.current_config.import_textures, emuenv.cfg.current_config.export_textures, emuenv.cfg.current_config.export_as_png);
-    emuenv.renderer->get_texture_cache()->set_native_pvrtc(emuenv.cfg.current_config.native_pvrtc);
     emuenv.renderer->get_texture_cache()->set_half_res_textures(emuenv.cfg.current_config.half_res_textures);
 }
 

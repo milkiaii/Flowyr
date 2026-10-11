@@ -64,10 +64,10 @@ void copy_global_to_current(Config::CurrentConfig &current, const Config &cfg) {
     current.export_textures = cfg.export_textures;
     current.export_as_png = cfg.export_as_png;
     current.fps_hack = cfg.fps_hack;
+    current.frame_cap_30 = cfg.frame_cap_30;
     current.shader_cache = cfg.shader_cache;
     current.spirv_shader = cfg.spirv_shader;
     current.texture_cache = cfg.texture_cache;
-    current.native_pvrtc = cfg.native_pvrtc;
     current.half_res_textures = cfg.half_res_textures;
     current.audio_backend = cfg.audio_backend;
     current.audio_volume = cfg.audio_volume;
@@ -112,10 +112,10 @@ void copy_current_to_global(Config &cfg, const Config::CurrentConfig &current) {
     cfg.export_textures = current.export_textures;
     cfg.export_as_png = current.export_as_png;
     cfg.fps_hack = current.fps_hack;
+    cfg.frame_cap_30 = current.frame_cap_30;
     cfg.shader_cache = current.shader_cache;
     cfg.spirv_shader = current.spirv_shader;
     cfg.texture_cache = current.texture_cache;
-    cfg.native_pvrtc = current.native_pvrtc;
     cfg.half_res_textures = current.half_res_textures;
     cfg.audio_backend = current.audio_backend;
     cfg.audio_volume = current.audio_volume;
@@ -229,10 +229,10 @@ bool load_custom_config(Config::CurrentConfig &out, const fs::path &config_path,
         out.export_textures = gpu.attribute("export-textures").as_bool();
         out.export_as_png = gpu.attribute("export-as-png").as_bool();
         out.fps_hack = gpu.attribute("fps-hack").as_bool();
+        out.frame_cap_30 = gpu.attribute("frame-cap-30").as_bool(false);
         out.shader_cache = gpu.attribute("shader-cache").as_bool(true);
         out.spirv_shader = gpu.attribute("spirv-shader").as_bool();
         out.texture_cache = gpu.attribute("texture-cache").as_bool(true);
-        out.native_pvrtc = gpu.attribute("native-pvrtc").as_bool(false);
         out.half_res_textures = gpu.attribute("half-res-textures").as_bool(false);
     }
 
@@ -327,10 +327,10 @@ bool save_custom_config(const Config::CurrentConfig &cc, const fs::path &config_
     gpu_child.append_attribute("export-textures") = cc.export_textures;
     gpu_child.append_attribute("export-as-png") = cc.export_as_png;
     gpu_child.append_attribute("fps-hack") = cc.fps_hack;
+    gpu_child.append_attribute("frame-cap-30") = cc.frame_cap_30;
     gpu_child.append_attribute("shader-cache") = cc.shader_cache;
     gpu_child.append_attribute("spirv-shader") = cc.spirv_shader;
     gpu_child.append_attribute("texture-cache") = cc.texture_cache;
-    gpu_child.append_attribute("native-pvrtc") = cc.native_pvrtc;
     gpu_child.append_attribute("half-res-textures") = cc.half_res_textures;
 
     auto audio_child = config_child.append_child("audio");

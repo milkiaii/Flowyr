@@ -88,10 +88,10 @@ struct Config {
         bool export_textures = false;
         bool export_as_png = false;
         bool fps_hack = false;
+        bool frame_cap_30 = false;
         bool shader_cache = true;
         bool spirv_shader = false;
         bool texture_cache = true;
-        bool native_pvrtc = false;
         bool half_res_textures = false;
         bool stretch_the_display_area = false;
         bool fullscreen_hd_res_pixel_perfect = false;

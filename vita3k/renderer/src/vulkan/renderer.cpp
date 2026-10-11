@@ -695,8 +695,6 @@ bool VKState::create(std::unique_ptr<renderer::State> &state, const Config &conf
             // Needed to create the MoltenVK device
             { vk::KHRPortabilitySubsetExtensionName, &temp_bool },
 #endif
-            // lets the GPU sample PVRTC textures directly (Apple GPUs), used by the "native PVRTC" setting
-            { vk::IMGFormatPvrtcExtensionName, &texture_cache.support_pvrtc },
             // used for coherent framebuffer fetch
             { VK_EXT_RASTERIZATION_ORDER_ATTACHMENT_ACCESS_EXTENSION_NAME, &support_rasterized_order_access },
 #ifdef __ANDROID__

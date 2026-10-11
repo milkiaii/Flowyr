@@ -376,17 +376,6 @@ bool VKTextureCache::init(const bool hashless_texture_cache, const fs::path &tex
     const vk::FormatProperties astc_support = state.physical_device.getFormatProperties(vk::Format::eAstc4x4SrgbBlock);
     support_astc = static_cast<bool>(astc_support.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImage);
 
-    // check for native PVRTC1 support (the VK_IMG_format_pvrtc extension must have been enabled, see renderer.cpp)
-    if (support_pvrtc) {
-        constexpr vk::FormatFeatureFlags pvrtc_features = vk::FormatFeatureFlagBits::eSampledImage
-            | vk::FormatFeatureFlagBits::eSampledImageFilterLinear | vk::FormatFeatureFlagBits::eTransferDst;
-        const vk::FormatProperties pvrtc4 = state.physical_device.getFormatProperties(vk::Format::ePvrtc14BppUnormBlockIMG);
-        const vk::FormatProperties pvrtc2 = state.physical_device.getFormatProperties(vk::Format::ePvrtc12BppUnormBlockIMG);
-        support_pvrtc = (pvrtc4.optimalTilingFeatures & pvrtc_features) == pvrtc_features
-            && (pvrtc2.optimalTilingFeatures & pvrtc_features) == pvrtc_features;
-    }
-    LOG_INFO("Native PVRTC texture support: {}", support_pvrtc ? "yes" : "no");
-
     return true;
 }
 
@@ -465,11 +454,7 @@ void VKTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
     uint16_t mip_count = renderer::texture::get_upload_mip(gxm_texture.true_mip_count(), width, height);
 
     vk::Format vk_format = texture::translate_format(base_format);
-    if (use_native_pvrtc(gxm_texture)) {
-        // keep the compressed PVRTC1 blocks (about 8x smaller than RGBA8)
-        vk_format = (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP) ? vk::Format::ePvrtc12BppUnormBlockIMG : vk::Format::ePvrtc14BppUnormBlockIMG;
-        mip_count = native_pvrtc_mip_count(gxm_texture, mip_count);
-    } else if (gxm::is_bcn_format(base_format) && !support_dxt)
+    if (gxm::is_bcn_format(base_format) && !support_dxt)
         // texture will be decompressed
         vk_format = bcn_to_rgba8(vk_format);
     if (gxm_texture.gamma_mode)
@@ -598,9 +583,6 @@ void VKTextureCache::upload_texture_impl(SceGxmTextureBaseFormat base_format, ui
         upload_size = renderer::texture::get_compressed_size(base_format, pixels_per_stride, height);
         pixels_per_stride = align(pixels_per_stride, 4);
         buffer_height = align(buffer_height, 4);
-    } else if (gxm::is_pvrt_format(base_format)) {
-        // native PVRTC1 upload: the dimensions are powers of two and at least 2x2 blocks
-        upload_size = (static_cast<vk::DeviceSize>(pixels_per_stride) * height * gxm::bits_per_pixel(base_format)) / 8;
     } else if (renderer::texture::is_astc_format(base_format)) {
         upload_size = renderer::texture::get_compressed_size(base_format, pixels_per_stride, height);
         const uint32_t block_height = gxm::get_block_size(base_format).second;

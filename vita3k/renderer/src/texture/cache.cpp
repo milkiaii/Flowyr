@@ -26,12 +26,8 @@
 #include <util/log.h>
 
 #include <algorithm>
-#include <bit>
 #include <cstring>
 #include <numeric>
-#include <string>
-#include <set>
-#include <mutex>
 #if defined(__x86_64__) && !defined(__APPLE__)
 #include <xxh_x86dispatch.h>
 #else
@@ -291,39 +287,6 @@ uint16_t get_upload_mip(const uint16_t true_mip, const uint16_t width, const uin
 
 using namespace texture;
 
-// returns why this texture can not use the native PVRTC path, or nullptr if it can
-const char *TextureCache::native_pvrtc_reject_reason(const SceGxmTexture &texture) const {
-    // replacing/exporting textures needs the decoded pixels
-    if (!native_pvrtc)
-        return "setting is off";
-    if (!support_pvrtc)
-        return "GPU does not support PVRTC";
-    if (import_textures || export_textures)
-        return "texture import/export is enabled";
-    const SceGxmTextureBaseFormat base_format = gxm::get_base_format(gxm::get_format(texture));
-    // only PVRTC1; PVRTC2 (the "II" formats) is not available on the GPU
-    if (base_format != SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP && base_format != SCE_GXM_TEXTURE_BASE_FORMAT_PVRT4BPP)
-        return "PVRTC2 format";
-    // gamma textures would need the sRGB variant, keep them on the decoded path
-    if (texture.gamma_mode)
-        return "gamma texture";
-    const auto type = texture.texture_type();
-    if (type != SCE_GXM_TEXTURE_SWIZZLED && type != SCE_GXM_TEXTURE_CUBE)
-        return "texture type is not swizzled/cube";
-    const uint32_t width = gxm::get_width(texture);
-    const uint32_t height = gxm::get_height(texture);
-    if (!std::has_single_bit(width) || !std::has_single_bit(height))
-        return "size is not a power of two";
-    const auto [block_width, block_height] = gxm::get_block_size(base_format);
-    if (width < 2 * block_width || height < 2 * block_height)
-        return "texture too small";
-    return nullptr;
-}
-
-bool TextureCache::use_native_pvrtc(const SceGxmTexture &texture) const {
-    return native_pvrtc_reject_reason(texture) == nullptr;
-}
-
 void TextureCache::set_half_res_textures(bool enable) {
     if (enable != half_res_textures)
         LOG_INFO("Half-resolution textures: setting {}", enable ? "on" : "off");
@@ -336,31 +299,9 @@ uint32_t TextureCache::texture_skip_mips(const SceGxmTexture &texture, uint32_t 
     const auto type = texture.texture_type();
     if (type == SCE_GXM_TEXTURE_CUBE || type == SCE_GXM_TEXTURE_CUBE_ARBITRARY)
         return 0;
-    if (use_native_pvrtc(texture))
-        return 0;
     if (std::max(gxm::get_width(texture), gxm::get_height(texture)) < 256)
         return 0;
     return 1;
-}
-
-void TextureCache::set_native_pvrtc(bool enable) {
-    if (enable != native_pvrtc)
-        LOG_INFO("Native PVRTC textures: setting {} (GPU support: {})", enable ? "on" : "off", support_pvrtc ? "yes" : "no");
-    native_pvrtc = enable;
-}
-
-uint16_t TextureCache::native_pvrtc_mip_count(const SceGxmTexture &texture, uint16_t mip_count) const {
-    const SceGxmTextureBaseFormat base_format = gxm::get_base_format(gxm::get_format(texture));
-    const auto [block_width, block_height] = gxm::get_block_size(base_format);
-    uint32_t width = gxm::get_width(texture);
-    uint32_t height = gxm::get_height(texture);
-    uint16_t levels = 0;
-    while (levels < mip_count && width >= 2 * block_width && height >= 2 * block_height) {
-        levels++;
-        width /= 2;
-        height /= 2;
-    }
-    return std::max<uint16_t>(levels, 1);
 }
 
 bool TextureCache::init(const bool hashless_texture_cache, const fs::path &texture_folder, std::string_view game_id, const size_t sampler_cache_size) {
@@ -430,9 +371,6 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
 
     uint32_t mip_index = 0;
     uint32_t total_mip = get_upload_mip(gxm_texture.true_mip_count(), width, height);
-    const bool native_pvrt = use_native_pvrtc(gxm_texture);
-    if (native_pvrt)
-        total_mip = native_pvrtc_mip_count(gxm_texture, static_cast<uint16_t>(total_mip));
     const uint32_t skip_mips = texture_skip_mips(gxm_texture, total_mip);
     uint32_t face_uploaded_count = 0;
     uint32_t face_total_count;
@@ -537,20 +475,6 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
         case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT4BPP:
         case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP:
         case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP:
-            if (native_pvrt) {
-                // the GPU samples PVRTC1 directly: upload the blocks untouched
-                LOG_INFO_ONCE("Uploading PVRTC textures natively (no RGBA8 decoding)");
-                break;
-            }
-            {
-                // log each distinct reason once, to see why PVRTC textures are still decoded
-                static std::set<std::string> logged_reasons;
-                static std::mutex logged_reasons_mutex;
-                const char *reason = native_pvrtc_reject_reason(gxm_texture);
-                const std::lock_guard lock(logged_reasons_mutex);
-                if (reason && logged_reasons.insert(reason).second)
-                    LOG_INFO("PVRTC texture {}x{} is decoded to RGBA8: {}", org_width, org_height, reason);
-            }
             // Both backends allocate RGBA8 images for these formats. Native
             // PVRTC sampling support does not make compressed bytes a valid
             // upload to those images (including PVRTC2 on PVRTC1-capable GPUs).

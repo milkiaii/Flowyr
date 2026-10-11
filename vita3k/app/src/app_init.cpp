@@ -622,13 +622,13 @@ void apply_renderer_config(EmuEnvState &emuenv) {
     r.stretch_hd_pixel_perfect(cc.fullscreen_hd_res_pixel_perfect);
     r.set_async_compilation(cc.async_pipeline_compilation);
     r.get_texture_cache()->set_replacement_state(cc.import_textures, cc.export_textures, cc.export_as_png);
-    r.get_texture_cache()->set_native_pvrtc(cc.native_pvrtc);
     r.get_texture_cache()->set_half_res_textures(cc.half_res_textures);
 #ifdef __ANDROID__
     if (r.support_custom_drivers())
         r.set_turbo_mode(emuenv.cfg.turbo_mode);
 #endif
     emuenv.display.fps_hack = cc.fps_hack;
+    emuenv.display.frame_cap_30 = cc.frame_cap_30;
 
     if (!emuenv.overlay_manager)
         emuenv.overlay_manager = std::make_unique<overlay::display_manager>();
@@ -721,13 +721,13 @@ void apply_runtime_settings(EmuEnvState &emuenv) {
     r.stretch_hd_pixel_perfect(cc.fullscreen_hd_res_pixel_perfect);
     r.set_async_compilation(cc.async_pipeline_compilation);
     r.get_texture_cache()->set_replacement_state(cc.import_textures, cc.export_textures, cc.export_as_png);
-    r.get_texture_cache()->set_native_pvrtc(cc.native_pvrtc);
     r.get_texture_cache()->set_half_res_textures(cc.half_res_textures);
 #ifdef __ANDROID__
     if (r.support_custom_drivers())
         r.set_turbo_mode(emuenv.cfg.turbo_mode);
 #endif
     emuenv.display.fps_hack = cc.fps_hack;
+    emuenv.display.frame_cap_30 = cc.frame_cap_30;
     r.sys_date_format = cc.sys_date_format;
     r.sys_lang = cc.sys_lang;
     r.sys_button = cc.sys_button;

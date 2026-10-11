@@ -37,6 +37,8 @@ static int display_wait(EmuEnvState &emuenv, SceUID thread_id, int vcount, const
         // a game can use a vcount of 2 to render as 30fps
         // thus doing this can allow some games to run at 60fps
         vcount = 1;
+    else if (emuenv.display.frame_cap_30)
+        vcount = std::max(vcount, 2);
 
     uint64_t target_vcount;
     if (is_since_setbuf) {

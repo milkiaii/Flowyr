@@ -24,8 +24,8 @@ struct GameConfigView: View {
     @State private var anisotropicIdx: Int = 0
     @State private var shaderCache = true
     @State private var fpsHack = false
+    @State private var frameCap30 = false
     @State private var textureCache = true
-    @State private var nativePvrtc = false
     @State private var halfResTextures = false
     @State private var hasCustom = false
 
@@ -165,10 +165,10 @@ struct GameConfigView: View {
             .disabled(clearing)
             Toggle("FPS Hack", isOn: $fpsHack)
                 .onChange(of: fpsHack) { _, on in guard !loading else { return }; set("fps_hack", on ? "1" : "0") }
+            Toggle("Limit to 30 FPS", isOn: $frameCap30)
+                .onChange(of: frameCap30) { _, on in guard !loading else { return }; set("frame_cap_30", on ? "1" : "0") }
             Toggle("Enable Texture Cache", isOn: $textureCache)
                 .onChange(of: textureCache) { _, on in guard !loading else { return }; set("texture_cache", on ? "1" : "0") }
-            Toggle("Native PVRTC Textures", isOn: $nativePvrtc)
-                .onChange(of: nativePvrtc) { _, on in guard !loading else { return }; set("native_pvrtc", on ? "1" : "0") }
             Toggle("Half-Resolution Textures", isOn: $halfResTextures)
                 .onChange(of: halfResTextures) { _, on in guard !loading else { return }; set("half_res_textures", on ? "1" : "0") }
         } header: {
@@ -271,8 +271,8 @@ struct GameConfigView: View {
         anisotropicIdx = anisotropics.firstIndex(of: aniso) ?? 0
         shaderCache = (d["shader_cache"] == "1")
         fpsHack = (d["fps_hack"] == "1")
+        frameCap30 = (d["frame_cap_30"] == "1")
         textureCache = (d["texture_cache"] == "1")
-        nativePvrtc = (d["native_pvrtc"] == "1")
         halfResTextures = (d["half_res_textures"] == "1")
         logLevel = min(6, max(0, Int(d["log_level"] ?? "6") ?? 6))
         logCompatWarn = (d["log_compat_warn"] == "1")
