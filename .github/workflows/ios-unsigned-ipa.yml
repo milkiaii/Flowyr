@@ -116,6 +116,11 @@ jobs:
 
       - name: Build unsigned device app
         run: |
+          # SWIFT_VERSION=5: the project builds in Swift 6 mode, but the Xcode 26
+          # on the runner rejects four `[weak self]` + MainActor.run sites
+          # (Vita3KCore.swift, EmulationViewController.swift) with "sending 'self'
+          # risks causing data races". Swift 5 mode turns that check off for this
+          # CI build only; sources and local builds are unchanged.
           xcodebuild \
             -project ios/Vita3K/Vita3K.xcodeproj \
             -scheme Vita3K \
@@ -123,6 +128,7 @@ jobs:
             -destination 'generic/platform=iOS' \
             -derivedDataPath build/ios-app \
             -jobs "$(sysctl -n hw.ncpu)" \
+            SWIFT_VERSION=5 \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_STYLE=Manual \
