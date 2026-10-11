@@ -1,0 +1,179 @@
+name: Build unsigned iOS IPA
+
+# Builds the iOS app on a GitHub macOS runner and uploads an UNSIGNED arm64
+# device IPA as a workflow artifact, so no local Mac or signing certificate is
+# needed. Download it from the run's "Artifacts" section and sign/install it
+# with a sideloading tool (Sideloadly, AltStore, ...). The same steps as
+# ./build-ios.sh are used (CMake core -> stage -> XcodeGen -> xcodebuild), minus
+# the local signing and provisioning.
+
+on:
+  workflow_dispatch:
+  push:
+    paths-ignore:
+      - "**.md"
+  pull_request:
+    paths-ignore:
+      - "**.md"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-unsigned-ipa-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  HOMEBREW_NO_AUTO_UPDATE: "1"
+  HOMEBREW_NO_INSTALL_CLEANUP: "1"
+  CCACHE_DIR: ${{ github.workspace }}/.ccache
+  CCACHE_MAXSIZE: 3G
+  CCACHE_COMPILERCHECK: content
+
+jobs:
+  unsigned-ipa:
+    name: Unsigned arm64 device IPA
+    runs-on: macos-15
+    timeout-minutes: 180
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          # Dependencies are vendored in-tree; there are no submodules to fetch.
+          submodules: false
+
+      - name: Select Xcode 26 toolchain
+        run: |
+          # The app targets iOS 26.0, which needs the iOS 26 SDK (Xcode 26+).
+          xcode_apps=(/Applications/Xcode_26*.app)
+          if [[ ! -d "${xcode_apps[0]}" ]]; then
+            echo "::error::No Xcode 26 installation is present on this runner."
+            ls -1 /Applications | grep '^Xcode' || true
+            exit 1
+          fi
+          selected_xcode="${xcode_apps[${#xcode_apps[@]}-1]}"
+          echo "Selecting ${selected_xcode}"
+          sudo xcode-select --switch "${selected_xcode}/Contents/Developer"
+          xcodebuild -version
+          sdk_version="$(xcrun --sdk iphoneos --show-sdk-version)"
+          echo "iPhoneOS SDK ${sdk_version}"
+          [[ "${sdk_version%%.*}" -ge 26 ]] || {
+            echo "::error::Selected Xcode does not provide an iOS 26 SDK (found ${sdk_version})."
+            exit 1
+          }
+
+      - name: Install build tools
+        run: |
+          # python@3.12: the i18n generator needs Python 3.12+ (the toolchain file
+          # looks for python3.14/3.13/3.12). magick: app icon. xcodegen: project.
+          brew install --quiet ninja xcodegen imagemagick ccache python@3.12
+          cmake --version
+          ninja --version
+          xcodegen --version
+          magick -version | head -1
+          python3.12 --version
+          ccache --version | head -1
+
+      - name: Restore compiler cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .ccache
+          # The unique key means the save step below always stores the updated
+          # cache; restores match the newest entry by prefix.
+          key: ccache-ios-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            ccache-ios-${{ runner.os }}-
+
+      - name: Render app icon
+        run: python3 ios/Vita3K/scripts/render-app-icon.py
+
+      - name: Configure core (ios-device preset)
+        run: |
+          mkdir -p build
+          cmake --preset ios-device 2>&1 | tee build/cmake-configure.log
+
+      - name: Build core
+        run: |
+          cmake --build --preset ios-device --target vita3k \
+            --parallel "$(sysctl -n hw.ncpu)" 2>&1 | tee build/cmake-build.log
+
+      - name: Save compiler cache
+        # Save even if a later step fails so retries stay fast.
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: .ccache
+          key: ccache-ios-${{ runner.os }}-${{ github.sha }}
+
+      - name: Stage core and generate Xcode project
+        run: ios/Vita3K/scripts/stage-core.sh device
+
+      - name: Build unsigned device app
+        run: |
+          xcodebuild \
+            -project ios/Vita3K/Vita3K.xcodeproj \
+            -scheme Vita3K \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build/ios-app \
+            -jobs "$(sysctl -n hw.ncpu)" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM="" \
+            build 2>&1 | tee build/xcodebuild.log
+
+      - name: Package and verify unsigned IPA
+        run: |
+          app="build/ios-app/Build/Products/Release-iphoneos/Vita3K.app"
+          [[ -d "$app" ]] || { echo "::error::Missing built app: $app"; exit 1; }
+
+          plist="$app/Info.plist"
+          plutil -lint "$plist"
+          exe_name="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$plist")"
+          exe="$app/$exe_name"
+          [[ -f "$exe" ]] || { echo "::error::Missing app executable: $exe"; exit 1; }
+          [[ -f "$app/Frameworks/libVita3KCore.dylib" ]] || {
+            echo "::error::Missing embedded core: Frameworks/libVita3KCore.dylib"; exit 1; }
+          lipo -archs "$exe" | grep -qx 'arm64' || {
+            echo "::error::App executable is not arm64-only:"; lipo -archs "$exe"; exit 1; }
+          lipo -archs "$app/Frameworks/libVita3KCore.dylib" | grep -qx 'arm64' || {
+            echo "::error::Core dylib is not arm64-only."; exit 1; }
+
+          stage="$(mktemp -d)"
+          mkdir -p "$stage/Payload" artifacts
+          ditto "$app" "$stage/Payload/Veeb.app"
+          ditto -c -k --keepParent "$stage/Payload" "$PWD/artifacts/Veeb-unsigned.ipa"
+          unzip -tq artifacts/Veeb-unsigned.ipa
+          unzip -l artifacts/Veeb-unsigned.ipa | grep -q 'Payload/Veeb.app/Frameworks/libVita3KCore.dylib'
+          ls -lh artifacts/Veeb-unsigned.ipa
+
+      - name: Upload unsigned IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Veeb-iOS-${{ github.sha }}-unsigned
+          path: artifacts/Veeb-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload build logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Veeb-iOS-${{ github.sha }}-logs
+          path: |
+            build/cmake-configure.log
+            build/cmake-build.log
+            build/xcodebuild.log
+            build/ios-device/CMakeFiles/CMakeConfigureLog.yaml
+            build/ios-device/CMakeFiles/CMakeOutput.log
+            build/ios-device/CMakeFiles/CMakeError.log
+          if-no-files-found: ignore
+          retention-days: 7
