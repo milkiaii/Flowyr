@@ -95,6 +95,8 @@ extern "C" void SDL_SetMainReady(void);
 #include <util/diagnostics.h>
 
 #include <sys/utsname.h>
+#include <mach/mach.h>
+#include <os/proc.h>
 
 #include <sys/param.h>
 #include <unistd.h>
@@ -102,6 +104,7 @@ extern "C" void SDL_SetMainReady(void);
 #include <algorithm>
 #include <atomic>
 #include <cctype>
+#include <chrono>
 #include <cstdint>
 #include <cstdio>
 #include <ctime>
@@ -381,6 +384,38 @@ bool install_app_content(EmuEnvState &emuenv, const fs::path &content_root, bool
 // Launch thread
 // ------------------------------------------------------------------
 
+// Logs the process memory footprint every few seconds while a game runs, so a
+// jetsam (out-of-memory) kill can be traced in vita3k.log: how much RAM the
+// app uses in total, how much of it is guest memory, and how much headroom iOS
+// still reports.
+void log_memory_usage(EmuEnvState &emuenv) {
+    using clock = std::chrono::steady_clock;
+    static clock::time_point last{};
+    const auto now = clock::now();
+    if (last != clock::time_point{} && now - last < std::chrono::seconds(3))
+        return;
+    last = now;
+
+    task_vm_info_data_t info{};
+    mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
+    uint64_t footprint = 0;
+    if (task_info(mach_task_self(), TASK_VM_INFO, reinterpret_cast<task_info_t>(&info), &count) == KERN_SUCCESS)
+        footprint = info.phys_footprint;
+
+    uint64_t guest_bytes = 0;
+    size_t guest_regions = 0;
+    {
+        const std::lock_guard lock(emuenv.mem.protect_mutex);
+        for (const auto &entry : emuenv.mem.backing_regions)
+            guest_bytes += entry.second.size;
+        guest_regions = emuenv.mem.backing_regions.size();
+    }
+
+    constexpr double mib = 1024.0 * 1024.0;
+    LOG_INFO("[mem] footprint={:.0f} MiB, ios_available={:.0f} MiB, guest_reserved={:.0f} MiB in {} regions",
+        footprint / mib, os_proc_available_memory() / mib, guest_bytes / mib, guest_regions);
+}
+
 // The worker holds op_lock for its whole life, so a concurrent
 // vita3k_ios_session_stop() either runs fully before the launch (session
 // inactive: no-op) or waits for the launch to finish, after which the
@@ -486,6 +521,7 @@ void launch_worker(Session &s, const std::string &app_path, int width, int heigh
                 while (!s.stop_requested.load(std::memory_order_relaxed) &&
                        s.phase.load() == FacadePhase::Running &&
                        s.controller->has_active_session()) {
+                    log_memory_usage(*s.emuenv);
                     if (SDL_WaitEventTimeout(&event, 50) <= 0)
                         continue;
                     switch (event.type) {
