@@ -202,6 +202,11 @@ struct State {
         return true;
     }
     virtual void unmap_memory(MemState &mem, Ptr<void> address) {}
+    // GPU memory in use: device memory blocks allocated from the driver vs. bytes actually used by resources
+    virtual void get_memory_stats(uint64_t &block_bytes, uint64_t &allocation_bytes) {
+        block_bytes = 0;
+        allocation_bytes = 0;
+    }
 #ifdef __ANDROID__
     virtual bool support_custom_drivers() {
         return false;

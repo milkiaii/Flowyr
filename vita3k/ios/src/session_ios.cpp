@@ -411,9 +411,14 @@ void log_memory_usage(EmuEnvState &emuenv) {
         guest_regions = emuenv.mem.backing_regions.size();
     }
 
+    uint64_t gpu_blocks = 0;
+    uint64_t gpu_used = 0;
+    if (emuenv.renderer)
+        emuenv.renderer->get_memory_stats(gpu_blocks, gpu_used);
+
     constexpr double mib = 1024.0 * 1024.0;
-    LOG_INFO("[mem] footprint={:.0f} MiB, ios_available={:.0f} MiB, guest_reserved={:.0f} MiB in {} regions",
-        footprint / mib, os_proc_available_memory() / mib, guest_bytes / mib, guest_regions);
+    LOG_INFO("[mem] footprint={:.0f} MiB, ios_available={:.0f} MiB, guest_reserved={:.0f} MiB in {} regions, gpu_blocks={:.0f} MiB, gpu_used={:.0f} MiB",
+        footprint / mib, os_proc_available_memory() / mib, guest_bytes / mib, guest_regions, gpu_blocks / mib, gpu_used / mib);
 }
 
 // The worker holds op_lock for its whole life, so a concurrent

@@ -157,6 +157,7 @@ struct VKState : public renderer::State {
     void set_turbo_mode(bool set) override;
 #endif
     std::string_view get_gpu_name() override;
+    void get_memory_stats(uint64_t &block_bytes, uint64_t &allocation_bytes) override;
     uint32_t get_gpu_version() override;
 
     void precompile_shader(const ShadersHash &hash) override;

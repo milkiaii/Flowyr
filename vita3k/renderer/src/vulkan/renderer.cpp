@@ -896,6 +896,12 @@ bool VKState::create(std::unique_ptr<renderer::State> &state, const Config &conf
             .vulkanApiVersion = VK_API_VERSION_1_0,
         };
 
+#if defined(__APPLE__) && TARGET_OS_IPHONE
+        // The default block size for large heaps is 256 MiB, and the whole block counts toward the
+        // app's memory limit on iOS even if only part of it is used. Smaller blocks track real usage.
+        allocator_info.preferredLargeHeapBlockSize = 32ull * 1024 * 1024;
+#endif
+
         if (support_dedicated_allocations)
             allocator_info.flags |= vma::AllocatorCreateFlagBits::eKhrDedicatedAllocation;
 
@@ -1662,6 +1668,21 @@ uint32_t VKState::get_gpu_version() {
 
 std::string_view VKState::get_gpu_name() {
     return physical_device_properties.deviceName.data();
+}
+
+void VKState::get_memory_stats(uint64_t &block_bytes, uint64_t &allocation_bytes) {
+    block_bytes = 0;
+    allocation_bytes = 0;
+    if (!allocator)
+        return;
+    // these counters are atomics inside vma, safe to read from another thread
+    const uint32_t heap_count = physical_device.getMemoryProperties().memoryHeapCount;
+    std::vector<vma::Budget> budgets(heap_count);
+    allocator.getHeapBudgets(budgets.data());
+    for (const vma::Budget &budget : budgets) {
+        block_bytes += budget.statistics.blockBytes;
+        allocation_bytes += budget.statistics.allocationBytes;
+    }
 }
 
 } // namespace renderer::vulkan
