@@ -144,7 +144,9 @@ public:
     // user setting: upload PVRTC1 textures as-is instead of decoding them to RGBA8 (about 8x less memory)
     bool native_pvrtc = false;
 
-    void set_native_pvrtc(bool enable) { native_pvrtc = enable; }
+    void set_native_pvrtc(bool enable);
+    // why this texture can not be uploaded as native PVRTC1 data (nullptr if it can)
+    const char *native_pvrtc_reject_reason(const SceGxmTexture &texture) const;
     // true if this texture will be uploaded as native PVRTC1 data
     bool use_native_pvrtc(const SceGxmTexture &texture) const;
     // mip count to upload for a native PVRTC1 texture (PVRTC needs at least 2x2 blocks per level)
