@@ -327,6 +327,7 @@ static Address alloc_inner(MemState &state, uint32_t start_page, uint32_t page_c
         if (addr != 0) {
             uint8_t *const backing = allocate_backing_region(size);
             if (!backing) {
+                LOG_ERROR("Guest memory backing allocation of {} KiB failed (host out of memory)", size / 1024);
                 state.allocator.free(static_cast<uint32_t>(page_num), page_count);
                 return 0;
             }

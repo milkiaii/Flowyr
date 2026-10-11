@@ -324,6 +324,25 @@ bool TextureCache::use_native_pvrtc(const SceGxmTexture &texture) const {
     return native_pvrtc_reject_reason(texture) == nullptr;
 }
 
+void TextureCache::set_half_res_textures(bool enable) {
+    if (enable != half_res_textures)
+        LOG_INFO("Half-resolution textures: setting {}", enable ? "on" : "off");
+    half_res_textures = enable;
+}
+
+uint32_t TextureCache::texture_skip_mips(const SceGxmTexture &texture, uint32_t mip_count) const {
+    if (!half_res_textures || mip_count < 2 || import_textures || export_textures)
+        return 0;
+    const auto type = texture.texture_type();
+    if (type == SCE_GXM_TEXTURE_CUBE || type == SCE_GXM_TEXTURE_CUBE_ARBITRARY)
+        return 0;
+    if (use_native_pvrtc(texture))
+        return 0;
+    if (std::max(gxm::get_width(texture), gxm::get_height(texture)) < 256)
+        return 0;
+    return 1;
+}
+
 void TextureCache::set_native_pvrtc(bool enable) {
     if (enable != native_pvrtc)
         LOG_INFO("Native PVRTC textures: setting {} (GPU support: {})", enable ? "on" : "off", support_pvrtc ? "yes" : "no");
@@ -414,6 +433,7 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
     const bool native_pvrt = use_native_pvrtc(gxm_texture);
     if (native_pvrt)
         total_mip = native_pvrtc_mip_count(gxm_texture, static_cast<uint16_t>(total_mip));
+    const uint32_t skip_mips = texture_skip_mips(gxm_texture, total_mip);
     uint32_t face_uploaded_count = 0;
     uint32_t face_total_count;
     uint32_t total_source_so_far = 0;
@@ -642,7 +662,8 @@ void TextureCache::upload_texture(const SceGxmTexture &gxm_texture, MemState &me
             upload_format = get_matching_decompressed_format(base_format);
         }
 
-        upload_texture_impl(upload_format, width, height, mip_index, pixels, upload_type, pixels_per_stride);
+        if (mip_index >= skip_mips)
+            upload_texture_impl(upload_format, width, height, mip_index - skip_mips, pixels, upload_type, pixels_per_stride);
         if (export_textures)
             export_texture_impl(upload_format, width, height, mip_index, pixels, upload_type, pixels_per_stride);
 

@@ -274,7 +274,7 @@ int vita3k_ios_session_firmware_mask(void);
 ///   force_software_page_table (0/1),
 ///   high_accuracy (0 = Standard, 1 = High), disable_surface_sync,
 ///   async_pipeline_compilation, resolution_multiplier, anisotropic_filtering,
-///   shader_cache, fps_hack, texture_cache, native_pvrtc, log_level, log_compat_warn;
+///   shader_cache, fps_hack, texture_cache, native_pvrtc, half_res_textures, log_level, log_compat_warn;
 ///   then global values: show_compile_shaders.
 /// The report is written to `out` (NUL-terminated, truncated when too small).
 /// Returns 0 on success, -1 when the environment is not initialized,
@@ -287,7 +287,7 @@ int vita3k_ios_game_config_get(const char *app_path, char *out, size_t out_size)
 /// anisotropic_filtering a power of two; log_level 0..6 =
 /// trace..critical/off). Per-game keys (cpu_opt, cpu_jit_cache_mib, force_software_page_table, high_accuracy, disable_surface_sync,
 /// async_pipeline_compilation, resolution_multiplier, anisotropic_filtering,
-/// shader_cache, fps_hack, texture_cache, native_pvrtc, log_level, log_compat_warn) are saved
+/// shader_cache, fps_hack, texture_cache, native_pvrtc, half_res_textures, log_level, log_compat_warn) are saved
 /// to the game's custom config (requires a non-empty app_path), applied next
 /// launch. show_compile_shaders updates the shared config.
 /// Returns 0 on success, -1 invalid arguments/environment, -2 unknown key/invalid value,

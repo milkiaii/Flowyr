@@ -68,6 +68,7 @@ void copy_global_to_current(Config::CurrentConfig &current, const Config &cfg) {
     current.spirv_shader = cfg.spirv_shader;
     current.texture_cache = cfg.texture_cache;
     current.native_pvrtc = cfg.native_pvrtc;
+    current.half_res_textures = cfg.half_res_textures;
     current.audio_backend = cfg.audio_backend;
     current.audio_volume = cfg.audio_volume;
     current.ngs_enable = cfg.ngs_enable;
@@ -115,6 +116,7 @@ void copy_current_to_global(Config &cfg, const Config::CurrentConfig &current) {
     cfg.spirv_shader = current.spirv_shader;
     cfg.texture_cache = current.texture_cache;
     cfg.native_pvrtc = current.native_pvrtc;
+    cfg.half_res_textures = current.half_res_textures;
     cfg.audio_backend = current.audio_backend;
     cfg.audio_volume = current.audio_volume;
     cfg.ngs_enable = current.ngs_enable;
@@ -231,6 +233,7 @@ bool load_custom_config(Config::CurrentConfig &out, const fs::path &config_path,
         out.spirv_shader = gpu.attribute("spirv-shader").as_bool();
         out.texture_cache = gpu.attribute("texture-cache").as_bool(true);
         out.native_pvrtc = gpu.attribute("native-pvrtc").as_bool(false);
+        out.half_res_textures = gpu.attribute("half-res-textures").as_bool(false);
     }
 
     if (!config_child.child("audio").empty()) {
@@ -328,6 +331,7 @@ bool save_custom_config(const Config::CurrentConfig &cc, const fs::path &config_
     gpu_child.append_attribute("spirv-shader") = cc.spirv_shader;
     gpu_child.append_attribute("texture-cache") = cc.texture_cache;
     gpu_child.append_attribute("native-pvrtc") = cc.native_pvrtc;
+    gpu_child.append_attribute("half-res-textures") = cc.half_res_textures;
 
     auto audio_child = config_child.append_child("audio");
     audio_child.append_attribute("audio-backend") = cc.audio_backend.c_str();

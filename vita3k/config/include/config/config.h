@@ -164,6 +164,7 @@ using PhysicalKeyCode = input::PhysicalKeyCode;
     code(int, "anisotropic-filtering", 1, anisotropic_filtering)                                        \
     code(bool, "texture-cache", true, texture_cache)                                                    \
     code(bool, "native-pvrtc", false, native_pvrtc)                                                     \
+    code(bool, "half-res-textures", false, half_res_textures)                                           \
     code(bool, "async-pipeline-compilation", true, async_pipeline_compilation)                          \
     code(bool, "show-compile-shaders", true, show_compile_shaders)                                      \
     code(bool, "hashless-texture-cache", false, hashless_texture_cache)                                 \

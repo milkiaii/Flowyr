@@ -205,7 +205,12 @@ ExitCode add_sink(const fs::path &log_path) {
             sinks.push_back(std::make_shared<spdlog::sinks::rotating_file_sink_mt>(log_path.generic_path().native(), 8 * 1024 * 1024, 2));
             sinks.push_back(std::make_shared<spdlog::sinks::rotating_file_sink_mt>(diagnostics::capture_path() + "/runtime.log", 8 * 1024 * 1024, 2));
         } else {
+#if defined(__APPLE__) && TARGET_OS_IOS
+            // Bounded log (max ~16 MiB): error spam used to grow it to 1 GB on iOS.
+            sinks.push_back(std::make_shared<spdlog::sinks::rotating_file_sink_mt>(log_path.generic_path().native(), 8 * 1024 * 1024, 1, true));
+#else
             sinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>(log_path.generic_path().native(), true));
+#endif
         }
     } catch (const spdlog::spdlog_ex &ex) {
         std::cerr << "File log initialization failed: " << ex.what() << std::endl;

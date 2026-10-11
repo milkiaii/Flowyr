@@ -623,6 +623,7 @@ void apply_renderer_config(EmuEnvState &emuenv) {
     r.set_async_compilation(cc.async_pipeline_compilation);
     r.get_texture_cache()->set_replacement_state(cc.import_textures, cc.export_textures, cc.export_as_png);
     r.get_texture_cache()->set_native_pvrtc(cc.native_pvrtc);
+    r.get_texture_cache()->set_half_res_textures(cc.half_res_textures);
 #ifdef __ANDROID__
     if (r.support_custom_drivers())
         r.set_turbo_mode(emuenv.cfg.turbo_mode);
@@ -721,6 +722,7 @@ void apply_runtime_settings(EmuEnvState &emuenv) {
     r.set_async_compilation(cc.async_pipeline_compilation);
     r.get_texture_cache()->set_replacement_state(cc.import_textures, cc.export_textures, cc.export_as_png);
     r.get_texture_cache()->set_native_pvrtc(cc.native_pvrtc);
+    r.get_texture_cache()->set_half_res_textures(cc.half_res_textures);
 #ifdef __ANDROID__
     if (r.support_custom_drivers())
         r.set_turbo_mode(emuenv.cfg.turbo_mode);

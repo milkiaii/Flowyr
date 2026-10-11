@@ -26,6 +26,7 @@ struct GameConfigView: View {
     @State private var fpsHack = false
     @State private var textureCache = true
     @State private var nativePvrtc = false
+    @State private var halfResTextures = false
     @State private var hasCustom = false
 
     @State private var logLevel: Int = 6
@@ -168,6 +169,8 @@ struct GameConfigView: View {
                 .onChange(of: textureCache) { _, on in guard !loading else { return }; set("texture_cache", on ? "1" : "0") }
             Toggle("Native PVRTC Textures", isOn: $nativePvrtc)
                 .onChange(of: nativePvrtc) { _, on in guard !loading else { return }; set("native_pvrtc", on ? "1" : "0") }
+            Toggle("Half-Resolution Textures", isOn: $halfResTextures)
+                .onChange(of: halfResTextures) { _, on in guard !loading else { return }; set("half_res_textures", on ? "1" : "0") }
         } header: {
             Text("CPU e GPU (este jogo)")
         } footer: {
@@ -270,6 +273,7 @@ struct GameConfigView: View {
         fpsHack = (d["fps_hack"] == "1")
         textureCache = (d["texture_cache"] == "1")
         nativePvrtc = (d["native_pvrtc"] == "1")
+        halfResTextures = (d["half_res_textures"] == "1")
         logLevel = min(6, max(0, Int(d["log_level"] ?? "6") ?? 6))
         logCompatWarn = (d["log_compat_warn"] == "1")
         showCompileHint = (d["show_compile_shaders"] == "1")

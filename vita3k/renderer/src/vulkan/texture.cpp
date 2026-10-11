@@ -475,6 +475,14 @@ void VKTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
     if (gxm_texture.gamma_mode)
         vk_format = linear_to_srgb(vk_format);
 
+    const uint32_t skip_mips = texture_skip_mips(gxm_texture, mip_count);
+    if (skip_mips) {
+        // the top mip is never uploaded: create a smaller image
+        width >>= skip_mips;
+        height >>= skip_mips;
+        mip_count -= skip_mips;
+    }
+
     current_texture->mip_count = mip_count;
     current_texture->is_cube = is_cube;
     uint32_t memory_needed = get_image_memory_upper_bound(gxm_texture, vk_format, base_format);

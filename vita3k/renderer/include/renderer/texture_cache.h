@@ -144,6 +144,12 @@ public:
     // user setting: upload PVRTC1 textures as-is instead of decoding them to RGBA8 (about 8x less memory)
     bool native_pvrtc = false;
 
+    // user setting: for large textures that have mipmaps, skip the top level (half width/height, ~4x less GPU memory)
+    bool half_res_textures = false;
+
+    void set_half_res_textures(bool enable);
+    // number of top mip levels not uploaded for this texture (0 or 1)
+    uint32_t texture_skip_mips(const SceGxmTexture &texture, uint32_t mip_count) const;
     void set_native_pvrtc(bool enable);
     // why this texture can not be uploaded as native PVRTC1 data (nullptr if it can)
     const char *native_pvrtc_reject_reason(const SceGxmTexture &texture) const;
