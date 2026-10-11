@@ -330,7 +330,10 @@ static Address alloc_inner(MemState &state, uint32_t start_page, uint32_t page_c
                 state.allocator.free(static_cast<uint32_t>(page_num), page_count);
                 return 0;
             }
-            std::memset(backing, 0, size);
+            // No memset: fresh anonymous mappings are already zero-filled, and
+            // touching every page here would commit the whole allocation up front
+            // (large guest blocks would blow the iOS memory limit). Pages are
+            // committed lazily on first access, as in fastmem mode.
             {
                 const std::lock_guard lock(state.protect_mutex);
                 state.backing_regions.emplace(static_cast<uint32_t>(page_num), BackingRegion{ addr, size, backing });
