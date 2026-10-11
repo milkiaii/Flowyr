@@ -163,6 +163,21 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+      - name: Show errors in the run summary
+        # Lifts the key error lines out of the (long) build logs into annotations,
+        # so a failure is readable on the run page without downloading logs.
+        if: failure()
+        run: |
+          for log in build/cmake-configure.log build/cmake-build.log build/xcodebuild.log; do
+            [[ -f "$log" ]] || continue
+            echo "::group::Errors in $log"
+            { grep -E 'error:|fatal error|CMake Error|BUILD FAILED|\*\* .* FAILED|ld: ' "$log" || true; } \
+              | sort -u | head -n 8 | cut -c1-400 | while IFS= read -r line; do
+                echo "::error title=$(basename "$log")::${line//%/%25}"
+              done
+            echo "::endgroup::"
+          done
+
       - name: Upload build logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
