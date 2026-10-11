@@ -35,6 +35,7 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #endif
 
+#include <chrono>
 #include <functional>
 #include <iostream>
 #include <mutex>
@@ -237,6 +238,12 @@ void rebuild_default_logger() {
     logger->set_level(spdlog::get_level());
     spdlog::set_default_logger(std::move(logger));
     spdlog::set_pattern(LOG_PATTERN);
+#if defined(__APPLE__) && TARGET_OS_IOS
+    // iOS kills the app abruptly on memory pressure, which would lose whatever the
+    // async logger still holds in its file buffer (logs ended mid-line or came out
+    // empty). Flush every second so a crash log keeps almost everything.
+    spdlog::flush_every(std::chrono::seconds(1));
+#endif
     if (diagnostics::enabled()) {
         spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%t] |%L| [%!]: %v");
         spdlog::flush_on(spdlog::level::warn);
