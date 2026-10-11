@@ -1025,6 +1025,7 @@ int vita3k_ios_game_config_get(const char *app_path, char *out, size_t out_size)
     report += fmt::format("shader_cache={}\n", cc.shader_cache ? 1 : 0);
     report += fmt::format("fps_hack={}\n", cc.fps_hack ? 1 : 0);
     report += fmt::format("texture_cache={}\n", cc.texture_cache ? 1 : 0);
+    report += fmt::format("native_pvrtc={}\n", cc.native_pvrtc ? 1 : 0);
     report += fmt::format("log_level={}\n", cc.ios_log_level);
     report += fmt::format("log_compat_warn={}\n", cc.ios_log_compat_warn ? 1 : 0);
     report += fmt::format("show_compile_shaders={}\n", tmp.show_compile_shaders ? 1 : 0);
@@ -1047,7 +1048,7 @@ int vita3k_ios_game_config_set(const char *app_path, const char *key, const char
     // next launch by the core's set_current_config).
     if (k == "cpu_opt" || k == "cpu_jit_cache_mib" || k == "force_software_page_table" || k == "high_accuracy" || k == "disable_surface_sync" || k == "async_pipeline_compilation" ||
         k == "resolution_multiplier" || k == "anisotropic_filtering" || k == "shader_cache" ||
-        k == "fps_hack" || k == "texture_cache" || k == "log_level" || k == "log_compat_warn") {
+        k == "fps_hack" || k == "texture_cache" || k == "native_pvrtc" || k == "log_level" || k == "log_compat_warn") {
         if (!app_path || app_path[0] == '\0')
             return -1;
         Config tmp{};
@@ -1087,6 +1088,8 @@ int vita3k_ios_game_config_set(const char *app_path, const char *key, const char
                 cc.ios_log_level = level[0] - '0';
             } else if (k == "log_compat_warn")
                 cc.ios_log_compat_warn = b;
+            else if (k == "native_pvrtc")
+                cc.native_pvrtc = b;
             else
                 cc.texture_cache = b;
         } catch (const std::exception &) {

@@ -139,6 +139,16 @@ public:
     bool support_x8d24 = false;
     bool support_e5rgb9 = false;
     bool support_a2rgb10 = false;
+    // the GPU can sample PVRTC1 textures directly (Apple GPUs do)
+    bool support_pvrtc = false;
+    // user setting: upload PVRTC1 textures as-is instead of decoding them to RGBA8 (about 8x less memory)
+    bool native_pvrtc = false;
+
+    void set_native_pvrtc(bool enable) { native_pvrtc = enable; }
+    // true if this texture will be uploaded as native PVRTC1 data
+    bool use_native_pvrtc(const SceGxmTexture &texture) const;
+    // mip count to upload for a native PVRTC1 texture (PVRTC needs at least 2x2 blocks per level)
+    uint16_t native_pvrtc_mip_count(const SceGxmTexture &texture, uint16_t mip_count) const;
 
     bool init(const bool hashless_texture_cache, const fs::path &texture_folder, const std::string_view game_id, const size_t sampler_cache_size = 0);
     void set_replacement_state(bool import_textures, bool export_textures, bool export_as_png);

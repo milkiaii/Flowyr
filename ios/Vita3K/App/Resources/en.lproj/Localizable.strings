@@ -56,6 +56,7 @@
 "Emulador experimental de PlayStation Vita para iOS. Compatibilidade e desempenho variam por jogo." = "Experimental PlayStation Vita emulator for iOS. Compatibility and performance vary by game.";
 "Enable CPU Optimizations" = "Enable CPU Optimizations";
 "Force Software Page Table" = "Force Software Page Table";
+"Native PVRTC Textures" = "Native PVRTC Textures";
 "Enable Shader Cache" = "Enable Shader Cache";
 "Enable Texture Cache" = "Enable Texture Cache";
 "Erro ao limpar o shader cache (código %d)." = "Could not clear the shader cache (code %d).";
