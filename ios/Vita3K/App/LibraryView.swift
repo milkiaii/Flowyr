@@ -85,7 +85,7 @@ struct LibraryView: View {
                 LoggingModeBanner(mode: controller.loggingMode)
             }
         }
-        .navigationTitle("Veeb").navigationBarTitleDisplayMode(.inline)
+        .navigationTitle("Veeb-SE").navigationBarTitleDisplayMode(.inline)
         .searchable(text: $search, prompt: "Buscar jogo ou título ID")
         .sheet(item: $configGame) { game in
             GameConfigView(titleId: game.titleId, title: game.title, onDone: {
