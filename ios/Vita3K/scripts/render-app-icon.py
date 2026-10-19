@@ -18,7 +18,7 @@ def main():
     # Preserve the supplied artwork and framing. iOS supplies the corner mask.
     subprocess.run(
         ["magick", str(source), "-resize", "1024x1024", "-colorspace", "sRGB",
-         "-background", "#03112b", "-alpha", "remove", "-alpha", "off",
+         "-background", "#2a1200", "-alpha", "remove", "-alpha", "off",
          "-strip", "-depth", "8", f"PNG24:{output}"],
         check=True,
     )
