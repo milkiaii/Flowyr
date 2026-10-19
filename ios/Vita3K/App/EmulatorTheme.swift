@@ -4,9 +4,9 @@ import UIKit
 enum EmulatorTheme {
     static let lightModePreference = "interface.lightMode"
 
-    static let background = adaptive(light: 0xFFF6EC, dark: 0x140D07)
-    static let panel = adaptive(light: 0xFFFFFF, dark: 0x1F150D)
-    static let artworkBackground = adaptive(light: 0xFFE6C7, dark: 0x5A3A1E)
+    static let background = adaptive(light: 0xFFF6EC, dark: 0x090807)
+    static let panel = adaptive(light: 0xFFFFFF, dark: 0x151311)
+    static let artworkBackground = adaptive(light: 0xFFE6C7, dark: 0x2A211A)
     // Logo orange, with a deeper shade for readable controls on light surfaces.
     static let accent = adaptive(light: 0xB84A00, dark: 0xFF8A1F)
     // Red, so warnings stay distinct from the orange accent.
