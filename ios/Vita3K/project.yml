@@ -38,6 +38,7 @@ targets:
       - path: App/SaveSyncEngine.swift
       - path: App/CloudSaveSync.swift
       - path: App/GameConfigView.swift
+      - path: App/InGameSettingsView.swift
       - path: App/EmulationViewController.swift
       - path: App/PerformanceOverlay.swift
       - path: App/GameKeyboardView.swift

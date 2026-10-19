@@ -172,6 +172,7 @@ final class EmulationViewController: UIViewController {
     private let homeButton = UIButton(configuration: .plain())
     private let homeMenu = UIView()
     private let homeResume = UIButton(configuration: .borderedProminent())
+    private let homeSettings = UIButton(configuration: .bordered())
     private let homeExit = UIButton(configuration: .bordered())
     private let homeTitle = UILabel()
     private var userPaused = false
@@ -270,6 +271,11 @@ final class EmulationViewController: UIViewController {
         homeResume.translatesAutoresizingMaskIntoConstraints = false
         homeResume.accessibilityIdentifier = "resume-game"
         homeResume.addAction(UIAction { [weak self] _ in self?.resumeGame() }, for: .touchUpInside)
+        homeSettings.configuration?.title = L10n.text("Configurações")
+        homeSettings.configuration?.baseForegroundColor = .white
+        homeSettings.translatesAutoresizingMaskIntoConstraints = false
+        homeSettings.accessibilityIdentifier = "ingame-settings"
+        homeSettings.addAction(UIAction { [weak self] _ in self?.openInGameSettings() }, for: .touchUpInside)
         homeExit.configuration?.title = L10n.text("Voltar à biblioteca")
         homeExit.configuration?.baseForegroundColor = .white
         homeExit.translatesAutoresizingMaskIntoConstraints = false
@@ -277,6 +283,7 @@ final class EmulationViewController: UIViewController {
         homeExit.addAction(UIAction { [weak self] _ in self?.exit() }, for: .touchUpInside)
         homeMenu.addSubview(homeTitle)
         homeMenu.addSubview(homeResume)
+        homeMenu.addSubview(homeSettings)
         homeMenu.addSubview(homeExit)
 
         statusLabel.font = .monospacedSystemFont(ofSize: 13, weight: .medium)
@@ -335,14 +342,18 @@ final class EmulationViewController: UIViewController {
             homeMenu.centerXAnchor.constraint(equalTo: root.centerXAnchor),
             homeMenu.centerYAnchor.constraint(equalTo: root.centerYAnchor),
             homeMenu.widthAnchor.constraint(equalToConstant: 300),
-            homeMenu.heightAnchor.constraint(equalToConstant: 156),
+            homeMenu.heightAnchor.constraint(equalToConstant: 206),
             homeTitle.topAnchor.constraint(equalTo: homeMenu.topAnchor, constant: 16),
             homeTitle.centerXAnchor.constraint(equalTo: homeMenu.centerXAnchor),
             homeResume.topAnchor.constraint(equalTo: homeTitle.bottomAnchor, constant: 12),
             homeResume.leadingAnchor.constraint(equalTo: homeMenu.leadingAnchor, constant: 16),
             homeResume.trailingAnchor.constraint(equalTo: homeMenu.trailingAnchor, constant: -16),
             homeResume.heightAnchor.constraint(equalToConstant: 40),
-            homeExit.topAnchor.constraint(equalTo: homeResume.bottomAnchor, constant: 10),
+            homeSettings.topAnchor.constraint(equalTo: homeResume.bottomAnchor, constant: 10),
+            homeSettings.leadingAnchor.constraint(equalTo: homeMenu.leadingAnchor, constant: 16),
+            homeSettings.trailingAnchor.constraint(equalTo: homeMenu.trailingAnchor, constant: -16),
+            homeSettings.heightAnchor.constraint(equalToConstant: 40),
+            homeExit.topAnchor.constraint(equalTo: homeSettings.bottomAnchor, constant: 10),
             homeExit.leadingAnchor.constraint(equalTo: homeMenu.leadingAnchor, constant: 16),
             homeExit.trailingAnchor.constraint(equalTo: homeMenu.trailingAnchor, constant: -16),
             homeExit.heightAnchor.constraint(equalToConstant: 40),
@@ -399,6 +410,15 @@ final class EmulationViewController: UIViewController {
         }
         homeMenu.isHidden = false
         view.bringSubviewToFront(homeMenu)
+    }
+
+    /// Settings sheet over the paused game (the game stays paused until Resume).
+    private func openInGameSettings() {
+        guard let appPath, presentedViewController == nil else { return }
+        let host = UIHostingController(rootView: InGameSettingsView(titleId: appPath, onDone: { [weak self] in
+            self?.dismiss(animated: true)
+        }))
+        present(host, animated: true)
     }
 
     private func resumeGame() {

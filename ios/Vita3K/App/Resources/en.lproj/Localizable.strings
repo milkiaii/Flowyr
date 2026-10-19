@@ -208,3 +208,9 @@
 "Áudio" = "Audio";
 "Última verificação" = "Last checked";
 "Nenhum jogo instalado" = "No games installed";
+"In-Game Settings" = "In-Game Settings";
+"Applied now" = "Applied now";
+"Applied on next launch" = "Applied on next launch";
+"Half-resolution textures only affect textures loaded from now on." = "Half-resolution textures only affect textures loaded from now on.";
+"Exit to the library and start the game again to use the new resolution." = "Exit to the library and start the game again to use the new resolution.";
+"Configurações" = "Settings";

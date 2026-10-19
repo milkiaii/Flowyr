@@ -208,3 +208,9 @@
 "Áudio" = "Áudio";
 "Última verificação" = "Última verificação";
 "Nenhum jogo instalado" = "Nenhum jogo instalado";
+"In-Game Settings" = "Configurações do jogo";
+"Applied now" = "Aplicado agora";
+"Applied on next launch" = "Aplicado na próxima inicialização";
+"Half-resolution textures only affect textures loaded from now on." = "Texturas em meia resolução só afetam texturas carregadas daqui em diante.";
+"Exit to the library and start the game again to use the new resolution." = "Volte à biblioteca e inicie o jogo novamente para usar a nova resolução.";
+"Configurações" = "Configurações";

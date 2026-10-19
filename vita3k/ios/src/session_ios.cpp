@@ -1107,6 +1107,30 @@ int vita3k_ios_game_config_set(const char *app_path, const char *key, const char
             LOG_ERROR("iOS game config: could not save custom config for '{}'", app_path);
             return -3;
         }
+        // The in-game settings menu changes these while the game is paused: also apply them to the
+        // running game (everything else is picked up on the next launch).
+        if (s.controller->has_active_session() && s.launch_app_path == app_path) {
+            auto &live = s.emuenv->cfg.current_config;
+            bool applied = true;
+            if (k == "fps_hack")
+                live.fps_hack = cc.fps_hack;
+            else if (k == "frame_cap_30")
+                live.frame_cap_30 = cc.frame_cap_30;
+            else if (k == "anisotropic_filtering")
+                live.anisotropic_filtering = cc.anisotropic_filtering;
+            else if (k == "half_res_textures")
+                live.half_res_textures = cc.half_res_textures;
+            else if (k == "disable_surface_sync")
+                live.disable_surface_sync = cc.disable_surface_sync;
+            else if (k == "async_pipeline_compilation")
+                live.async_pipeline_compilation = cc.async_pipeline_compilation;
+            else
+                applied = false;
+            if (applied) {
+                app::apply_runtime_settings(*s.emuenv);
+                LOG_INFO("iOS game config: {} applied to the running game", k);
+            }
+        }
         LOG_INFO("iOS game config: {} = {} for {}", k, value, app_path);
         return 0;
     }
