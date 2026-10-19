@@ -2,7 +2,7 @@
 
 > **Vita is for Weebs.**
 
-![](logo.png)
+![](logo-rounded.png)
 
 **Veeb** is an experimental PlayStation Vita emulator built specifically for **iOS 26 and newer**.
 
