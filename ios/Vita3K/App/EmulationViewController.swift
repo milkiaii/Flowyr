@@ -417,8 +417,32 @@ final class EmulationViewController: UIViewController {
         guard let appPath, presentedViewController == nil else { return }
         let host = UIHostingController(rootView: InGameSettingsView(titleId: appPath, onDone: { [weak self] in
             self?.dismiss(animated: true)
+        }, onRestart: { [weak self] in
+            self?.dismiss(animated: true) { self?.restartGame() }
         }))
         present(host, animated: true)
+    }
+
+    /// Stops the running session and starts it again (used to apply settings
+    /// that only take effect at launch, such as the resolution).
+    private func restartGame() {
+        guard isSessionMode, !userExited, Vita3KCore.sessionIsActive() else { return }
+        imeHide()
+        dismissedImeRequest = nil
+        performanceOverlay.isHidden = true
+        frameSampler.reset()
+        pollTask?.cancel()
+        pollTask = nil
+        setVpadVisible(false)
+        homeMenu.isHidden = true
+        userPaused = false
+        statusLabel.isHidden = false
+        statusLabel.text = L10n.text("inicializando sessão…")
+        Task.detached(priority: .userInitiated) {
+            // stop() joins the session thread and tears down cleanly.
+            _ = Vita3KCore.sessionStop()
+            await MainActor.run { [weak self] in self?.startDemo() }
+        }
     }
 
     private func resumeGame() {

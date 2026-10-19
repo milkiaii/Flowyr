@@ -9,6 +9,8 @@ import Vita3KCore
 struct InGameSettingsView: View {
     let titleId: String
     var onDone: () -> Void
+    /// Stops and relaunches the game (the caller closes the sheet).
+    var onRestart: () -> Void
 
     @State private var frameCap30 = false
     @State private var fpsHack = false
@@ -17,6 +19,9 @@ struct InGameSettingsView: View {
     @State private var asyncPipeline = true
     @State private var anisotropicIdx = 0
     @State private var resolutionIdx = 1
+    @State private var initialResolutionIdx = 1
+    @State private var confirmRestart = false
+    @AppStorage("emulation.showStatus") private var showStatus = false
     @State private var loaded = false
     @State private var loading = false
     @State private var message = ""
@@ -39,6 +44,8 @@ struct InGameSettingsView: View {
                             .onChange(of: disableSurfaceSync) { _, on in guard !loading else { return }; set("disable_surface_sync", on ? "1" : "0") }
                         Toggle("Asynchronous Pipeline Compilation", isOn: $asyncPipeline)
                             .onChange(of: asyncPipeline) { _, on in guard !loading else { return }; set("async_pipeline_compilation", on ? "1" : "0") }
+                        Toggle("Performance Overlay", isOn: $showStatus)
+                            .accessibilityIdentifier("ingame-performance-overlay")
                         Picker("Anisotropic Filtering", selection: $anisotropicIdx) {
                             ForEach(anisotropics.indices, id: \.self) { i in
                                 Text("\(anisotropics[i])x").tag(i)
@@ -65,10 +72,14 @@ struct InGameSettingsView: View {
                             guard !loading else { return }
                             set("resolution_multiplier", String(resolutions[i]))
                         }
+                        if resolutionIdx != initialResolutionIdx {
+                            Button("Restart game to apply", role: .destructive) { confirmRestart = true }
+                                .accessibilityIdentifier("ingame-restart")
+                        }
                     } header: {
-                        Text("Applied on next launch")
+                        Text("Resolution")
                     } footer: {
-                        Text("Exit to the library and start the game again to use the new resolution.")
+                        Text("The resolution is applied by restarting the game. Unsaved progress is lost.")
                     }
                 } else {
                     Section { Text(message.isEmpty ? "…" : message).foregroundStyle(.secondary) }
@@ -85,6 +96,12 @@ struct InGameSettingsView: View {
                         .accessibilityIdentifier("ingame-settings-done")
                 }
             }
+        }
+        .confirmationDialog("Restart the game?", isPresented: $confirmRestart, titleVisibility: .visible) {
+            Button("Restart", role: .destructive) { onRestart() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Unsaved progress will be lost.")
         }
         .onAppear { load() }
     }
@@ -114,6 +131,7 @@ struct InGameSettingsView: View {
         anisotropicIdx = anisotropics.firstIndex(of: aniso) ?? 0
         let res = Double(d["resolution_multiplier"] ?? "1") ?? 1
         resolutionIdx = resolutions.firstIndex { abs($0 - res) < 0.01 } ?? 1
+        initialResolutionIdx = resolutionIdx
     }
 
     @discardableResult

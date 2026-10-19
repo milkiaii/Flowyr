@@ -214,3 +214,10 @@
 "Half-resolution textures only affect textures loaded from now on." = "Texturas em meia resolução só afetam texturas carregadas daqui em diante.";
 "Exit to the library and start the game again to use the new resolution." = "Volte à biblioteca e inicie o jogo novamente para usar a nova resolução.";
 "Configurações" = "Configurações";
+"Resolution" = "Resolução";
+"Restart game to apply" = "Reiniciar o jogo para aplicar";
+"Restart the game?" = "Reiniciar o jogo?";
+"Restart" = "Reiniciar";
+"Cancel" = "Cancelar";
+"Unsaved progress will be lost." = "O progresso não salvo será perdido.";
+"The resolution is applied by restarting the game. Unsaved progress is lost." = "A resolução é aplicada ao reiniciar o jogo. O progresso não salvo é perdido.";

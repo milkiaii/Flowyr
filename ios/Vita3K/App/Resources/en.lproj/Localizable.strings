@@ -214,3 +214,10 @@
 "Half-resolution textures only affect textures loaded from now on." = "Half-resolution textures only affect textures loaded from now on.";
 "Exit to the library and start the game again to use the new resolution." = "Exit to the library and start the game again to use the new resolution.";
 "Configurações" = "Settings";
+"Resolution" = "Resolution";
+"Restart game to apply" = "Restart game to apply";
+"Restart the game?" = "Restart the game?";
+"Restart" = "Restart";
+"Cancel" = "Cancel";
+"Unsaved progress will be lost." = "Unsaved progress will be lost.";
+"The resolution is applied by restarting the game. Unsaved progress is lost." = "The resolution is applied by restarting the game. Unsaved progress is lost.";
