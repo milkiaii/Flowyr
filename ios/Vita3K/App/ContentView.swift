@@ -28,8 +28,13 @@ struct ContentView: View {
         .task {
             guard !startupComplete else { return }
             startupComplete = true
+            // Start the JIT check first: it runs off the main thread, so it
+            // overlaps with the (main-thread, SDL-bound) session init.
+            let jit = Task { await controller.checkJIT() }
+            // Let the first frame draw before the main thread blocks in init.
+            try? await Task.sleep(for: .milliseconds(80))
             controller.runSessionInit()
-            _ = await controller.checkJIT()
+            _ = await jit.value
             // The launch sync is armed by CloudSaveSync (needsSync) and run
             // once by the control poller; an explicit call here would sync
             // again right after the JIT check.

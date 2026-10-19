@@ -369,21 +369,22 @@ final class CoreController: ObservableObject {
             if await Task.detached(operation: { Vita3KCore.jitValidateAlive() == 0 }).value {
                 return true
             }
-            // Poll for the debugger every 100 ms (up to 3 s).
-            for _ in 0..<30 {
-                if vita3k_ios_cs_debugged() == 1 { break }
-                try? await Task.sleep(for: .milliseconds(100))
-            }
-            guard vita3k_ios_cs_debugged() == 1 else { return false }
-            // No blind grace period: try right away and retry every 200 ms
-            // (up to ~3 s) in case the debugger is still settling.
-            for attempt in 0..<15 {
-                if await Task.detached(priority: .userInitiated, operation: {
-                    vita3k_ios_jit_prepare() == 0
-                }).value { return true }
-                if attempt < 14 { try? await Task.sleep(for: .milliseconds(200)) }
-            }
-            return false
+            // Runs entirely off the main actor so it overlaps with the
+            // (main-thread) session init instead of waiting behind it.
+            // Poll for the debugger every 100 ms (up to 3 s), then prepare
+            // right away, retrying every 200 ms (up to ~3 s).
+            return await Task.detached(priority: .userInitiated) {
+                for _ in 0..<30 {
+                    if vita3k_ios_cs_debugged() == 1 { break }
+                    try? await Task.sleep(for: .milliseconds(100))
+                }
+                guard vita3k_ios_cs_debugged() == 1 else { return false }
+                for attempt in 0..<15 {
+                    if vita3k_ios_jit_prepare() == 0 { return true }
+                    if attempt < 14 { try? await Task.sleep(for: .milliseconds(200)) }
+                }
+                return false
+            }.value
             #endif
             #if targetEnvironment(simulator)
             return await Task.detached(priority: .userInitiated) {
@@ -499,7 +500,9 @@ final class CoreController: ObservableObject {
     /// logging, EmuEnvState, config, apps list, users). Idempotent.
     func runSessionInit() {
         guard !sessionInitialized else { return }
+        let initStart = Date()
         let rc = Vita3KCore.sessionInit(basePath: basePath, staticAssets: Bundle.main.bundlePath)
+        Probe.mark("session-init took \(Int(Date().timeIntervalSince(initStart) * 1000)) ms")
         // Host-readable probe (like app-probe.txt for the self-test).
         if Vita3KCore.loggingEnabled {
             let report = Vita3KCore.sessionReport()
