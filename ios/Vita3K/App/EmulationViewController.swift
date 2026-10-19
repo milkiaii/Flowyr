@@ -173,6 +173,8 @@ final class EmulationViewController: UIViewController {
     /// Invisible area over the HOME button: while the button is hidden
     /// (in-game setting), a double tap here brings it back.
     private let homeHotspot = UIView()
+    /// Set by the double tap: the button stays visible until the game is resumed, then hides again.
+    private var homeShownTemporarily = false
     private let homeMenu = UIView()
     private let homeResume = UIButton(configuration: .borderedProminent())
     private let homeSettings = UIButton(configuration: .bordered())
@@ -413,13 +415,13 @@ final class EmulationViewController: UIViewController {
     /// Shows the HOME button, or (when hidden in the in-game settings) only its
     /// invisible double-tap area.
     private func applyHomeVisibility(active: Bool) {
-        let hide = UserDefaults.standard.bool(forKey: "emulation.hideHome")
+        let hide = UserDefaults.standard.bool(forKey: "emulation.hideHome") && !homeShownTemporarily
         homeButton.isHidden = !active || hide
         homeHotspot.isHidden = !active || !hide
     }
 
     @objc private func homeHotspotDoubleTapped() {
-        UserDefaults.standard.set(false, forKey: "emulation.hideHome")
+        homeShownTemporarily = true
         applyHomeVisibility(active: Vita3KCore.sessionIsActive())
     }
 
@@ -467,6 +469,7 @@ final class EmulationViewController: UIViewController {
         userPaused = false
         statusLabel.isHidden = false
         statusLabel.text = L10n.text("inicializando sessão…")
+        homeShownTemporarily = false
         Task.detached(priority: .userInitiated) {
             // stop() joins the session thread and tears down cleanly.
             _ = Vita3KCore.sessionStop()
@@ -479,6 +482,9 @@ final class EmulationViewController: UIViewController {
         userPaused = false
         homeMenu.isHidden = true
         frameSampler.reset()
+        // Back in the game: hide the HOME button again if the setting is on.
+        homeShownTemporarily = false
+        applyHomeVisibility(active: Vita3KCore.sessionIsActive())
     }
 
     override func viewDidAppear(_ animated: Bool) {

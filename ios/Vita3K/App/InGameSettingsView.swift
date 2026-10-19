@@ -62,7 +62,7 @@ struct InGameSettingsView: View {
                     } header: {
                         Text("Applied now")
                     } footer: {
-                        Text("Half-resolution textures only affect textures loaded from now on. With the HOME button hidden, double-tap where it was (top center) to bring it back.")
+                        Text("Half-resolution textures only affect textures loaded from now on. With the HOME button hidden, double-tap where it was (top center) to show it until you resume the game.")
                     }
                     Section {
                         Picker("Internal Resolution Upscaling", selection: $resolutionIdx) {
