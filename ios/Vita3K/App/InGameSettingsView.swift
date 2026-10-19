@@ -22,6 +22,7 @@ struct InGameSettingsView: View {
     @State private var initialResolutionIdx = 1
     @State private var confirmRestart = false
     @AppStorage("emulation.showStatus") private var showStatus = false
+    @AppStorage("emulation.hideHome") private var hideHome = false
     @State private var loaded = false
     @State private var loading = false
     @State private var message = ""
@@ -46,6 +47,8 @@ struct InGameSettingsView: View {
                             .onChange(of: asyncPipeline) { _, on in guard !loading else { return }; set("async_pipeline_compilation", on ? "1" : "0") }
                         Toggle("Performance Overlay", isOn: $showStatus)
                             .accessibilityIdentifier("ingame-performance-overlay")
+                        Toggle("Hide HOME Button", isOn: $hideHome)
+                            .accessibilityIdentifier("ingame-hide-home")
                         Picker("Anisotropic Filtering", selection: $anisotropicIdx) {
                             ForEach(anisotropics.indices, id: \.self) { i in
                                 Text("\(anisotropics[i])x").tag(i)
@@ -59,7 +62,7 @@ struct InGameSettingsView: View {
                     } header: {
                         Text("Applied now")
                     } footer: {
-                        Text("Half-resolution textures only affect textures loaded from now on.")
+                        Text("Half-resolution textures only affect textures loaded from now on. With the HOME button hidden, double-tap where it was (top center) to bring it back.")
                     }
                     Section {
                         Picker("Internal Resolution Upscaling", selection: $resolutionIdx) {

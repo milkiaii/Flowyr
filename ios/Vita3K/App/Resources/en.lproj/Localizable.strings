@@ -221,3 +221,5 @@
 "Cancel" = "Cancel";
 "Unsaved progress will be lost." = "Unsaved progress will be lost.";
 "The resolution is applied by restarting the game. Unsaved progress is lost." = "The resolution is applied by restarting the game. Unsaved progress is lost.";
+"Hide HOME Button" = "Hide HOME Button";
+"Half-resolution textures only affect textures loaded from now on. With the HOME button hidden, double-tap where it was (top center) to bring it back." = "Half-resolution textures only affect textures loaded from now on. With the HOME button hidden, double-tap where it was (top center) to bring it back.";

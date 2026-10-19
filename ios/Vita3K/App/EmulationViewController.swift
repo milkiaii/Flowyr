@@ -170,6 +170,9 @@ final class EmulationViewController: UIViewController {
     // while a session is active) pauses the game and offers "Continuar" /
     // "Voltar à biblioteca" — the only way back to the library.
     private let homeButton = UIButton(configuration: .plain())
+    /// Invisible area over the HOME button: while the button is hidden
+    /// (in-game setting), a double tap here brings it back.
+    private let homeHotspot = UIView()
     private let homeMenu = UIView()
     private let homeResume = UIButton(configuration: .borderedProminent())
     private let homeSettings = UIButton(configuration: .bordered())
@@ -325,7 +328,16 @@ final class EmulationViewController: UIViewController {
         performanceOverlay.translatesAutoresizingMaskIntoConstraints = false
         performanceOverlay.isHidden = true
         root.addSubview(performanceOverlay)
+        homeHotspot.translatesAutoresizingMaskIntoConstraints = false
+        homeHotspot.backgroundColor = .clear
+        homeHotspot.isHidden = true
+        homeHotspot.accessibilityIdentifier = "home-hotspot"
+        let doubleTap = UITapGestureRecognizer(target: self, action: #selector(homeHotspotDoubleTapped))
+        doubleTap.numberOfTapsRequired = 2
+        homeHotspot.addGestureRecognizer(doubleTap)
+        root.addSubview(homeHotspot)
         root.bringSubviewToFront(homeButton)
+        root.bringSubviewToFront(homeHotspot)
         root.bringSubviewToFront(imeBar)
         root.bringSubviewToFront(homeMenu)
 
@@ -336,6 +348,10 @@ final class EmulationViewController: UIViewController {
 
             homeButton.topAnchor.constraint(equalTo: root.safeAreaLayoutGuide.topAnchor),
             homeButton.centerXAnchor.constraint(equalTo: root.centerXAnchor),
+            homeHotspot.centerXAnchor.constraint(equalTo: homeButton.centerXAnchor),
+            homeHotspot.centerYAnchor.constraint(equalTo: homeButton.centerYAnchor),
+            homeHotspot.widthAnchor.constraint(equalToConstant: 72),
+            homeHotspot.heightAnchor.constraint(equalToConstant: 72),
             homeButton.widthAnchor.constraint(equalToConstant: 44),
             homeButton.heightAnchor.constraint(equalToConstant: 44),
 
@@ -392,6 +408,19 @@ final class EmulationViewController: UIViewController {
         vpad.resetInput()
         super.viewWillTransition(to: size, with: coordinator)
         coordinator.animate(alongsideTransition: { _ in self.view.setNeedsLayout(); self.view.layoutIfNeeded() })
+    }
+
+    /// Shows the HOME button, or (when hidden in the in-game settings) only its
+    /// invisible double-tap area.
+    private func applyHomeVisibility(active: Bool) {
+        let hide = UserDefaults.standard.bool(forKey: "emulation.hideHome")
+        homeButton.isHidden = !active || hide
+        homeHotspot.isHidden = !active || !hide
+    }
+
+    @objc private func homeHotspotDoubleTapped() {
+        UserDefaults.standard.set(false, forKey: "emulation.hideHome")
+        applyHomeVisibility(active: Vita3KCore.sessionIsActive())
     }
 
     /// HOME (the only in-game control): pause the game and show the
@@ -724,7 +753,7 @@ final class EmulationViewController: UIViewController {
                         // HOME button while a session is active; the pause
                         // menu cannot outlive the session.
                         let active = Vita3KCore.sessionIsActive()
-                        self.homeButton.isHidden = !active
+                        self.applyHomeVisibility(active: active)
                         if !active {
                             self.homeMenu.isHidden = true
                             self.userPaused = false
