@@ -369,16 +369,27 @@ final class CoreController: ObservableObject {
             if await Task.detached(operation: { Vita3KCore.jitValidateAlive() == 0 }).value {
                 return true
             }
-            for _ in 0..<6 {
+            // Poll for the debugger every 100 ms (up to 3 s).
+            for _ in 0..<30 {
                 if vita3k_ios_cs_debugged() == 1 { break }
-                try? await Task.sleep(for: .milliseconds(500))
+                try? await Task.sleep(for: .milliseconds(100))
             }
             guard vita3k_ios_cs_debugged() == 1 else { return false }
-            try? await Task.sleep(for: .seconds(2))
+            // No blind grace period: try right away and retry every 200 ms
+            // (up to ~3 s) in case the debugger is still settling.
+            for attempt in 0..<15 {
+                if await Task.detached(priority: .userInitiated, operation: {
+                    vita3k_ios_jit_prepare() == 0
+                }).value { return true }
+                if attempt < 14 { try? await Task.sleep(for: .milliseconds(200)) }
+            }
+            return false
             #endif
+            #if targetEnvironment(simulator)
             return await Task.detached(priority: .userInitiated) {
                 vita3k_ios_jit_prepare() == 0
             }.value
+            #endif
         }
         jitTask = task
         let ready = await task.value
