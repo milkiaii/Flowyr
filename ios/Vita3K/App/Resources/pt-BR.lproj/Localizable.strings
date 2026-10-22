@@ -223,3 +223,4 @@
 "The resolution is applied by restarting the game. Unsaved progress is lost." = "A resolução é aplicada ao reiniciar o jogo. O progresso não salvo é perdido.";
 "Hide HOME Button" = "Ocultar botão HOME";
 "Half-resolution textures only affect textures loaded from now on. With the HOME button hidden, double-tap where it was (top center) to bring it back." = "Texturas em meia resolução só afetam texturas carregadas daqui em diante. Com o botão HOME oculto, toque duas vezes onde ele estava (centro superior) para exibi-lo até você retomar o jogo.";
+"Pressione Start + Select para abrir o menu" = "Pressione Start + Select para abrir o menu";

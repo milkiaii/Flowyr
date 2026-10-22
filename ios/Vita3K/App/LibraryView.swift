@@ -7,7 +7,12 @@ struct LibraryView: View {
     let launch: (String) -> Void
     let importContent: () -> Void
     let openSettings: () -> Void
+    /// False while a sheet, the importer or a game is on screen.
+    let inputEnabled: Bool
     @ObservedObject private var deviceStatus = DeviceStatus.shared
+    @ObservedObject private var pad = GamepadInput.shared
+    @State private var focusedID: String?
+    @State private var gridWidth: CGFloat = 0
     @State private var search = ""
     @State private var favoritesOnly = false
     @State private var configGame: CoreController.AppInfo?
@@ -57,6 +62,15 @@ struct LibraryView: View {
                 onSettings: openSettings
             )
             .padding(.bottom, 10)
+        }
+        .onAppear { pad.start(owner: PadOwner.library) }
+        .onDisappear { pad.stop(owner: PadOwner.library) }
+        .onChange(of: pad.lastEvent) { _, event in
+            guard inputEnabled, configGame == nil, deleteGame == nil, let event else { return }
+            handlePad(event.button)
+        }
+        .onChange(of: games.map(\.titleId)) { _, ids in
+            if let focusedID, !ids.contains(focusedID) { self.focusedID = nil }
         }
         .sheet(item: $configGame) { game in
             GameConfigView(titleId: game.titleId, title: game.title, onDone: {
@@ -108,7 +122,7 @@ struct LibraryView: View {
             }
             .refreshable { controller.refreshApps() }
         } else if showsCarousel {
-            GameCarousel(games: games, initialID: lastPlayed, onLaunch: launch) { game in
+            GameCarousel(games: games, initialID: lastPlayed, scrolledID: $focusedID, onLaunch: launch) { game in
                 gameMenu(game)
             }
             .padding(.bottom, 84)
@@ -146,6 +160,7 @@ struct LibraryView: View {
     }
 
     private var listContent: some View {
+        ScrollViewReader { proxy in
         ScrollView {
             LazyVStack(spacing: 0) {
                 searchHeader.padding(.bottom, 8)
@@ -159,9 +174,12 @@ struct LibraryView: View {
         .contentMargins(.bottom, 96, for: .scrollContent)
         .scrollDismissesKeyboard(.interactively)
         .refreshable { controller.refreshApps() }
+        .onChange(of: focusedID) { _, id in scrollTo(id, using: proxy) }
+        }
     }
 
     private var gridContent: some View {
+        ScrollViewReader { proxy in
         ScrollView {
             VStack(spacing: 14) {
                 searchHeader
@@ -174,6 +192,63 @@ struct LibraryView: View {
         .contentMargins(.bottom, 96, for: .scrollContent)
         .scrollDismissesKeyboard(.interactively)
         .refreshable { controller.refreshApps() }
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { gridWidth = $0 }
+        .onChange(of: focusedID) { _, id in scrollTo(id, using: proxy) }
+        }
+    }
+
+    private func scrollTo(_ id: String?, using proxy: ScrollViewProxy) {
+        guard let id else { return }
+        withAnimation(.snappy) { proxy.scrollTo(id, anchor: .center) }
+    }
+
+    // MARK: - Gamepad
+
+    private enum PadOwner { case library }
+
+    private var gridColumns: Int {
+        max(1, Int((gridWidth - 32 + 14) / (160 + 14)))
+    }
+
+    private func focusRing(_ id: String, radius: CGFloat) -> some View {
+        RoundedRectangle(cornerRadius: radius, style: .continuous)
+            .strokeBorder(Color.primary, lineWidth: 3)
+            .opacity(pad.connected && focusedID == id && !showsCarousel ? 1 : 0)
+            .allowsHitTesting(false)
+    }
+
+    private func moveFocus(by delta: Int) {
+        guard !games.isEmpty else { return }
+        let ids = games.map(\.titleId)
+        guard let current = focusedID, let index = ids.firstIndex(of: current) else {
+            focusedID = ids.contains(lastPlayed) ? lastPlayed : ids.first
+            return
+        }
+        let next = min(max(index + delta, 0), ids.count - 1)
+        if showsCarousel {
+            withAnimation(.snappy) { focusedID = ids[next] }
+        } else {
+            focusedID = ids[next]
+        }
+    }
+
+    private func handlePad(_ button: PadButton) {
+        switch button {
+        case .left: moveFocus(by: -1)
+        case .right: moveFocus(by: 1)
+        case .up: if !showsCarousel { moveFocus(by: listLayout ? -1 : -gridColumns) }
+        case .down: if !showsCarousel { moveFocus(by: listLayout ? 1 : gridColumns) }
+        case .confirm:
+            if let id = focusedID, games.contains(where: { $0.titleId == id }) { launch(id) }
+            else { moveFocus(by: 0) }
+        case .x:
+            if let id = focusedID, let game = games.first(where: { $0.titleId == id }) { configGame = game }
+        case .y: withAnimation(.snappy) { listLayout.toggle() }
+        case .start: openSettings()
+        case .select:
+            if controller.sessionInitialized, !controller.isImporting { importContent() }
+        default: break
+        }
     }
 
     @ViewBuilder
@@ -206,7 +281,9 @@ struct LibraryView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain).accessibilityIdentifier("game-\(game.titleId)")
+        .overlay { focusRing(game.titleId, radius: 22) }
         .contextMenu { gameMenu(game) }
+        .id(game.titleId)
     }
 
     private func gameRow(_ game: CoreController.AppInfo) -> some View {
@@ -228,7 +305,9 @@ struct LibraryView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain).accessibilityIdentifier("game-\(game.titleId)")
+        .overlay { focusRing(game.titleId, radius: 14) }
         .contextMenu { gameMenu(game) }
+        .id(game.titleId)
     }
 
     private func deleteAction(_ game: CoreController.AppInfo) -> some View {

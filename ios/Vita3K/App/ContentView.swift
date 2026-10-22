@@ -9,13 +9,15 @@ struct ContentView: View {
     @State private var surfaceRequest: SurfaceRequest?
     @State private var showImporter = false
     @State private var showSettings = false
+    @ObservedObject private var pad = GamepadInput.shared
     @State private var launchInFlight = false
     @State private var startupComplete = false
     @State private var wasAway = false
     @State private var launchError: String?
 
     var body: some View {
-        LibraryView(launch: launch, importContent: { showImporter = true }, openSettings: { showSettings = true })
+        LibraryView(launch: launch, importContent: { showImporter = true }, openSettings: { showSettings = true },
+                    inputEnabled: surfaceRequest == nil && !showSettings && !showImporter && !launchInFlight)
         .disabled(controller.isImporting || controller.isDeleting || controller.isSyncingSaves || launchInFlight)
         .task {
             guard !startupComplete else { return }
@@ -30,6 +32,10 @@ struct ContentView: View {
             // The launch sync is armed by CloudSaveSync (needsSync) and run
             // once by the control poller; an explicit call here would sync
             // again right after the JIT check.
+        }
+        .onChange(of: pad.lastEvent) { _, event in
+            // B closes the settings sheet.
+            if showSettings, event?.button == .back { showSettings = false }
         }
         .onChange(of: scenePhase) { _, phase in
             switch phase {

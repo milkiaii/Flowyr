@@ -299,10 +299,10 @@ struct GameCover: View {
 struct GameCarousel<Menu: View>: View {
     let games: [CoreController.AppInfo]
     let initialID: String?
+    /// The centered game. Shared with the library so a gamepad can move it.
+    @Binding var scrolledID: String?
     let onLaunch: (String) -> Void
     @ViewBuilder let menu: (CoreController.AppInfo) -> Menu
-
-    @State private var scrolledID: String?
 
     var body: some View {
         GeometryReader { proxy in
@@ -323,7 +323,7 @@ struct GameCarousel<Menu: View>: View {
             .scrollIndicators(.hidden)
             .sensoryFeedback(.selection, trigger: scrolledID)
             .onAppear {
-                if scrolledID == nil {
+                if scrolledID == nil || !games.contains(where: { $0.titleId == scrolledID }) {
                     scrolledID = games.contains(where: { $0.titleId == initialID }) ? initialID : games.first?.titleId
                 }
             }

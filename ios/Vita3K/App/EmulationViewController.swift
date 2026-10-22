@@ -9,6 +9,7 @@
 // starts. Losing focus suspends CPU/audio and drains GPU submissions while
 // retaining the session; only an explicit exit tears it down.
 
+import Combine
 import SwiftUI
 import UIKit
 import Vita3KCore
@@ -181,6 +182,10 @@ final class EmulationViewController: UIViewController {
     private let homeExit = UIButton(configuration: .bordered())
     private let homeTitle = UILabel()
     private var userPaused = false
+    // Physical gamepad: Start + Select opens the menu; the D-pad / A / B drive it.
+    private var padCancellables = Set<AnyCancellable>()
+    private var homeFocusIndex = 0
+    private var padHintShown = false
     private var jitWarningShown = false
 
     override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
@@ -441,6 +446,110 @@ final class EmulationViewController: UIViewController {
         }
         homeMenu.isHidden = false
         view.bringSubviewToFront(homeMenu)
+        setHomeFocus(0)
+    }
+
+    // MARK: - Gamepad
+
+    private var homeButtons: [UIButton] { [homeResume, homeSettings, homeExit] }
+
+    private func setHomeFocus(_ index: Int) {
+        homeFocusIndex = min(max(index, 0), homeButtons.count - 1)
+        let showRing = GamepadInput.shared.connected
+        for (i, button) in homeButtons.enumerated() {
+            button.layer.cornerRadius = 20
+            button.layer.borderColor = UIColor.white.cgColor
+            button.layer.borderWidth = (showRing && i == homeFocusIndex) ? 2 : 0
+        }
+    }
+
+    private func startGamepad() {
+        padCancellables.removeAll()
+        GamepadInput.shared.start(owner: ObjectIdentifier(self))
+        GamepadInput.shared.$lastEvent
+            .compactMap { $0 }
+            .sink { [weak self] event in MainActor.assumeIsolated { self?.handlePad(event.button) } }
+            .store(in: &padCancellables)
+        GamepadInput.shared.$connected
+            .removeDuplicates()
+            .sink { [weak self] connected in
+                if connected { MainActor.assumeIsolated { self?.maybeShowPadHint() } }
+            }
+            .store(in: &padCancellables)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
+            MainActor.assumeIsolated { self?.maybeShowPadHint() }
+        }
+    }
+
+    private func stopGamepad() {
+        padCancellables.removeAll()
+        GamepadInput.shared.stop(owner: ObjectIdentifier(self))
+    }
+
+    private func handlePad(_ button: PadButton) {
+        guard isSessionMode, Vita3KCore.sessionIsActive() else { return }
+        if presentedViewController != nil {
+            // The in-game settings sheet: B closes it.
+            if button == .back { dismiss(animated: true) }
+            return
+        }
+        if homeMenu.isHidden {
+            if button == .menuCombo {
+                UserDefaults.standard.set(true, forKey: "emulation.menuComboUsed")
+                homeTapped()
+            }
+            return
+        }
+        switch button {
+        case .up: setHomeFocus(homeFocusIndex - 1)
+        case .down: setHomeFocus(homeFocusIndex + 1)
+        case .confirm: homeButtons[homeFocusIndex].sendActions(for: .touchUpInside)
+        case .back, .start: resumeGame()
+        default: break
+        }
+    }
+
+    /// Tells the player how to open the menu (until they have used it, and at
+    /// most a few times), shown once per play session when a controller is attached.
+    private func maybeShowPadHint() {
+        guard isSessionMode, !padHintShown, !userExited, GamepadInput.shared.connected,
+              Vita3KCore.sessionIsActive(), homeMenu.isHidden else { return }
+        let defaults = UserDefaults.standard
+        let shown = defaults.integer(forKey: "emulation.menuHintCount")
+        guard !defaults.bool(forKey: "emulation.menuComboUsed"), shown < 6 else { return }
+        padHintShown = true
+        defaults.set(shown + 1, forKey: "emulation.menuHintCount")
+
+        let label = UILabel()
+        label.text = L10n.text("Pressione Start + Select para abrir o menu")
+        label.font = .systemFont(ofSize: 14, weight: .semibold)
+        label.textColor = .white
+        label.textAlignment = .center
+        label.numberOfLines = 2
+        label.translatesAutoresizingMaskIntoConstraints = false
+        let toast = UIView()
+        toast.backgroundColor = .black.withAlphaComponent(0.8)
+        toast.layer.cornerRadius = 16
+        toast.layer.borderWidth = 1
+        toast.layer.borderColor = UIColor.white.withAlphaComponent(0.25).cgColor
+        toast.alpha = 0
+        toast.isUserInteractionEnabled = false
+        toast.translatesAutoresizingMaskIntoConstraints = false
+        toast.addSubview(label)
+        view.addSubview(toast)
+        NSLayoutConstraint.activate([
+            label.topAnchor.constraint(equalTo: toast.topAnchor, constant: 10),
+            label.bottomAnchor.constraint(equalTo: toast.bottomAnchor, constant: -10),
+            label.leadingAnchor.constraint(equalTo: toast.leadingAnchor, constant: 16),
+            label.trailingAnchor.constraint(equalTo: toast.trailingAnchor, constant: -16),
+            toast.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            toast.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
+            toast.widthAnchor.constraint(lessThanOrEqualTo: view.widthAnchor, constant: -48),
+        ])
+        UIView.animate(withDuration: 0.3) { toast.alpha = 1 }
+        UIView.animate(withDuration: 0.4, delay: 5, options: []) {
+            toast.alpha = 0
+        } completion: { _ in toast.removeFromSuperview() }
     }
 
     /// Settings sheet over the paused game (the game stays paused until Resume).
@@ -506,6 +615,7 @@ final class EmulationViewController: UIViewController {
                     self.resumeFromBackground()
                 }
             }
+        startGamepad()
         if UIApplication.shared.applicationState == .active {
             vita3k_ios_session_set_background(0)
             startDemo()
@@ -522,6 +632,7 @@ final class EmulationViewController: UIViewController {
         appResigningObserver = nil
         appActiveObserver = nil
         imeHide()
+        stopGamepad()
         vpad.setActive(false)
         // No stuck input may survive the surface's death: lift all fingers
         // and drop the overlay mouse in the core.
