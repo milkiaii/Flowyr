@@ -6,6 +6,8 @@ struct LibraryView: View {
     @Environment(\.locale) private var locale
     let launch: (String) -> Void
     let importContent: () -> Void
+    let openSettings: () -> Void
+    @ObservedObject private var deviceStatus = DeviceStatus.shared
     @State private var search = ""
     @State private var favoritesOnly = false
     @State private var configGame: CoreController.AppInfo?
@@ -26,67 +28,36 @@ struct LibraryView: View {
         }
     }
 
+    /// Landscape + grid mode shows the cover carousel; list mode stays a list.
+    private var showsCarousel: Bool {
+        !listLayout && verticalSizeClass == .compact && !games.isEmpty
+    }
+
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: verticalSizeClass == .compact ? 12 : 24) {
-                header
-                if let recent = controller.apps.first(where: { $0.titleId == lastPlayed }), search.isEmpty, !favoritesOnly, verticalSizeClass != .compact {
-                    Button { launch(recent.titleId) } label: {
-                        HStack(spacing: 16) {
-                            GameArtwork(titleID: recent.titleId).frame(width: 70, height: 70)
-                            VStack(alignment: .leading, spacing: 5) {
-                                Text("JOGADO RECENTEMENTE").font(.caption2.weight(.bold)).tracking(1.4).foregroundStyle(EmulatorTheme.accent)
-                                Text(recent.title).font(.headline).lineLimit(2).foregroundStyle(.primary)
-                                Text("Jogar novamente").font(.caption).foregroundStyle(.secondary)
-                            }
-                            Spacer(minLength: 0)
-                            Image(systemName: "play.circle.fill").font(.title).foregroundStyle(EmulatorTheme.accent)
-                        }
-                        .padding(16).background(EmulatorTheme.panel, in: RoundedRectangle(cornerRadius: 22))
-                    }.buttonStyle(.plain)
-                        .contextMenu { deleteAction(recent) }
+        ZStack {
+            EmulatorTheme.background.ignoresSafeArea()
+            VStack(spacing: 0) {
+                LibraryTopBar(status: deviceStatus, jitStatus: controller.jitStatus) {
+                    Task { _ = await controller.checkJIT() }
                 }
-                HStack {
-                    Picker("Filtro da biblioteca", selection: $favoritesOnly) {
-                        Text("Todos").tag(false)
-                        Text("Favoritos").tag(true)
-                    }.pickerStyle(.segmented).frame(maxWidth: 280)
-                    Spacer(minLength: 8)
-                    Button { listLayout.toggle() } label: {
-                        Image(systemName: listLayout ? "square.grid.2x2" : "list.bullet").frame(width: 44, height: 44)
-                    }
-                    .accessibilityLabel(Text(LocalizedStringKey(listLayout ? "Exibir em grade" : "Exibir em lista")))
+                .padding(.horizontal, 16).padding(.top, 6).padding(.bottom, 8)
+                if controller.loggingMode != .off {
+                    LoggingModeBanner(mode: controller.loggingMode)
                 }
-                if games.isEmpty {
-                    ContentUnavailableView {
-                        Label(LocalizedStringKey(controller.apps.isEmpty ? "Sua próxima aventura" : "Nenhum jogo encontrado"),
-                              systemImage: controller.apps.isEmpty ? "gamecontroller" : "magnifyingglass")
-                    } description: {
-                        Text(LocalizedStringKey(controller.apps.isEmpty ? "Importe seus jogos e homebrews para começar. Arquivos VPK, ZIP, PKG e pastas são aceitos." : "Tente outra busca ou veja todos os jogos."))
-                    } actions: {
-                        if controller.apps.isEmpty {
-                            Button("Importar jogo", action: importContent).buttonStyle(.borderedProminent)
-                                .disabled(!controller.sessionInitialized || controller.isImporting)
-                        }
-                    }
-                } else if listLayout {
-                    LazyVStack(spacing: 12) { ForEach(games) { game in gameRow(game) } }
-                } else {
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 155, maximum: 230), spacing: 18)], alignment: .leading, spacing: 24) {
-                        ForEach(games) { game in gameTile(game) }
-                    }
-                }
-            }
-            .padding(20).frame(maxWidth: 1200).frame(maxWidth: .infinity)
-        }
-        .background(EmulatorTheme.background)
-        .safeAreaInset(edge: .top, spacing: 0) {
-            if controller.loggingMode != .off {
-                LoggingModeBanner(mode: controller.loggingMode)
+                content
             }
         }
-        .navigationTitle("Veeb-SE").navigationBarTitleDisplayMode(.inline)
-        .searchable(text: $search, prompt: "Buscar jogo ou título ID")
+        .overlay(alignment: .bottom) {
+            LibraryFloatingBar(
+                layoutSymbol: listLayout ? "square.grid.2x2" : "list.bullet",
+                layoutLabel: LocalizedStringKey(listLayout ? "Exibir em grade" : "Exibir em lista"),
+                importDisabled: !controller.sessionInitialized || controller.isImporting,
+                onLayout: { withAnimation(.snappy) { listLayout.toggle() } },
+                onImport: importContent,
+                onSettings: openSettings
+            )
+            .padding(.bottom, 10)
+        }
         .sheet(item: $configGame) { game in
             GameConfigView(titleId: game.titleId, title: game.title, onDone: {
                 controller.refreshApps()
@@ -109,83 +80,157 @@ struct LibraryView: View {
         )) {
             Button("OK", role: .cancel) { deleteError = nil }
         } message: { Text(deleteError ?? "") }
-        .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                Image(systemName: "gamecontroller.fill").foregroundStyle(EmulatorTheme.accent)
+    }
+
+    // MARK: - Content
+
+    @ViewBuilder
+    private var content: some View {
+        if games.isEmpty {
+            ScrollView {
+                VStack(spacing: 16) {
+                    if !controller.apps.isEmpty { searchHeader }
+                    ContentUnavailableView {
+                        Label(LocalizedStringKey(controller.apps.isEmpty ? "Sua próxima aventura" : "Nenhum jogo encontrado"),
+                              systemImage: controller.apps.isEmpty ? "gamecontroller" : "magnifyingglass")
+                    } description: {
+                        Text(LocalizedStringKey(controller.apps.isEmpty ? "Importe seus jogos e homebrews para começar. Arquivos VPK, ZIP, PKG e pastas são aceitos." : "Tente outra busca ou veja todos os jogos."))
+                    } actions: {
+                        if controller.apps.isEmpty {
+                            Button("Importar jogo", action: importContent)
+                                .buttonStyle(.bordered)
+                                .disabled(!controller.sessionInitialized || controller.isImporting)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 320)
+                }
+                .padding(.horizontal, 16)
             }
-            ToolbarItem(placement: .topBarTrailing) {
-                Button(action: importContent) { Label("Importar", systemImage: "plus") }
-                    .disabled(!controller.sessionInitialized || controller.isImporting)
-                    .accessibilityIdentifier("import-content")
+            .refreshable { controller.refreshApps() }
+        } else if showsCarousel {
+            GameCarousel(games: games, initialID: lastPlayed, onLaunch: launch) { game in
+                gameMenu(game)
             }
+            .padding(.bottom, 84)
+        } else if listLayout {
+            listContent
+        } else {
+            gridContent
         }
+    }
+
+    private var searchHeader: some View {
+        HStack(spacing: 10) {
+            HStack(spacing: 8) {
+                Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+                TextField("Buscar jogo ou título ID", text: $search)
+                    .textInputAutocapitalization(.never).autocorrectionDisabled()
+                    .submitLabel(.search)
+                if !search.isEmpty {
+                    Button { search = "" } label: {
+                        Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
+                    }.buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 14).padding(.vertical, 10)
+            .background(EmulatorTheme.panel, in: Capsule())
+            Button { favoritesOnly.toggle() } label: {
+                Image(systemName: favoritesOnly ? "star.fill" : "star")
+                    .font(.system(size: 16, weight: .semibold))
+                    .frame(width: 42, height: 42)
+                    .background(EmulatorTheme.panel, in: Circle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text("Favoritos"))
+        }
+    }
+
+    private var listContent: some View {
+        ScrollView {
+            LazyVStack(spacing: 0) {
+                searchHeader.padding(.bottom, 8)
+                ForEach(games) { game in
+                    gameRow(game)
+                    Divider()
+                }
+            }
+            .padding(.horizontal, 16)
+        }
+        .contentMargins(.bottom, 96, for: .scrollContent)
+        .scrollDismissesKeyboard(.interactively)
         .refreshable { controller.refreshApps() }
     }
 
-    private var header: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(alignment: .center) { heading; Spacer(); jitButton }
-            VStack(alignment: .leading, spacing: 12) { heading; jitButton }
-        }
-    }
-    private var heading: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            if verticalSizeClass != .compact {
-                Text("Sua biblioteca").font(.largeTitle.bold())
+    private var gridContent: some View {
+        ScrollView {
+            VStack(spacing: 14) {
+                searchHeader
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 160, maximum: 280), spacing: 14)], spacing: 14) {
+                    ForEach(games) { game in gameTile(game) }
+                }
             }
-            Text(L10n.installedGames(controller.apps.count, language: AppLanguage(rawValue: locale.identifier) ?? .english))
-                .font(.subheadline).foregroundStyle(.secondary)
+            .padding(.horizontal, 16)
         }
+        .contentMargins(.bottom, 96, for: .scrollContent)
+        .scrollDismissesKeyboard(.interactively)
+        .refreshable { controller.refreshApps() }
     }
-    private var jitButton: some View {
-        Button { Task { _ = await controller.checkJIT() } } label: { JITBadge(status: controller.jitStatus) }
-            .buttonStyle(.plain).disabled(controller.jitStatus == .checking)
+
+    @ViewBuilder
+    private func gameMenu(_ game: CoreController.AppInfo) -> some View {
+        favoriteAction(game)
+        Button { configGame = game } label: {
+            Label("Editar Config", systemImage: "slider.horizontal.3")
+        }.accessibilityIdentifier("edit-config")
+        deleteAction(game)
     }
+
     private func gameTile(_ game: CoreController.AppInfo) -> some View {
         Button { launch(game.titleId) } label: {
-            VStack(alignment: .leading, spacing: 10) {
-                GameArtwork(titleID: game.titleId).overlay(alignment: .topTrailing) {
-                    if favoriteIDs.contains(game.titleId) {
-                        Image(systemName: "star.fill").font(.caption).foregroundStyle(.yellow)
-                            .padding(8).background(.black.opacity(0.7), in: Circle()).padding(8)
+            VStack(alignment: .leading, spacing: 8) {
+                GameCover(titleID: game.titleId, cornerRadius: 14)
+                    .overlay(alignment: .topTrailing) {
+                        if favoriteIDs.contains(game.titleId) {
+                            Image(systemName: "star.fill").font(.caption).foregroundStyle(.yellow)
+                                .padding(6).background(.black.opacity(0.6), in: Circle()).padding(6)
+                        }
                     }
-                }
-                Text(game.title.isEmpty ? game.titleId : game.title).font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.primary).lineLimit(2).frame(height: 40, alignment: .topLeading)
-                Text(game.titleId).font(.caption.monospaced()).foregroundStyle(.secondary)
-            }.contentShape(Rectangle())
+                Text(game.title.isEmpty ? game.titleId : game.title)
+                    .font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
+                    .lineLimit(2, reservesSpace: true).multilineTextAlignment(.leading)
+                Text(game.titleId).font(.caption2.monospaced()).foregroundStyle(.secondary)
+            }
+            .padding(10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(EmulatorTheme.panel, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain).accessibilityIdentifier("game-\(game.titleId)")
-        .contextMenu {
-            favoriteAction(game)
-            Button { configGame = game } label: {
-                Label("Editar Config", systemImage: "slider.horizontal.3")
-            }.accessibilityIdentifier("edit-config")
-            deleteAction(game)
-        }
+        .contextMenu { gameMenu(game) }
     }
 
     private func gameRow(_ game: CoreController.AppInfo) -> some View {
         Button { launch(game.titleId) } label: {
-            HStack(spacing: 16) {
-                GameArtwork(titleID: game.titleId).frame(width: 64, height: 64)
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(game.title).font(.headline).foregroundStyle(.primary)
+            HStack(spacing: 14) {
+                GameCover(titleID: game.titleId, cornerRadius: 12).frame(width: 132)
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(game.title.isEmpty ? game.titleId : game.title)
+                        .font(.headline).foregroundStyle(.primary)
+                        .lineLimit(2).multilineTextAlignment(.leading)
                     Text(game.titleId).font(.caption.monospaced()).foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 0)
-                Image(systemName: favoriteIDs.contains(game.titleId) ? "star.fill" : "play.fill").foregroundStyle(EmulatorTheme.accent)
-            }.padding(14).background(EmulatorTheme.panel, in: RoundedRectangle(cornerRadius: 20))
+                if favoriteIDs.contains(game.titleId) {
+                    Image(systemName: "star.fill").font(.footnote).foregroundStyle(.yellow)
+                }
+            }
+            .padding(.vertical, 10)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain).accessibilityIdentifier("game-\(game.titleId)")
-        .contextMenu {
-            favoriteAction(game)
-            Button { configGame = game } label: {
-                Label("Editar Config", systemImage: "slider.horizontal.3")
-            }.accessibilityIdentifier("edit-config-row")
-            deleteAction(game)
-        }
+        .contextMenu { gameMenu(game) }
     }
+
     private func deleteAction(_ game: CoreController.AppInfo) -> some View {
         Button(role: .destructive) { deleteGame = game } label: {
             Label("Apagar jogo", systemImage: "trash")

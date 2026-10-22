@@ -51,10 +51,21 @@ struct TextureCacheEntry {
     bool is_cube;
     uint16_t mip_count;
     uint32_t memory_needed;
+    // actual size of the allocated image (counted against the cache budget)
+    vk::DeviceSize image_bytes = 0;
 };
 
 struct VKTextureCache : public TextureCache {
     VKState &state;
+
+    // Cached images are evicted (least recently used first) when they would
+    // exceed this budget, so a game cannot grow the cache without bound.
+    vk::DeviceSize memory_budget = 0;
+    vk::DeviceSize cached_bytes = 0;
+    // queue the current image of the entry for destruction and update the accounting
+    void release_image(TextureCacheEntry &entry);
+    // allocate the image of current_texture, evicting old textures if over budget
+    void create_image(const vk::ImageCreateInfo &image_info);
 
     TextureStagingBuffer staging_buffers[NB_TEXTURE_STAGING_BUFFERS];
     uint32_t staging_idx = 0;

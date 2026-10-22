@@ -8,22 +8,14 @@ struct ContentView: View {
     @AppStorage(EmulatorTheme.lightModePreference) private var lightMode = false
     @State private var surfaceRequest: SurfaceRequest?
     @State private var showImporter = false
+    @State private var showSettings = false
     @State private var launchInFlight = false
     @State private var startupComplete = false
     @State private var wasAway = false
     @State private var launchError: String?
 
     var body: some View {
-        TabView {
-            NavigationStack {
-                LibraryView(launch: launch, importContent: { showImporter = true })
-            }
-            .tabItem { Label("Biblioteca", systemImage: "square.grid.2x2.fill") }
-            NavigationStack {
-                SettingsView(importContent: { showImporter = true })
-            }
-            .tabItem { Label("Opções", systemImage: "slider.horizontal.3") }
-        }
+        LibraryView(launch: launch, importContent: { showImporter = true }, openSettings: { showSettings = true })
         .disabled(controller.isImporting || controller.isDeleting || controller.isSyncingSaves || launchInFlight)
         .task {
             guard !startupComplete else { return }
@@ -79,6 +71,23 @@ struct ContentView: View {
         )) {
             Button("OK", role: .cancel) { launchError = nil }
         } message: { Text(launchError ?? "") }
+        .sheet(isPresented: $showSettings) {
+            NavigationStack {
+                SettingsView(importContent: {
+                    showSettings = false
+                    showImporter = true
+                })
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("OK") { showSettings = false }
+                            .accessibilityIdentifier("settings-done")
+                    }
+                }
+            }
+            .environmentObject(controller)
+            .tint(EmulatorTheme.accent)
+            .preferredColorScheme(lightMode ? .light : .dark)
+        }
         .fileImporter(isPresented: $showImporter,
                       allowedContentTypes: [.folder, .item, .zip,
                         UTType(filenameExtension: "vpk") ?? .item,

@@ -37,6 +37,7 @@ targets:
       - path: App/ContentView.swift
       - path: App/EmulatorTheme.swift
       - path: App/LibraryView.swift
+      - path: App/LibraryChrome.swift
       - path: App/SettingsView.swift
       - path: App/Vita3KCore.swift
       - path: App/ImportStore.swift
