@@ -13,6 +13,7 @@ struct LibraryView: View {
     @ObservedObject private var pad = GamepadInput.shared
     @State private var focusedID: String?
     @State private var gridWidth: CGFloat = 0
+    @AppStorage(GameIconStyle.preference) private var classicIcons = false
     @State private var search = ""
     @State private var favoritesOnly = false
     @State private var configGame: CoreController.AppInfo?
@@ -163,14 +164,16 @@ struct LibraryView: View {
         ScrollViewReader { proxy in
         ScrollView {
             LazyVStack(spacing: 0) {
-                searchHeader.padding(.bottom, 8)
+                searchHeader.padding(.bottom, 8).id("libraryTop")
                 ForEach(games) { game in
                     gameRow(game)
                     Divider()
                 }
+                Color.clear.frame(height: 1).id("libraryBottom")
             }
             .padding(.horizontal, 16)
         }
+        .contentMargins(.top, 4, for: .scrollContent)
         .contentMargins(.bottom, 96, for: .scrollContent)
         .scrollDismissesKeyboard(.interactively)
         .refreshable { controller.refreshApps() }
@@ -182,13 +185,15 @@ struct LibraryView: View {
         ScrollViewReader { proxy in
         ScrollView {
             VStack(spacing: 14) {
-                searchHeader
+                searchHeader.id("libraryTop")
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 160, maximum: 280), spacing: 14)], spacing: 14) {
                     ForEach(games) { game in gameTile(game) }
                 }
+                Color.clear.frame(height: 1).id("libraryBottom")
             }
             .padding(.horizontal, 16)
         }
+        .contentMargins(.top, 4, for: .scrollContent)
         .contentMargins(.bottom, 96, for: .scrollContent)
         .scrollDismissesKeyboard(.interactively)
         .refreshable { controller.refreshApps() }
@@ -199,7 +204,13 @@ struct LibraryView: View {
 
     private func scrollTo(_ id: String?, using proxy: ScrollViewProxy) {
         guard let id else { return }
-        withAnimation(.snappy) { proxy.scrollTo(id, anchor: .center) }
+        withAnimation(.snappy) {
+            // Edge items scroll to the real top/bottom so they are never
+            // left half hidden behind the top bar or the floating bar.
+            if id == games.first?.titleId { proxy.scrollTo("libraryTop", anchor: .top) }
+            else if id == games.last?.titleId { proxy.scrollTo("libraryBottom", anchor: .bottom) }
+            else { proxy.scrollTo(id, anchor: .center) }
+        }
     }
 
     // MARK: - Gamepad
@@ -289,7 +300,7 @@ struct LibraryView: View {
     private func gameRow(_ game: CoreController.AppInfo) -> some View {
         Button { launch(game.titleId) } label: {
             HStack(spacing: 14) {
-                GameCover(titleID: game.titleId, cornerRadius: 12).frame(width: 132)
+                GameCover(titleID: game.titleId, cornerRadius: 12).frame(width: classicIcons ? 72 : 132)
                 VStack(alignment: .leading, spacing: 5) {
                     Text(game.title.isEmpty ? game.titleId : game.title)
                         .font(.headline).foregroundStyle(.primary)

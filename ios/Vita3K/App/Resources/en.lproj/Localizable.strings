@@ -224,3 +224,7 @@
 "Hide HOME Button" = "Hide HOME Button";
 "Half-resolution textures only affect textures loaded from now on. With the HOME button hidden, double-tap where it was (top center) to show it until you resume the game." = "Half-resolution textures only affect textures loaded from now on. With the HOME button hidden, double-tap where it was (top center) to show it until you resume the game.";
 "Pressione Start + Select para abrir o menu" = "Press Start + Select to open the menu";
+"Ícones dos jogos" = "Game icons";
+"Arte larga" = "Wide artwork";
+"Ícone clássico" = "Classic icon";
+"Arte larga usa a imagem de fundo do jogo. Ícone clássico usa o ícone quadrado do jogo." = "Wide artwork uses the game's background image. Classic icon uses the game's square icon.";

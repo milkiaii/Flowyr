@@ -10,6 +10,7 @@ struct SettingsView: View {
     @AppStorage("emulation.showStatus") private var showStatus = false
     @AppStorage(AppOrientation.preference) private var forceLandscape = false
     @AppStorage(EmulatorTheme.lightModePreference) private var lightMode = false
+    @AppStorage(GameIconStyle.preference) private var classicIcons = false
     @AppStorage(AppLanguage.preference) private var language = AppLanguage.english.rawValue
 
     var body: some View {
@@ -29,6 +30,14 @@ struct SettingsView: View {
                 EmulatorCard(title: "Aparência") {
                     Toggle("Tema claro", isOn: $lightMode)
                         .accessibilityIdentifier("light-mode-toggle")
+                    Picker("Ícones dos jogos", selection: $classicIcons) {
+                        Text("Arte larga").tag(false)
+                        Text("Ícone clássico").tag(true)
+                    }
+                    .pickerStyle(.segmented)
+                    .accessibilityIdentifier("game-icon-style")
+                    Text("Arte larga usa a imagem de fundo do jogo. Ícone clássico usa o ícone quadrado do jogo.")
+                        .font(.caption).foregroundStyle(.secondary)
                     Text("Use fundos claros na biblioteca e nas opções. Desative para voltar ao tema escuro.")
                         .font(.caption).foregroundStyle(.secondary)
                 }

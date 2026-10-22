@@ -543,7 +543,7 @@ final class EmulationViewController: UIViewController {
             label.leadingAnchor.constraint(equalTo: toast.leadingAnchor, constant: 16),
             label.trailingAnchor.constraint(equalTo: toast.trailingAnchor, constant: -16),
             toast.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            toast.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
+            toast.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16),
             toast.widthAnchor.constraint(lessThanOrEqualTo: view.widthAnchor, constant: -48),
         ])
         UIView.animate(withDuration: 0.3) { toast.alpha = 1 }

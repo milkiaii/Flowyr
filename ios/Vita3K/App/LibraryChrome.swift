@@ -223,6 +223,11 @@ struct LibraryFloatingBar: View {
 
 // MARK: - Game cover
 
+/// "Wide artwork" (default) or the classic square icons.
+enum GameIconStyle {
+    static let preference = "library.classicIcons"
+}
+
 enum GameCoverLoader {
     nonisolated(unsafe) private static let cache: NSCache<NSString, UIImage> = {
         let cache = NSCache<NSString, UIImage>()
@@ -237,13 +242,15 @@ enum GameCoverLoader {
         "sce_sys/icon0.png",
     ]
 
-    /// Widest artwork available for the title (cached, downscaled).
-    static func load(_ titleID: String) async -> UIImage? {
-        if let hit = cache.object(forKey: titleID as NSString) { return hit }
+    /// Artwork for the title (cached, downscaled). Classic mode uses only the
+    /// square icon; otherwise the widest artwork available.
+    static func load(_ titleID: String, classic: Bool = false) async -> UIImage? {
+        let key = (classic ? "icon:" : "art:") + titleID
+        if let hit = cache.object(forKey: key as NSString) { return hit }
         let image: UIImage? = await Task.detached(priority: .utility) { () async -> UIImage? in
             let root = URL.documentsDirectory.appendingPathComponent("vita/ux0/app")
                 .appendingPathComponent(titleID)
-            for relative in candidates {
+            for relative in (classic ? ["sce_sys/icon0.png"] : candidates) {
                 let path = root.appendingPathComponent(relative).path
                 guard let original = UIImage(contentsOfFile: path) else { continue }
                 let longest = max(original.size.width, original.size.height)
@@ -254,7 +261,7 @@ enum GameCoverLoader {
             }
             return nil
         }.value
-        if let image { cache.setObject(image, forKey: titleID as NSString) }
+        if let image { cache.setObject(image, forKey: key as NSString) }
         return image
     }
 }
@@ -264,11 +271,12 @@ enum GameCoverLoader {
 struct GameCover: View {
     let titleID: String
     var cornerRadius: CGFloat = 16
+    @AppStorage(GameIconStyle.preference) private var classicIcons = false
     @State private var image: UIImage?
 
     private var isWide: Bool {
         guard let image else { return false }
-        return image.size.width / max(image.size.height, 1) > 1.3
+        return !classicIcons && image.size.width / max(image.size.height, 1) > 1.3
     }
 
     var body: some View {
@@ -287,10 +295,12 @@ struct GameCover: View {
                     .foregroundStyle(Color.secondary.opacity(0.7))
             }
         }
-        .aspectRatio(16.0 / 9.0, contentMode: .fit)
+        .aspectRatio(classicIcons ? 1 : 16.0 / 9.0, contentMode: .fit)
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
         .accessibilityHidden(true)
-        .task(id: titleID) { image = await GameCoverLoader.load(titleID) }
+        .task(id: "\(titleID)|\(classicIcons)") {
+            image = await GameCoverLoader.load(titleID, classic: classicIcons)
+        }
     }
 }
 
@@ -303,6 +313,12 @@ struct GameCarousel<Menu: View>: View {
     @Binding var scrolledID: String?
     let onLaunch: (String) -> Void
     @ViewBuilder let menu: (CoreController.AppInfo) -> Menu
+
+    @AppStorage(GameIconStyle.preference) private var classicIcons = false
+    /// Local scroll position. It is committed to `scrolledID` only when the
+    /// scroll settles, so the library is not re-rendered (and the scroll
+    /// interrupted) on every cover that passes the center.
+    @State private var position: String?
 
     var body: some View {
         GeometryReader { proxy in
@@ -319,20 +335,30 @@ struct GameCarousel<Menu: View>: View {
             // on the covers themselves.
             .safeAreaPadding(.horizontal, max(0, (proxy.size.width - width) / 2))
             .scrollTargetBehavior(.viewAligned)
-            .scrollPosition(id: $scrolledID, anchor: .center)
+            .scrollPosition(id: $position, anchor: .center)
             .scrollIndicators(.hidden)
-            .sensoryFeedback(.selection, trigger: scrolledID)
+            .sensoryFeedback(.selection, trigger: position)
+            .onScrollPhaseChange { _, phase in
+                if phase == .idle, let position, position != scrolledID { scrolledID = position }
+            }
+            // Gamepad (or anything else) moved the focus: follow it.
+            .onChange(of: scrolledID) { _, new in
+                guard let new, new != position else { return }
+                withAnimation(.snappy) { position = new }
+            }
             .onAppear {
-                if scrolledID == nil || !games.contains(where: { $0.titleId == scrolledID }) {
-                    scrolledID = games.contains(where: { $0.titleId == initialID }) ? initialID : games.first?.titleId
-                }
+                let start = games.contains(where: { $0.titleId == scrolledID }) ? scrolledID
+                    : (games.contains(where: { $0.titleId == initialID }) ? initialID : games.first?.titleId)
+                position = start
+                scrolledID = start
             }
         }
     }
 
     private func cardWidth(in size: CGSize) -> CGFloat {
-        let byHeight = max(140, size.height - 80) * 16.0 / 9.0
-        return max(200, min(byHeight, size.width * 0.56))
+        let aspect: CGFloat = classicIcons ? 1 : 16.0 / 9.0
+        let byHeight = max(140, size.height - 80) * aspect
+        return max(classicIcons ? 150 : 200, min(byHeight, size.width * (classicIcons ? 0.4 : 0.56)))
     }
 
     private func card(_ game: CoreController.AppInfo, width: CGFloat) -> some View {
