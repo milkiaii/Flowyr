@@ -105,9 +105,7 @@ enum ImportStaging {
             let fingerprint = try ImportStore.Fingerprint(url: source)
             try store?.record(name, fingerprint: fingerprint, status: .installing)
             let (rc, report) = install(source.path)
-            let summary = rc == 0 ? L10n.text("Importação concluída") : L10n.format("Falha na importação (código %d)", rc)
-            outcome = Outcome(succeeded: rc == 0,
-                              message: "\(summary): \(name)\n\(report.isEmpty ? L10n.text("Não foram fornecidos detalhes pelo instalador.") : report)")
+            outcome = Outcome(succeeded: rc == 0, message: ImportReport.message(rc: rc, report: report))
             try store?.record(name, fingerprint: fingerprint, status: rc == 0 ? .succeeded : .failed,
                               report: outcome.message)
         } catch {
@@ -168,5 +166,33 @@ enum ImportStaging {
         if fm.fileExists(atPath: destination.path) { try fm.removeItem(at: destination) }
         try fm.moveItem(at: temporary, to: destination)
         return destination
+    }
+}
+
+
+/// Turns the installer's raw report into one short line in the app language.
+enum ImportReport {
+    static func message(rc: Int32, report: String) -> String {
+        if rc == 0 {
+            let successes = ["PKG instalado", "Licença instalada", "Firmware instalado", "Jogo já instalado"]
+            for key in successes where report.contains(key) {
+                return key == "Jogo já instalado" ? L10n.text("O jogo já está instalado.") : L10n.text(key)
+            }
+            return L10n.text("Jogo instalado")
+        }
+        let lines = report.split(separator: "\n").map(String.init)
+        let prefixes: [(String, String)] = [
+            ("Este PKG precisa de uma licença", "Este PKG precisa de uma licença. Toque em + e adicione a licença ou a chave zRIF; depois instale o PKG de novo."),
+            ("Arquivo de importação não encontrado", "Arquivo de importação não encontrado."),
+            ("Falha na importação", "Falha na importação."),
+        ]
+        var out: [String] = []
+        for line in lines {
+            if let hit = prefixes.first(where: { line.hasPrefix($0.0) }) { out.append(L10n.text(hit.1)); continue }
+            let t = L10n.text(line)
+            // Lines that are not translated debug output stay hidden.
+            if t != line || line.first?.isUppercase == true { out.append(t) }
+        }
+        return out.isEmpty ? L10n.format("Falha na importação (código %d)", rc) : out.joined(separator: "\n")
     }
 }

@@ -17,6 +17,7 @@ struct ContentView: View {
     @State private var startupComplete = false
     @State private var wasAway = false
     @State private var launchError: String?
+    @State private var toast: String?
 
     var body: some View {
         LibraryView(launch: launch, importContent: { kind in importKind = kind; showImporter = true },
@@ -122,22 +123,26 @@ struct ContentView: View {
         } message: {
             Text("Cole a chave zRIF do jogo. Ela será salva como licença.")
         }
-        .sheet(item: Binding(
-            get: { canPresentImportResult ? controller.importResult : nil },
-            set: { if canPresentImportResult { controller.importResult = $0 } }
-        )) { result in
-            NavigationStack {
-                ScrollView {
-                    Text(result.message)
-                        .font(.callout.monospaced()).textSelection(.enabled)
-                        .frame(maxWidth: .infinity, alignment: .leading).padding()
-                }
-                .background(EmulatorTheme.background)
-                .navigationTitle(LocalizedStringKey(result.succeeded ? "Importação concluída" : "Falha na importação"))
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar { Button("Concluir") { controller.importResult = nil } }
+        .alert("Falha na importação", isPresented: Binding(
+            get: { canPresentImportResult && controller.importResult?.succeeded == false },
+            set: { if !$0 { controller.importResult = nil } }
+        )) {
+            Button("OK", role: .cancel) { controller.importResult = nil }
+        } message: { Text(controller.importResult?.message ?? "") }
+        .onChange(of: controller.importResult?.id) { _, _ in showImportToast() }
+        .onChange(of: canPresentImportResult) { _, _ in showImportToast() }
+        .overlay(alignment: .bottom) {
+            if let toast {
+                Label(toast, systemImage: "checkmark.circle.fill")
+                    .font(.subheadline.weight(.semibold))
+                    .padding(.horizontal, 18).padding(.vertical, 12)
+                    .background(.regularMaterial, in: Capsule())
+                    .overlay(Capsule().strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
+                    .shadow(color: .black.opacity(0.25), radius: 12, y: 5)
+                    .padding(.bottom, 92)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .accessibilityIdentifier("import-toast")
             }
-            .presentationDetents([.medium, .large])
         }
         .fullScreenCover(item: $surfaceRequest, onDismiss: {
             controller.isGamePresented = false
@@ -175,6 +180,17 @@ struct ContentView: View {
             [.item]
         case .firmware:
             [UTType(filenameExtension: "pup") ?? .item]
+        }
+    }
+
+    private func showImportToast() {
+        guard canPresentImportResult, let result = controller.importResult, result.succeeded else { return }
+        UISounds.shared.play(.confirm)
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) { toast = result.message }
+        controller.importResult = nil
+        Task {
+            try? await Task.sleep(for: .seconds(2.6))
+            withAnimation(.easeOut(duration: 0.25)) { toast = nil }
         }
     }
 

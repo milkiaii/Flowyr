@@ -763,9 +763,9 @@ final class CoreController: ObservableObject {
             let (rc, report) = await Task.detached(priority: .userInitiated) {
                 Vita3KCore.sessionInstallZRIF(key)
             }.value
-            let summary = rc == 0 ? L10n.text("Importação concluída") : L10n.format("Falha na importação (código %d)", rc)
-            importResult = ImportResult(succeeded: rc == 0, message: "\(summary)\n\(report)")
-            appendLog("zRIF: \(summary)")
+            let message = ImportReport.message(rc: rc, report: report)
+            importResult = ImportResult(succeeded: rc == 0, message: message)
+            appendLog("zRIF: \(message)")
         }
     }
 

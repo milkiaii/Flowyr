@@ -209,23 +209,23 @@ struct AddContentPanel: View {
     let onSelect: (AddAction) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 8) {
             Text("Adicionar")
-                .font(.system(size: 13, weight: .heavy, design: .rounded))
+                .font(.system(size: 11, weight: .heavy, design: .rounded))
                 .tracking(1.2)
                 .textCase(.uppercase)
                 .foregroundStyle(.secondary)
                 .padding(.leading, 4)
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10),
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8),
                                      count: verticalSizeClass == .compact ? 4 : 2),
-                      spacing: 10) {
+                      spacing: 8) {
                 ForEach(AddAction.allCases) { action in tile(action) }
             }
         }
-        .padding(16)
-        .frame(maxWidth: verticalSizeClass == .compact ? 620 : 360)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 30, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 30, style: .continuous)
+        .padding(12)
+        .frame(maxWidth: verticalSizeClass == .compact ? 480 : 270)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 26, style: .continuous)
             .strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
         .shadow(color: .black.opacity(0.3), radius: 22, y: 10)
         .padding(.horizontal, 16)
@@ -236,24 +236,24 @@ struct AddContentPanel: View {
             UISounds.shared.play(.tap)
             onSelect(action)
         } label: {
-            VStack(spacing: 8) {
+            VStack(spacing: 5) {
                 Image(systemName: action.symbol)
-                    .font(.system(size: 22, weight: .semibold))
-                    .frame(width: 48, height: 48)
+                    .font(.system(size: 17, weight: .semibold))
+                    .frame(width: 38, height: 38)
                     .background(Color.primary.opacity(0.08), in: Circle())
                 Text(action.title)
-                    .font(.subheadline.weight(.semibold))
+                    .font(.footnote.weight(.semibold))
                     .lineLimit(1)
                 Text(verbatim: action.caption)
-                    .font(.caption2.monospaced())
+                    .font(.system(size: 9.5, design: .monospaced))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
             }
             .foregroundStyle(.primary)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
-            .background(EmulatorTheme.panel.opacity(0.7), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .padding(.vertical, 9)
+            .background(EmulatorTheme.panel.opacity(0.7), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
