@@ -465,13 +465,13 @@ enum LibraryMotion {
 /// A centered cover row driven directly by the focused game and a drag
 /// offset (no ScrollView / scroll-position state), so swipes and gamepad
 /// moves can never get out of step with each other.
-struct GameCarousel<Menu: View>: View {
+struct GameCarousel: View {
     let games: [CoreController.AppInfo]
     let initialID: String?
     /// The centered game. Shared with the library so a gamepad can move it.
     @Binding var focusedID: String?
     let onLaunch: (String) -> Void
-    @ViewBuilder let menu: (CoreController.AppInfo) -> Menu
+    let onLongPress: (CoreController.AppInfo) -> Void
 
     @AppStorage(GameIconStyle.preference) private var classicIcons = false
     /// Fractional index of the card in the middle; animated, so quick
@@ -512,7 +512,10 @@ struct GameCarousel<Menu: View>: View {
                                     withAnimation(glide) { focusedID = games[i].titleId; position = Double(i) }
                                 }
                             }
-                            .contextMenu { menu(games[i]) }
+                            .onLongPressGesture(minimumDuration: 0.45) {
+                                UISounds.shared.play(.open)
+                                onLongPress(games[i])
+                            }
                     }
                 }
             }

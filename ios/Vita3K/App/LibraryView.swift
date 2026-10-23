@@ -15,6 +15,8 @@ struct LibraryView: View {
     @State private var focusedID: String?
     @State private var gridWidth: CGFloat = 0
     @State private var showAdd = false
+    @State private var actionsGame: CoreController.AppInfo?
+    @State private var actionFocus = 0
     @AppStorage(GameIconStyle.preference) private var classicIcons = false
     @State private var search = ""
     @State private var favoritesOnly = false
@@ -79,6 +81,21 @@ struct LibraryView: View {
                 }
             }
         }
+        .overlay {
+            if let game = actionsGame {
+                ActionMenuOverlay(actions: actions(for: game), focus: pad.connected ? actionFocus : nil, header: {
+                    HStack(spacing: 10) {
+                        GameCover(titleID: game.titleId, cornerRadius: 10).frame(width: classicIcons ? 44 : 78)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(game.title.isEmpty ? game.titleId : game.title)
+                                .font(.subheadline.weight(.semibold)).lineLimit(2)
+                            Text(game.titleId).font(.caption2.monospaced()).foregroundStyle(.secondary)
+                        }
+                    }
+                }, onSelect: { perform($0, on: game) }, onDismiss: closeActions)
+                .transition(.opacity.combined(with: .scale(scale: 0.94)))
+            }
+        }
         .onAppear { pad.start(owner: PadOwner.library) }
         .onDisappear { pad.stop(owner: PadOwner.library) }
         .onChange(of: pad.lastEvent) { _, event in
@@ -138,9 +155,8 @@ struct LibraryView: View {
             }
             .refreshable { controller.refreshApps() }
         } else if showsCarousel {
-            GameCarousel(games: games, initialID: lastPlayed, focusedID: $focusedID, onLaunch: launch) { game in
-                gameMenu(game)
-            }
+            GameCarousel(games: games, initialID: lastPlayed, focusedID: $focusedID, onLaunch: launch,
+                         onLongPress: openActions)
             .padding(.bottom, 84)
         } else if listLayout {
             listContent
@@ -290,6 +306,17 @@ struct LibraryView: View {
     }
 
     private func handlePad(_ button: PadButton) {
+        if let game = actionsGame {
+            let list = actions(for: game)
+            switch button {
+            case .up: actionFocus = max(0, actionFocus - 1); UISounds.shared.play(.move)
+            case .down: actionFocus = min(list.count - 1, actionFocus + 1); UISounds.shared.play(.move)
+            case .confirm: if list[actionFocus].enabled { UISounds.shared.play(.tap); perform(list[actionFocus], on: game) }
+            case .back, .x: UISounds.shared.play(.back); closeActions()
+            default: break
+            }
+            return
+        }
         if showAdd {
             if button == .back || button == .select { withAnimation(addAnimation) { showAdd = false } }
             return
@@ -303,7 +330,9 @@ struct LibraryView: View {
             if let id = focusedID, games.contains(where: { $0.titleId == id }) { launch(id) }
             else { moveFocus(by: 0) }
         case .x:
-            if let id = focusedID, let game = games.first(where: { $0.titleId == id }) { configGame = game }
+            if let id = focusedID, let game = games.first(where: { $0.titleId == id }) {
+                openActions(game)
+            }
         case .y:
             UISounds.shared.play(.tap)
             withAnimation(.snappy) { listLayout.toggle() }
@@ -316,14 +345,38 @@ struct LibraryView: View {
         }
     }
 
-    @ViewBuilder
-    private func gameMenu(_ game: CoreController.AppInfo) -> some View {
-        favoriteAction(game)
-        Button { configGame = game } label: {
-            Label("Editar Config", systemImage: "slider.horizontal.3")
-        }.accessibilityIdentifier("edit-config")
-        deleteAction(game)
+    // MARK: - Game actions card
+
+    private func actions(for game: CoreController.AppInfo) -> [MenuAction] {
+        let isFavorite = favoriteIDs.contains(game.titleId)
+        return [
+            MenuAction(id: "favorite", title: LocalizedStringKey(isFavorite ? "Remover dos favoritos" : "Adicionar aos favoritos"),
+                       symbol: isFavorite ? "star.slash.fill" : "star.fill"),
+            MenuAction(id: "config", title: "Editar Config", symbol: "slider.horizontal.3"),
+            MenuAction(id: "delete", title: "Apagar jogo", symbol: "trash.fill", destructive: true,
+                       enabled: controller.canDeleteGame),
+        ]
     }
+
+    private func perform(_ action: MenuAction, on game: CoreController.AppInfo) {
+        actionsGame = nil
+        switch action.id {
+        case "favorite":
+            var ids = favoriteIDs
+            if ids.contains(game.titleId) { ids.remove(game.titleId) } else { ids.insert(game.titleId) }
+            favorites = ids.sorted().joined(separator: ",")
+        case "config": configGame = game
+        default: deleteGame = game
+        }
+    }
+
+    private func openActions(_ game: CoreController.AppInfo) {
+        actionFocus = 0
+        UISounds.shared.play(.open)
+        withAnimation(addAnimation) { actionsGame = game }
+    }
+
+    private func closeActions() { withAnimation(addAnimation) { actionsGame = nil } }
 
     private func gameTile(_ game: CoreController.AppInfo) -> some View {
         Button { launch(game.titleId) } label: {
@@ -347,7 +400,9 @@ struct LibraryView: View {
         }
         .buttonStyle(.plain).accessibilityIdentifier("game-\(game.titleId)")
         .overlay { focusRing(game.titleId, radius: 22) }
-        .contextMenu { gameMenu(game) }
+        .simultaneousGesture(LongPressGesture(minimumDuration: 0.45).onEnded { _ in
+            openActions(game)
+        })
         .id(game.titleId)
     }
 
@@ -371,25 +426,9 @@ struct LibraryView: View {
         }
         .buttonStyle(.plain).accessibilityIdentifier("game-\(game.titleId)")
         .overlay { focusRing(game.titleId, radius: 14) }
-        .contextMenu { gameMenu(game) }
+        .simultaneousGesture(LongPressGesture(minimumDuration: 0.45).onEnded { _ in
+            openActions(game)
+        })
         .id(game.titleId)
-    }
-
-    private func deleteAction(_ game: CoreController.AppInfo) -> some View {
-        Button(role: .destructive) { deleteGame = game } label: {
-            Label("Apagar jogo", systemImage: "trash")
-        }
-        .disabled(!controller.canDeleteGame)
-        .accessibilityIdentifier("delete-game")
-    }
-
-    private func favoriteAction(_ game: CoreController.AppInfo) -> some View {
-        Button {
-            var ids = favoriteIDs
-            if ids.contains(game.titleId) { ids.remove(game.titleId) } else { ids.insert(game.titleId) }
-            favorites = ids.sorted().joined(separator: ",")
-        } label: {
-            Label(LocalizedStringKey(favoriteIDs.contains(game.titleId) ? "Remover dos favoritos" : "Adicionar aos favoritos"), systemImage: "star")
-        }
     }
 }

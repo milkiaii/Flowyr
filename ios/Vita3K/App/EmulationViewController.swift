@@ -177,10 +177,7 @@ final class EmulationViewController: UIViewController {
     /// Set by the double tap: the button stays visible until the game is resumed, then hides again.
     private var homeShownTemporarily = false
     private let homeMenu = UIView()
-    private let homeResume = UIButton(configuration: .borderedProminent())
-    private let homeSettings = UIButton(configuration: .bordered())
-    private let homeExit = UIButton(configuration: .bordered())
-    private let homeTitle = UILabel()
+    private let homeModel = GameMenuModel()
     private var userPaused = false
     // Physical gamepad: Start + Select opens the menu; the D-pad / A / B drive it.
     private var padCancellables = Set<AnyCancellable>()
@@ -268,33 +265,24 @@ final class EmulationViewController: UIViewController {
         homeButton.addAction(UIAction { [weak self] _ in self?.homeTapped() }, for: .touchUpInside)
 
         homeMenu.translatesAutoresizingMaskIntoConstraints = false
-        homeMenu.backgroundColor = .black.withAlphaComponent(0.78)
-        homeMenu.layer.cornerRadius = 18
+        homeMenu.backgroundColor = .clear
         homeMenu.isHidden = true
-        homeTitle.text = L10n.text("Pausado")
-        homeTitle.translatesAutoresizingMaskIntoConstraints = false
-        homeTitle.font = .systemFont(ofSize: 17, weight: .semibold)
-        homeTitle.textColor = .white
-        homeTitle.textAlignment = .center
-        homeResume.configuration?.title = L10n.text("Continuar")
-        homeResume.configuration?.baseForegroundColor = .white
-        homeResume.translatesAutoresizingMaskIntoConstraints = false
-        homeResume.accessibilityIdentifier = "resume-game"
-        homeResume.addAction(UIAction { [weak self] _ in self?.resumeGame() }, for: .touchUpInside)
-        homeSettings.configuration?.title = L10n.text("Configurações")
-        homeSettings.configuration?.baseForegroundColor = .white
-        homeSettings.translatesAutoresizingMaskIntoConstraints = false
-        homeSettings.accessibilityIdentifier = "ingame-settings"
-        homeSettings.addAction(UIAction { [weak self] _ in self?.openInGameSettings() }, for: .touchUpInside)
-        homeExit.configuration?.title = L10n.text("Voltar à biblioteca")
-        homeExit.configuration?.baseForegroundColor = .white
-        homeExit.translatesAutoresizingMaskIntoConstraints = false
-        homeExit.accessibilityIdentifier = "exit-game"
-        homeExit.addAction(UIAction { [weak self] _ in self?.exit() }, for: .touchUpInside)
-        homeMenu.addSubview(homeTitle)
-        homeMenu.addSubview(homeResume)
-        homeMenu.addSubview(homeSettings)
-        homeMenu.addSubview(homeExit)
+        let menuHost = UIHostingController(rootView: GameMenuView(
+            model: homeModel,
+            onResume: { [weak self] in self?.resumeGame() },
+            onSettings: { [weak self] in self?.openInGameSettings() },
+            onExit: { [weak self] in self?.exit() }))
+        menuHost.view.backgroundColor = .clear
+        menuHost.view.translatesAutoresizingMaskIntoConstraints = false
+        addChild(menuHost)
+        homeMenu.addSubview(menuHost.view)
+        menuHost.didMove(toParent: self)
+        NSLayoutConstraint.activate([
+            menuHost.view.topAnchor.constraint(equalTo: homeMenu.topAnchor),
+            menuHost.view.bottomAnchor.constraint(equalTo: homeMenu.bottomAnchor),
+            menuHost.view.leadingAnchor.constraint(equalTo: homeMenu.leadingAnchor),
+            menuHost.view.trailingAnchor.constraint(equalTo: homeMenu.trailingAnchor),
+        ])
 
         statusLabel.font = .monospacedSystemFont(ofSize: 13, weight: .medium)
         statusLabel.textColor = .white
@@ -362,24 +350,10 @@ final class EmulationViewController: UIViewController {
             homeButton.widthAnchor.constraint(equalToConstant: 44),
             homeButton.heightAnchor.constraint(equalToConstant: 44),
 
-            homeMenu.centerXAnchor.constraint(equalTo: root.centerXAnchor),
-            homeMenu.centerYAnchor.constraint(equalTo: root.centerYAnchor),
-            homeMenu.widthAnchor.constraint(equalToConstant: 300),
-            homeMenu.heightAnchor.constraint(equalToConstant: 206),
-            homeTitle.topAnchor.constraint(equalTo: homeMenu.topAnchor, constant: 16),
-            homeTitle.centerXAnchor.constraint(equalTo: homeMenu.centerXAnchor),
-            homeResume.topAnchor.constraint(equalTo: homeTitle.bottomAnchor, constant: 12),
-            homeResume.leadingAnchor.constraint(equalTo: homeMenu.leadingAnchor, constant: 16),
-            homeResume.trailingAnchor.constraint(equalTo: homeMenu.trailingAnchor, constant: -16),
-            homeResume.heightAnchor.constraint(equalToConstant: 40),
-            homeSettings.topAnchor.constraint(equalTo: homeResume.bottomAnchor, constant: 10),
-            homeSettings.leadingAnchor.constraint(equalTo: homeMenu.leadingAnchor, constant: 16),
-            homeSettings.trailingAnchor.constraint(equalTo: homeMenu.trailingAnchor, constant: -16),
-            homeSettings.heightAnchor.constraint(equalToConstant: 40),
-            homeExit.topAnchor.constraint(equalTo: homeSettings.bottomAnchor, constant: 10),
-            homeExit.leadingAnchor.constraint(equalTo: homeMenu.leadingAnchor, constant: 16),
-            homeExit.trailingAnchor.constraint(equalTo: homeMenu.trailingAnchor, constant: -16),
-            homeExit.heightAnchor.constraint(equalToConstant: 40),
+            homeMenu.topAnchor.constraint(equalTo: root.topAnchor),
+            homeMenu.bottomAnchor.constraint(equalTo: root.bottomAnchor),
+            homeMenu.leadingAnchor.constraint(equalTo: root.leadingAnchor),
+            homeMenu.trailingAnchor.constraint(equalTo: root.trailingAnchor),
 
             bottom.leadingAnchor.constraint(equalTo: root.safeAreaLayoutGuide.leadingAnchor, constant: 12),
             bottom.trailingAnchor.constraint(equalTo: root.safeAreaLayoutGuide.trailingAnchor, constant: -12),
@@ -452,16 +426,9 @@ final class EmulationViewController: UIViewController {
 
     // MARK: - Gamepad
 
-    private var homeButtons: [UIButton] { [homeResume, homeSettings, homeExit] }
-
     private func setHomeFocus(_ index: Int) {
-        homeFocusIndex = min(max(index, 0), homeButtons.count - 1)
-        let showRing = GamepadInput.shared.connected
-        for (i, button) in homeButtons.enumerated() {
-            button.layer.cornerRadius = 20
-            button.layer.borderColor = UIColor.white.cgColor
-            button.layer.borderWidth = (showRing && i == homeFocusIndex) ? 2 : 0
-        }
+        homeFocusIndex = min(max(index, 0), GameMenuView.actions.count - 1)
+        homeModel.focus = GamepadInput.shared.connected ? homeFocusIndex : nil
     }
 
     private func startGamepad() {
@@ -490,8 +457,7 @@ final class EmulationViewController: UIViewController {
     private func handlePad(_ button: PadButton) {
         guard isSessionMode, Vita3KCore.sessionIsActive() else { return }
         if presentedViewController != nil {
-            // The in-game settings sheet: B closes it.
-            if button == .back { dismiss(animated: true) }
+            // The in-game settings sheet handles its own pad input.
             return
         }
         if homeMenu.isHidden {
@@ -508,7 +474,12 @@ final class EmulationViewController: UIViewController {
         case .down:
             UISounds.shared.play(.move)
             setHomeFocus(homeFocusIndex + 1)
-        case .confirm: homeButtons[homeFocusIndex].sendActions(for: .touchUpInside)
+        case .confirm:
+            switch homeFocusIndex {
+            case 0: resumeGame()
+            case 1: openInGameSettings()
+            default: exit()
+            }
         case .back, .start: resumeGame()
         default: break
         }

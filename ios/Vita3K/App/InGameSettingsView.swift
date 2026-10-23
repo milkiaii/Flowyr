@@ -35,63 +35,12 @@ struct InGameSettingsView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
+            Group {
                 if loaded {
-                    Section {
-                        Toggle("Limit to 30 FPS", isOn: $frameCap30)
-                            .onChange(of: frameCap30) { _, on in guard !loading else { return }; set("frame_cap_30", on ? "1" : "0") }
-                        Toggle("FPS Hack", isOn: $fpsHack)
-                            .onChange(of: fpsHack) { _, on in guard !loading else { return }; set("fps_hack", on ? "1" : "0") }
-                        Toggle("Half-Resolution Textures", isOn: $halfResTextures)
-                            .onChange(of: halfResTextures) { _, on in guard !loading else { return }; set("half_res_textures", on ? "1" : "0") }
-                        Toggle("Disable Surface Sync", isOn: $disableSurfaceSync)
-                            .onChange(of: disableSurfaceSync) { _, on in guard !loading else { return }; set("disable_surface_sync", on ? "1" : "0") }
-                        Toggle("Asynchronous Pipeline Compilation", isOn: $asyncPipeline)
-                            .onChange(of: asyncPipeline) { _, on in guard !loading else { return }; set("async_pipeline_compilation", on ? "1" : "0") }
-                        Toggle("Performance Overlay", isOn: $showStatus)
-                            .accessibilityIdentifier("ingame-performance-overlay")
-                        Toggle("Hide HOME Button", isOn: $hideHome)
-                            .accessibilityIdentifier("ingame-hide-home")
-                        Picker("Anisotropic Filtering", selection: $anisotropicIdx) {
-                            ForEach(anisotropics.indices, id: \.self) { i in
-                                Text("\(anisotropics[i])x").tag(i)
-                            }
-                        }
-                        .pickerStyle(.menu)
-                        .onChange(of: anisotropicIdx) { _, i in
-                            guard !loading else { return }
-                            set("anisotropic_filtering", String(anisotropics[i]))
-                        }
-                    } header: {
-                        Text("Applied now")
-                    } footer: {
-                        Text("Half-resolution textures only affect textures loaded from now on. With the HOME button hidden, double-tap where it was (top center) to show it until you resume the game.")
-                    }
-                    Section {
-                        Picker("Internal Resolution Upscaling", selection: $resolutionIdx) {
-                            ForEach(resolutions.indices, id: \.self) { i in
-                                Text(resolutions[i].formatted() + "x").tag(i)
-                            }
-                        }
-                        .pickerStyle(.menu)
-                        .onChange(of: resolutionIdx) { _, i in
-                            guard !loading else { return }
-                            set("resolution_multiplier", String(resolutions[i]))
-                        }
-                        if resolutionIdx != initialResolutionIdx {
-                            Button("Restart game to apply", role: .destructive) { confirmRestart = true }
-                                .accessibilityIdentifier("ingame-restart")
-                        }
-                    } header: {
-                        Text("Resolution")
-                    } footer: {
-                        Text("The resolution is applied by restarting the game. Unsaved progress is lost.")
-                    }
+                    PadSettingsPage(sections: sections, status: message, onClose: onDone)
                 } else {
-                    Section { Text(message.isEmpty ? "…" : message).foregroundStyle(.secondary) }
-                }
-                if loaded, !message.isEmpty {
-                    Section { Text(message).foregroundStyle(.red) }
+                    ScrollView { Text(message.isEmpty ? "…" : message).foregroundStyle(.secondary).padding(20) }
+                        .background(EmulatorTheme.background)
                 }
             }
             .navigationTitle("In-Game Settings")
@@ -112,6 +61,46 @@ struct InGameSettingsView: View {
         .tint(EmulatorTheme.accent)
         .preferredColorScheme(lightMode ? .light : .dark)
         .onAppear { load() }
+    }
+
+    private func flag(_ id: String, _ title: LocalizedStringKey, _ key: String, _ value: Binding<Bool>) -> SettingItem {
+        SettingItem(id: id, title: title, kind: .toggle(Binding(
+            get: { value.wrappedValue },
+            set: { new in value.wrappedValue = new; if !loading { set(key, new ? "1" : "0") } })))
+    }
+
+    private var sections: [SettingSection] {
+        var resolution = [
+            SettingItem(id: "resolution", title: "Internal Resolution Upscaling", kind: .choice(Binding(
+                get: { resolutionIdx },
+                set: { i in
+                    if !loading, !set("resolution_multiplier", String(resolutions[i])) { return }
+                    resolutionIdx = i
+                }), resolutions.map { $0.formatted() + "x" })),
+        ]
+        if resolutionIdx != initialResolutionIdx {
+            resolution.append(SettingItem(id: "restart", title: "Restart game to apply", symbol: "arrow.clockwise",
+                                          kind: .action { confirmRestart = true }, destructive: true))
+        }
+        return [
+            SettingSection(id: "now", title: "Applied now", items: [
+                flag("cap30", "Limit to 30 FPS", "frame_cap_30", $frameCap30),
+                flag("fps-hack", "FPS Hack", "fps_hack", $fpsHack),
+                flag("half-res", "Half-Resolution Textures", "half_res_textures", $halfResTextures),
+                flag("surface", "Disable Surface Sync", "disable_surface_sync", $disableSurfaceSync),
+                flag("async", "Asynchronous Pipeline Compilation", "async_pipeline_compilation", $asyncPipeline),
+                SettingItem(id: "overlay", title: "Performance Overlay", kind: .toggle($showStatus)),
+                SettingItem(id: "hide-home", title: "Hide HOME Button", kind: .toggle($hideHome)),
+                SettingItem(id: "aniso", title: "Anisotropic Filtering", kind: .choice(Binding(
+                    get: { anisotropicIdx },
+                    set: { i in
+                        if !loading, !set("anisotropic_filtering", String(anisotropics[i])) { return }
+                        anisotropicIdx = i
+                    }), anisotropics.map { "\($0)x" })),
+            ], footer: "Half-resolution textures only affect textures loaded from now on. With the HOME button hidden, double-tap where it was (top center) to show it until you resume the game."),
+            SettingSection(id: "resolution", title: "Resolution", items: resolution,
+                           footer: "The resolution is applied by restarting the game. Unsaved progress is lost."),
+        ]
     }
 
     private func load() {
