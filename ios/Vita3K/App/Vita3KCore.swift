@@ -108,6 +108,17 @@ enum Vita3KCore {
         return (rc, text)
     }
 
+    /// Installs a license from a zRIF key (saved under ux0/license).
+    static func sessionInstallZRIF(_ key: String) -> (Int32, String) {
+        let capacity = 4096
+        var buffer = [Int8](repeating: 0, count: capacity)
+        let rc = buffer.withUnsafeMutableBufferPointer { ptr -> Int32 in
+            vita3k_ios_session_install_zrif(key, ptr.baseAddress!, capacity)
+        }
+        let text = rc == 0 || buffer.contains(where: { $0 != 0 }) ? CText.string(buffer) : ""
+        return (rc, text)
+    }
+
     /// Installed apps as "title_id|title" lines.
     static func sessionGetApps() -> String {
         let capacity = 8192
@@ -655,7 +666,7 @@ final class CoreController: ObservableObject {
             }
             let files = try FileManager.default.contentsOfDirectory(at: directory,
                 includingPropertiesForKeys: [.isDirectoryKey], options: [.skipsHiddenFiles])
-                .filter { ["zip", "vpk", "pkg", "pup"].contains($0.pathExtension.lowercased())
+                .filter { ["zip", "vpk", "pkg", "pup", "bin", "rif"].contains($0.pathExtension.lowercased())
                     || (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true }
                 .sorted { $0.lastPathComponent < $1.lastPathComponent }
             let candidates = try files.compactMap { url -> (URL, ImportStore.Fingerprint)? in
@@ -734,6 +745,27 @@ final class CoreController: ObservableObject {
             } catch {
                 reportImportFailure(L10n.format("Não foi possível importar %@: %@", url.lastPathComponent, error.localizedDescription))
             }
+        }
+    }
+
+    /// Saves a license from a pasted zRIF key (needed by retail PKGs).
+    func importZRIF(_ text: String) {
+        let key = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !key.isEmpty else { return }
+        guard sessionInitialized, !isImporting, !isDeleting, !memRunning, !isSyncingSaves, !isPreparingGame, !isGamePresented,
+              !Vita3KCore.sessionIsActive() else {
+            reportImportFailure(L10n.text("Aguarde a operação em andamento e encerre o jogo antes de importar."))
+            return
+        }
+        isImporting = true
+        Task { @MainActor in
+            defer { isImporting = false }
+            let (rc, report) = await Task.detached(priority: .userInitiated) {
+                Vita3KCore.sessionInstallZRIF(key)
+            }.value
+            let summary = rc == 0 ? L10n.text("Importação concluída") : L10n.format("Falha na importação (código %d)", rc)
+            importResult = ImportResult(succeeded: rc == 0, message: "\(summary)\n\(report)")
+            appendLog("zRIF: \(summary)")
         }
     }
 

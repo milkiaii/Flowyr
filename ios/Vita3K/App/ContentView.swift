@@ -8,6 +8,9 @@ struct ContentView: View {
     @AppStorage(EmulatorTheme.lightModePreference) private var lightMode = false
     @State private var surfaceRequest: SurfaceRequest?
     @State private var showImporter = false
+    @State private var importKind: ImportKind = .game
+    @State private var showZRIF = false
+    @State private var zrifText = ""
     @State private var showSettings = false
     @ObservedObject private var pad = GamepadInput.shared
     @State private var launchInFlight = false
@@ -16,8 +19,10 @@ struct ContentView: View {
     @State private var launchError: String?
 
     var body: some View {
-        LibraryView(launch: launch, importContent: { showImporter = true }, openSettings: { UISounds.shared.play(.open); showSettings = true },
-                    inputEnabled: surfaceRequest == nil && !showSettings && !showImporter && !launchInFlight)
+        LibraryView(launch: launch, importContent: { kind in importKind = kind; showImporter = true },
+                    enterZRIF: { zrifText = ""; showZRIF = true },
+                    openSettings: { UISounds.shared.play(.open); showSettings = true },
+                    inputEnabled: surfaceRequest == nil && !showSettings && !showImporter && !showZRIF && !launchInFlight)
         .disabled(controller.isImporting || controller.isDeleting || controller.isSyncingSaves || launchInFlight)
         .task {
             guard !startupComplete else { return }
@@ -84,6 +89,7 @@ struct ContentView: View {
             NavigationStack {
                 SettingsView(importContent: {
                     showSettings = false
+                    importKind = .game
                     showImporter = true
                 })
                 .toolbar {
@@ -98,10 +104,7 @@ struct ContentView: View {
             .preferredColorScheme(lightMode ? .light : .dark)
         }
         .fileImporter(isPresented: $showImporter,
-                      allowedContentTypes: [.folder, .item, .zip,
-                        UTType(filenameExtension: "vpk") ?? .item,
-                        UTType(filenameExtension: "pkg") ?? .item,
-                        UTType(filenameExtension: "pup") ?? .item],
+                      allowedContentTypes: importTypes,
                       allowsMultipleSelection: false) { result in
             switch result {
             case .success(let urls):
@@ -109,6 +112,15 @@ struct ContentView: View {
             case .failure(let error):
                 controller.reportImportFailure(error.localizedDescription)
             }
+        }
+        .alert("Chave zRIF", isPresented: $showZRIF) {
+            TextField("Chave zRIF", text: $zrifText)
+                .autocorrectionDisabled()
+                .textInputAutocapitalization(.never)
+            Button("Cancelar", role: .cancel) {}
+            Button("Instalar") { controller.importZRIF(zrifText) }
+        } message: {
+            Text("Cole a chave zRIF do jogo. Ela será salva como licença.")
         }
         .sheet(item: Binding(
             get: { canPresentImportResult ? controller.importResult : nil },
@@ -149,6 +161,21 @@ struct ContentView: View {
         }
         .tint(EmulatorTheme.accent)
         .preferredColorScheme(lightMode ? .light : .dark)
+    }
+
+    /// File picker filter for the chosen "+" menu entry.
+    private var importTypes: [UTType] {
+        switch importKind {
+        case .game:
+            [.folder, .item, .zip,
+             UTType(filenameExtension: "vpk") ?? .item,
+             UTType(filenameExtension: "pkg") ?? .item]
+        case .license:
+            // work.bin / .rif have no registered type.
+            [.item]
+        case .firmware:
+            [UTType(filenameExtension: "pup") ?? .item]
+        }
     }
 
     private var canPresentImportResult: Bool {

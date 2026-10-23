@@ -5,7 +5,8 @@ struct LibraryView: View {
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Environment(\.locale) private var locale
     let launch: (String) -> Void
-    let importContent: () -> Void
+    let importContent: (ImportKind) -> Void
+    let enterZRIF: () -> Void
     let openSettings: () -> Void
     /// False while a sheet, the importer or a game is on screen.
     let inputEnabled: Bool
@@ -60,6 +61,7 @@ struct LibraryView: View {
                 importDisabled: !controller.sessionInitialized || controller.isImporting,
                 onLayout: { withAnimation(.snappy) { listLayout.toggle() } },
                 onImport: importContent,
+                onEnterZRIF: enterZRIF,
                 onSettings: openSettings
             )
             .padding(.bottom, 10)
@@ -112,7 +114,7 @@ struct LibraryView: View {
                         Text(LocalizedStringKey(controller.apps.isEmpty ? "Importe seus jogos e homebrews para começar. Arquivos VPK, ZIP, PKG e pastas são aceitos." : "Tente outra busca ou veja todos os jogos."))
                     } actions: {
                         if controller.apps.isEmpty {
-                            Button("Importar jogo", action: importContent)
+                            Button("Importar jogo") { importContent(.game) }
                                 .buttonStyle(.bordered)
                                 .disabled(!controller.sessionInitialized || controller.isImporting)
                         }
@@ -262,7 +264,7 @@ struct LibraryView: View {
             UISounds.shared.play(.open)
             openSettings()
         case .select:
-            if controller.sessionInitialized, !controller.isImporting { importContent() }
+            if controller.sessionInitialized, !controller.isImporting { importContent(.game) }
         default: break
         }
     }

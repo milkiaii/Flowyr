@@ -233,6 +233,10 @@ int vita3k_ios_session_staging_path(char *out, size_t out_size);
 /// picker imports pass 1 to allow a user-requested reinstall.
 int vita3k_ios_session_install(const char *staged_path, int replace_existing, char *out, size_t out_size);
 
+/// Installs a license from a zRIF key (base64 text) into ux0/license.
+/// Returns 0 on success, otherwise a negative code with a message in `out`.
+int vita3k_ios_session_install_zrif(const char *zrif, char *out, size_t out_size);
+
 /// List the installed apps, one line each: "title_id|title".
 /// Returns 0 on success, -1 when the environment is not initialized,
 /// -4 when the buffer is too small.

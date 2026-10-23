@@ -82,5 +82,9 @@ struct PkgEntry {
 };
 
 bool install_pkg(const fs::path &pkg_path, EmuEnvState &emuenv, std::string &p_zRIF, const std::function<void(float)> &progress_callback = nullptr);
+// Content id (e.g. "UP0177-PCSE00120_00-...") stored in the pkg header, or "" when unreadable.
+std::string read_pkg_content_id(const fs::path &pkg_path);
+// zRIF of the license already installed for this pkg (ux0/license/<title id>/<content id>.rif), or "".
+std::string find_pkg_zrif(const fs::path &pkg_path, const fs::path &vita_fs_path);
 std::string find_pkg_zrif(const fs::path &pkg_path, const fs::path &vita_fs_path);
 bool decrypt_install_nonpdrm(EmuEnvState &emuenv, const fs::path &drmlicpath, const fs::path &title_path, const std::function<void(float)> &progress_callback = nullptr);

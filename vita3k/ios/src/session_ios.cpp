@@ -70,6 +70,7 @@
 #include <motion/event_handler.h>
 #include <modules/module_parent.h>
 #include <packages/functions.h>
+#include <packages/license.h>
 #include <packages/pkg.h>
 #include <packages/sfo.h>
 #include <renderer/functions.h>
@@ -838,17 +839,34 @@ int vita3k_ios_session_install(const char *staged_path, int replace_existing, ch
                 return fail(-3, error);
             content_dir = extraction->path;
         } else if (ext == ".pkg") {
-            std::string zrif;
+            // Retail packages are encrypted: they need the license (work.bin /
+            // zRIF) imported beforehand. Homebrew packages need none.
+            std::string zrif = find_pkg_zrif(source, s.emuenv->vita_fs_path);
+            if (zrif.empty()) {
+                const std::string content_id = read_pkg_content_id(source);
+                if (content_id.size() < 16)
+                    return fail(-2, "Arquivo PKG inválido ou corrompido.");
+                if (content_id.substr(7, 9).starts_with("PCS"))
+                    return fail(-6, "Este PKG precisa de uma licença (" + content_id + "). Toque em + e escolha \"Importar licença (work.bin)\" ou \"Inserir chave zRIF\"; depois importe o PKG de novo.");
+            }
             if (!install_pkg(source, *s.emuenv, zrif, [](float) {}))
                 return fail(-4, "Não foi possível instalar o PKG. Verifique o arquivo e a licença.");
             report += "PKG instalado: " + source.filename().string() + "\n";
+        } else if (ext == ".bin" || ext == ".rif") {
+            // NoNpDrm work.bin / .rif license: stored under ux0/license so
+            // packages and installed games can find it.
+            if (fs::file_size(source) < sizeof(SceNpDrmLicense))
+                return fail(-2, "Arquivo de licença inválido (tamanho incorreto).");
+            if (!copy_license(*s.emuenv, source) || s.emuenv->license_content_id.size() < 16)
+                return fail(-4, "Não foi possível instalar a licença. O arquivo pode estar corrompido.");
+            report += "Licença instalada: " + s.emuenv->license_content_id + "\n";
         } else if (ext == ".pup") {
             const auto version = install_pup(fs::path(s.emuenv->vita_fs_path), source);
             if (version.empty())
                 return fail(-4, "Não foi possível instalar o firmware PUP.");
             report += "Firmware instalado: " + version + "\n";
         } else {
-            return fail(-2, "Formato não suportado. Selecione uma pasta de jogo, ZIP, VPK, PKG ou PUP.");
+            return fail(-2, "Formato não suportado. Selecione uma pasta de jogo, ZIP, VPK, PKG, PUP ou uma licença (work.bin).");
         }
         if (!content_dir.empty()) {
             fs::path root;
@@ -860,6 +878,37 @@ int vita3k_ios_session_install(const char *staged_path, int replace_existing, ch
         }
         if (!app::scan_apps(*s.emuenv))
             LOG_WARN("iOS install: apps rescan after install failed.");
+        bool fits = false;
+        write_report_or(out, out_size, report, fits);
+        return fits ? 0 : -5;
+    } catch (const std::exception &error) {
+        return fail(-4, std::string("Falha na importação: ") + error.what());
+    } catch (...) {
+        return fail(-4, "Falha inesperada na importação.");
+    }
+}
+
+int vita3k_ios_session_install_zrif(const char *zrif, char *out, size_t out_size) {
+    auto &s = state();
+    std::lock_guard<std::mutex> lock(s.lock);
+    std::string report;
+    auto fail = [&](int code, const std::string &detail) -> int {
+        report += detail + "\n";
+        LOG_ERROR("iOS zRIF install: {}", detail);
+        bool fits = false;
+        write_report_or(out, out_size, report, fits);
+        return fits ? code : -5;
+    };
+    if (!s.initialized || !s.emuenv || !zrif)
+        return fail(-1, "O emulador não está pronto para importar conteúdo.");
+    try {
+        std::string key(zrif);
+        key.erase(std::remove_if(key.begin(), key.end(), [](unsigned char c) { return std::isspace(c); }), key.end());
+        if (!validate_zrif(key))
+            return fail(-2, "Chave zRIF inválida.");
+        if (!create_license(*s.emuenv, key))
+            return fail(-4, "Não foi possível instalar a licença a partir da chave zRIF.");
+        report += "Licença instalada a partir da chave zRIF.\n";
         bool fits = false;
         write_report_or(out, out_size, report, fits);
         return fits ? 0 : -5;

@@ -213,12 +213,18 @@ struct BatteryIcon: View {
 
 // MARK: - Floating bottom bar
 
+/// What the "+" menu is importing; decides the file picker's filter.
+enum ImportKind {
+    case game, license, firmware
+}
+
 struct LibraryFloatingBar: View {
     let layoutSymbol: String
     let layoutLabel: LocalizedStringKey
     let importDisabled: Bool
     let onLayout: () -> Void
-    let onImport: () -> Void
+    let onImport: (ImportKind) -> Void
+    let onEnterZRIF: () -> Void
     let onSettings: () -> Void
 
     var body: some View {
@@ -226,10 +232,30 @@ struct LibraryFloatingBar: View {
             barButton(layoutSymbol, action: onLayout)
                 .accessibilityLabel(Text(layoutLabel))
                 .accessibilityIdentifier("layout-toggle")
-            barButton("plus", action: onImport)
-                .disabled(importDisabled)
-                .accessibilityLabel(Text("Importar"))
-                .accessibilityIdentifier("import-content")
+            Menu {
+                Button { onImport(.game) } label: {
+                    Label("Instalar jogo (.vpk / .zip / .pkg)", systemImage: "arrow.down.doc")
+                }
+                Button { onImport(.license) } label: {
+                    Label("Importar licença (work.bin)", systemImage: "key.fill")
+                }
+                Button(action: onEnterZRIF) {
+                    Label("Inserir chave zRIF…", systemImage: "character.cursor.ibeam")
+                }
+                Button { onImport(.firmware) } label: {
+                    Label("Instalar firmware (.pup)", systemImage: "cpu")
+                }
+            } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundStyle(.primary)
+                    .frame(width: 46, height: 46)
+                    .contentShape(Rectangle())
+            }
+            .simultaneousGesture(TapGesture().onEnded { UISounds.shared.play(.tap) })
+            .disabled(importDisabled)
+            .accessibilityLabel(Text("Importar"))
+            .accessibilityIdentifier("import-content")
             barButton("gearshape.fill", action: onSettings)
                 .accessibilityLabel(Text("Opções"))
                 .accessibilityIdentifier("open-settings")

@@ -229,3 +229,10 @@
 "Ícone clássico" = "Classic icon";
 "Arte larga usa a imagem de fundo do jogo. Ícone clássico usa o ícone quadrado do jogo." = "Wide artwork uses the game's background image. Classic icon uses the game's square icon.";
 "Sons da interface" = "Interface sounds";
+"Instalar jogo (.vpk / .zip / .pkg)" = "Install game (.vpk / .zip / .pkg)";
+"Importar licença (work.bin)" = "Import license (work.bin)";
+"Inserir chave zRIF…" = "Enter zRIF key…";
+"Instalar firmware (.pup)" = "Install firmware (.pup)";
+"Chave zRIF" = "zRIF key";
+"Cole a chave zRIF do jogo. Ela será salva como licença." = "Paste the game's zRIF key. It is saved as a license.";
+"Instalar" = "Install";
