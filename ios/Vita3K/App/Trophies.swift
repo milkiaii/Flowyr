@@ -151,14 +151,17 @@ struct TrophyImage: View {
     @State private var image: UIImage?
 
     var body: some View {
-        ZStack {
-            Rectangle().fill(EmulatorTheme.artworkBackground)
-            if let image {
-                Image(uiImage: image).resizable().scaledToFill()
-            } else {
-                Image(systemName: "trophy.fill").foregroundStyle(.secondary)
+        // The image is an overlay so its fill size never changes the layout
+        // size (a wide icon used to push the text underneath it).
+        Rectangle().fill(EmulatorTheme.artworkBackground)
+            .overlay {
+                if let image {
+                    Image(uiImage: image).resizable().scaledToFill()
+                } else {
+                    Image(systemName: "trophy.fill").foregroundStyle(.secondary)
+                }
             }
-        }
+            .clipped()
         .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
         .task(id: path) {
             let p = path
