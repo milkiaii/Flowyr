@@ -14,6 +14,7 @@ struct LibraryView: View {
     @ObservedObject private var pad = GamepadInput.shared
     @State private var focusedID: String?
     @State private var gridWidth: CGFloat = 0
+    @State private var showAdd = false
     @AppStorage(GameIconStyle.preference) private var classicIcons = false
     @State private var search = ""
     @State private var favoritesOnly = false
@@ -60,11 +61,23 @@ struct LibraryView: View {
                 layoutLabel: LocalizedStringKey(listLayout ? "Exibir em grade" : "Exibir em lista"),
                 importDisabled: !controller.sessionInitialized || controller.isImporting,
                 onLayout: { withAnimation(.snappy) { listLayout.toggle() } },
-                onImport: importContent,
-                onEnterZRIF: enterZRIF,
+                isAddOpen: showAdd,
+                onAdd: { withAnimation(addAnimation) { showAdd.toggle() } },
                 onSettings: openSettings
             )
             .padding(.bottom, 10)
+        }
+        .overlay(alignment: .bottom) {
+            if showAdd {
+                ZStack(alignment: .bottom) {
+                    Color.black.opacity(0.35).ignoresSafeArea()
+                        .onTapGesture { withAnimation(addAnimation) { showAdd = false } }
+                        .transition(.opacity)
+                    AddContentPanel { action in choose(action) }
+                        .padding(.bottom, 84)
+                        .transition(.scale(scale: 0.88, anchor: .bottom).combined(with: .opacity))
+                }
+            }
         }
         .onAppear { pad.start(owner: PadOwner.library) }
         .onDisappear { pad.stop(owner: PadOwner.library) }
@@ -219,6 +232,22 @@ struct LibraryView: View {
 
     private enum PadOwner { case library }
 
+    private var addAnimation: Animation { .spring(response: 0.32, dampingFraction: 0.84) }
+
+    private func choose(_ action: AddAction) {
+        withAnimation(addAnimation) { showAdd = false }
+        Task { @MainActor in
+            // Let the panel finish leaving before the picker / dialog appears.
+            try? await Task.sleep(for: .milliseconds(180))
+            switch action {
+            case .game: importContent(.game)
+            case .license: importContent(.license)
+            case .firmware: importContent(.firmware)
+            case .zrif: enterZRIF()
+            }
+        }
+    }
+
     private var gridColumns: Int {
         max(1, Int((gridWidth - 32 + 14) / (160 + 14)))
     }
@@ -247,6 +276,10 @@ struct LibraryView: View {
     }
 
     private func handlePad(_ button: PadButton) {
+        if showAdd {
+            if button == .back || button == .select { withAnimation(addAnimation) { showAdd = false } }
+            return
+        }
         switch button {
         case .left: moveFocus(by: -1)
         case .right: moveFocus(by: 1)
@@ -264,7 +297,7 @@ struct LibraryView: View {
             UISounds.shared.play(.open)
             openSettings()
         case .select:
-            if controller.sessionInitialized, !controller.isImporting { importContent(.game) }
+            if controller.sessionInitialized, !controller.isImporting { withAnimation(addAnimation) { showAdd = true } }
         default: break
         }
     }

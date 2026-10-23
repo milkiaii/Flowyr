@@ -55,11 +55,11 @@ final class DeviceStatus: ObservableObject {
     /// Fill level for the variable-value battery symbol (1 when unknown).
     var batteryFill: Double { batteryLevel < 0 ? 1 : Double(max(0, min(1, batteryLevel))) }
 
-    /// Follows the system battery colors: green charging, yellow/orange in
+    /// Follows the system battery colors: green charging, yellow in
     /// Low Power Mode, red when low, otherwise the normal (white/black) fill.
     var batteryFillColor: Color {
         if isCharging { return .green }
-        if lowPowerMode { return .orange }
+        if lowPowerMode { return .yellow }
         if let percent = batteryPercent, percent <= 20 { return .red }
         return .primary
     }
@@ -171,6 +171,96 @@ struct LibraryTopBar: View {
     }
 }
 
+// MARK: - Add-content panel
+
+enum AddAction: CaseIterable, Identifiable {
+    case game, license, zrif, firmware
+    var id: Self { self }
+
+    var symbol: String {
+        switch self {
+        case .game: "arrow.down.doc.fill"
+        case .license: "key.fill"
+        case .zrif: "character.cursor.ibeam"
+        case .firmware: "cpu.fill"
+        }
+    }
+    var title: LocalizedStringKey {
+        switch self {
+        case .game: "Jogo"
+        case .license: "Licença"
+        case .zrif: "Chave zRIF"
+        case .firmware: "Firmware"
+        }
+    }
+    var caption: String {
+        switch self {
+        case .game: ".vpk · .zip · .pkg"
+        case .license: "work.bin · .rif"
+        case .zrif: "zRIF"
+        case .firmware: ".pup"
+        }
+    }
+}
+
+/// A floating card above the bottom bar: one tile per kind of content.
+struct AddContentPanel: View {
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+    let onSelect: (AddAction) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Adicionar")
+                .font(.system(size: 13, weight: .heavy, design: .rounded))
+                .tracking(1.2)
+                .textCase(.uppercase)
+                .foregroundStyle(.secondary)
+                .padding(.leading, 4)
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10),
+                                     count: verticalSizeClass == .compact ? 4 : 2),
+                      spacing: 10) {
+                ForEach(AddAction.allCases) { action in tile(action) }
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: verticalSizeClass == .compact ? 620 : 360)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 30, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 30, style: .continuous)
+            .strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
+        .shadow(color: .black.opacity(0.3), radius: 22, y: 10)
+        .padding(.horizontal, 16)
+    }
+
+    private func tile(_ action: AddAction) -> some View {
+        Button {
+            UISounds.shared.play(.tap)
+            onSelect(action)
+        } label: {
+            VStack(spacing: 8) {
+                Image(systemName: action.symbol)
+                    .font(.system(size: 22, weight: .semibold))
+                    .frame(width: 48, height: 48)
+                    .background(Color.primary.opacity(0.08), in: Circle())
+                Text(action.title)
+                    .font(.subheadline.weight(.semibold))
+                    .lineLimit(1)
+                Text(verbatim: action.caption)
+                    .font(.caption2.monospaced())
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+            .foregroundStyle(.primary)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .background(EmulatorTheme.panel.opacity(0.7), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("add-\(String(describing: action))")
+    }
+}
+
 // MARK: - Battery icon
 
 /// iOS-style battery: gray outline, colored fill *inside* it sized to the
@@ -223,8 +313,8 @@ struct LibraryFloatingBar: View {
     let layoutLabel: LocalizedStringKey
     let importDisabled: Bool
     let onLayout: () -> Void
-    let onImport: (ImportKind) -> Void
-    let onEnterZRIF: () -> Void
+    let isAddOpen: Bool
+    let onAdd: () -> Void
     let onSettings: () -> Void
 
     var body: some View {
@@ -232,28 +322,8 @@ struct LibraryFloatingBar: View {
             barButton(layoutSymbol, action: onLayout)
                 .accessibilityLabel(Text(layoutLabel))
                 .accessibilityIdentifier("layout-toggle")
-            Menu {
-                Button { onImport(.game) } label: {
-                    Label("Instalar jogo (.vpk / .zip / .pkg)", systemImage: "arrow.down.doc")
-                }
-                Button { onImport(.license) } label: {
-                    Label("Importar licença (work.bin)", systemImage: "key.fill")
-                }
-                Button(action: onEnterZRIF) {
-                    Label("Inserir chave zRIF…", systemImage: "character.cursor.ibeam")
-                }
-                Button { onImport(.firmware) } label: {
-                    Label("Instalar firmware (.pup)", systemImage: "cpu")
-                }
-            } label: {
-                Image(systemName: "plus")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(.primary)
-                    .frame(width: 46, height: 46)
-                    .contentShape(Rectangle())
-            }
-            .simultaneousGesture(TapGesture().onEnded { UISounds.shared.play(.tap) })
-            .disabled(importDisabled)
+            barButton("plus", rotated: isAddOpen, action: onAdd)
+                .disabled(importDisabled)
             .accessibilityLabel(Text("Importar"))
             .accessibilityIdentifier("import-content")
             barButton("gearshape.fill", action: onSettings)
@@ -266,12 +336,14 @@ struct LibraryFloatingBar: View {
         .shadow(color: .black.opacity(0.25), radius: 14, y: 6)
     }
 
-    private func barButton(_ symbol: String, action: @escaping () -> Void) -> some View {
+    private func barButton(_ symbol: String, rotated: Bool = false, action: @escaping () -> Void) -> some View {
         Button {
             UISounds.shared.play(.tap)
             action()
         } label: {
             Image(systemName: symbol)
+                .rotationEffect(.degrees(rotated ? 45 : 0))
+                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: rotated)
                 .font(.system(size: 20, weight: .semibold))
                 .foregroundStyle(.primary)
                 .frame(width: 46, height: 46)
