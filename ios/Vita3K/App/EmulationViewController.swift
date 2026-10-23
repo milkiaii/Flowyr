@@ -273,6 +273,7 @@ final class EmulationViewController: UIViewController {
             model: homeModel,
             onResume: { [weak self] in self?.resumeGame() },
             onSettings: { [weak self] in self?.openInGameSettings() },
+            onTrophies: { [weak self] in self?.openTrophies() },
             onExit: { [weak self] in self?.exit() }))
         menuHost.view.backgroundColor = .clear
         menuHost.view.translatesAutoresizingMaskIntoConstraints = false
@@ -513,6 +514,7 @@ final class EmulationViewController: UIViewController {
             switch homeFocusIndex {
             case 0: resumeGame()
             case 1: openInGameSettings()
+            case 2: openTrophies()
             default: exit()
             }
         case .back, .start: resumeGame()
@@ -570,6 +572,15 @@ final class EmulationViewController: UIViewController {
             self?.dismiss(animated: true)
         }, onRestart: { [weak self] in
             self?.dismiss(animated: true) { self?.restartGame() }
+        }))
+        present(host, animated: true)
+    }
+
+    /// Trophy browser over the paused game.
+    private func openTrophies() {
+        guard presentedViewController == nil else { return }
+        let host = UIHostingController(rootView: TrophiesView(onClose: { [weak self] in
+            self?.dismiss(animated: true)
         }))
         present(host, animated: true)
     }

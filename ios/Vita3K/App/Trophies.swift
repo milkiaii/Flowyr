@@ -290,7 +290,7 @@ struct TrophiesView: View {
 
     private func card(_ c: TrophyCollection) -> some View {
         HStack(spacing: 14) {
-            TrophyImage(path: c.iconPath, radius: 14).frame(width: 64, height: 64)
+            TrophyImage(path: c.iconPath, radius: 14).frame(width: 112, height: 63)
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text(c.title.isEmpty ? c.id : c.title).font(.subheadline.weight(.semibold)).lineLimit(1)
@@ -321,7 +321,7 @@ struct TrophiesView: View {
                 VStack(spacing: 10) {
                     VStack(spacing: 12) {
                         HStack(spacing: 14) {
-                            TrophyImage(path: c.iconPath, radius: 16).frame(width: 72, height: 72)
+                            TrophyImage(path: c.iconPath, radius: 16).frame(width: 128, height: 72)
                             VStack(alignment: .leading, spacing: 8) {
                                 Text(verbatim: "\(Int((c.progress * 100).rounded()))%")
                                     .font(.system(size: 28, weight: .bold, design: .rounded))
