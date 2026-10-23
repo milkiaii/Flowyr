@@ -69,6 +69,7 @@
 #include <kernel/thread/thread_state.h>
 #include <motion/event_handler.h>
 #include <modules/module_parent.h>
+#include <np/state.h>
 #include <np/trophy/collection.h>
 #include <packages/functions.h>
 #include <packages/license.h>
