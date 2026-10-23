@@ -538,10 +538,10 @@ struct GameCarousel<Menu: View>: View {
         }
     }
 
-    private static let glide = Animation.interpolatingSpring(stiffness: 230, damping: 25)
+    private static let glide = Animation.interpolatingSpring(stiffness: 320, damping: 27)
 
     private func dragGesture(stride: CGFloat, current: Int) -> some Gesture {
-        DragGesture(minimumDistance: 4)
+        DragGesture(minimumDistance: 2)
             .onChanged { value in
                 let base = dragBase ?? position
                 dragBase = base
@@ -549,18 +549,20 @@ struct GameCarousel<Menu: View>: View {
                 let last = Double(max(games.count - 1, 0))
                 // Rubber-band past the first and last game.
                 if raw < 0 { raw *= 0.35 } else if raw > last { raw = last + (raw - last) * 0.35 }
-                // A short interactive spring absorbs the jump when a touch
-                // lands while a glide is still running.
-                withAnimation(.interactiveSpring(response: 0.12, dampingFraction: 0.9)) { position = raw }
+                // Follow the finger 1:1; any glide still running is cancelled.
+                var t = Transaction(); t.disablesAnimations = true
+                withTransaction(t) { position = raw }
             }
             .onEnded { value in
-                let base = dragBase ?? position
                 dragBase = nil
-                let projected = base - Double(value.predictedEndTranslation.width / stride) * 0.6
+                // Coast by the release velocity, so a fast flick travels
+                // several cards and a slow drag settles on the nearest one.
+                let velocity = Double(value.velocity.width / stride)
+                let projected = position - velocity * 0.22
                 var target = Int(projected.rounded())
                 let moved = Int(position.rounded())
-                if target == moved, abs(value.translation.width) > 40 { target += value.translation.width < 0 ? 1 : -1 }
-                target = max(moved - 4, min(moved + 4, target))
+                if target == moved, abs(value.translation.width) > 30 { target += value.translation.width < 0 ? 1 : -1 }
+                target = max(moved - 8, min(moved + 8, target))
                 target = max(0, min(games.count - 1, target))
                 withAnimation(Self.glide) {
                     position = Double(target)

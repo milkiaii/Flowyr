@@ -178,7 +178,9 @@ struct LibraryView: View {
     private var listContent: some View {
         ScrollViewReader { proxy in
         ScrollView {
-            LazyVStack(spacing: 0) {
+            // Eager (not lazy) so every row has its real height and scrollTo
+            // lands exactly on the focused game.
+            VStack(spacing: 0) {
                 searchHeader.padding(.bottom, 8).id("libraryTop")
                 ForEach(games) { game in
                     gameRow(game)
@@ -228,6 +230,8 @@ struct LibraryView: View {
             try? await Task.sleep(for: .milliseconds(60))
             jump(to: id, using: proxy)
             try? await Task.sleep(for: .milliseconds(250))
+            if focusedID == id { jump(to: id, using: proxy) }
+            try? await Task.sleep(for: .milliseconds(450))
             if focusedID == id { jump(to: id, using: proxy) }
         }
     }
