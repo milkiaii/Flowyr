@@ -509,7 +509,7 @@ struct GameCarousel<Menu: View>: View {
                                 if i == current {
                                     onLaunch(games[i].titleId)
                                 } else {
-                                    withAnimation(Self.glide) { focusedID = games[i].titleId; position = Double(i) }
+                                    withAnimation(glide) { focusedID = games[i].titleId; position = Double(i) }
                                 }
                             }
                             .contextMenu { menu(games[i]) }
@@ -527,7 +527,7 @@ struct GameCarousel<Menu: View>: View {
             // Controller moves and taps: glide to the new card.
             if let new, let index = games.firstIndex(where: { $0.titleId == new }),
                abs(position - Double(index)) > 0.001 {
-                withAnimation(Self.glide) { position = Double(index) }
+                withAnimation(glide) { position = Double(index) }
             }
         }
         .onAppear {
@@ -538,7 +538,7 @@ struct GameCarousel<Menu: View>: View {
         }
     }
 
-    private static let glide = Animation.interpolatingSpring(stiffness: 320, damping: 27)
+    private var glide: Animation { .interpolatingSpring(stiffness: 320, damping: 27) }
 
     private func dragGesture(stride: CGFloat, current: Int) -> some Gesture {
         DragGesture(minimumDistance: 2)
@@ -564,7 +564,7 @@ struct GameCarousel<Menu: View>: View {
                 if target == moved, abs(value.translation.width) > 30 { target += value.translation.width < 0 ? 1 : -1 }
                 target = max(moved - 8, min(moved + 8, target))
                 target = max(0, min(games.count - 1, target))
-                withAnimation(Self.glide) {
+                withAnimation(glide) {
                     position = Double(target)
                     focusedID = games[target].titleId
                 }
