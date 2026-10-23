@@ -474,7 +474,10 @@ struct GameCarousel<Menu: View>: View {
     @ViewBuilder let menu: (CoreController.AppInfo) -> Menu
 
     @AppStorage(GameIconStyle.preference) private var classicIcons = false
-    @State private var drag: CGFloat = 0
+    /// Fractional index of the card in the middle; animated, so quick
+    /// repeated moves chain smoothly instead of restarting.
+    @State private var position: Double = 0
+    @State private var dragBase: Double?
 
     private var currentIndex: Int {
         games.firstIndex(where: { $0.titleId == focusedID }) ?? 0
@@ -485,14 +488,14 @@ struct GameCarousel<Menu: View>: View {
             let width = cardWidth(in: proxy.size)
             let spacing: CGFloat = 22
             let stride = width + spacing
-            let current = min(currentIndex, max(games.count - 1, 0))
+            let current = min(max(Int(position.rounded()), 0), max(games.count - 1, 0))
             let reach = Int(ceil(proxy.size.width / stride / 2)) + 1
             let lo = max(0, current - reach)
             let hi = min(games.count - 1, current + reach)
             ZStack {
                 if !games.isEmpty, lo <= hi {
                     ForEach(lo...hi, id: \.self) { i in
-                        let relative = CGFloat(i - current) + drag / stride
+                        let relative = CGFloat(Double(i) - position)
                         let distance = min(abs(relative), 1)
                         let depth = Double(abs(relative))
                         card(games[i], width: width)
@@ -506,7 +509,7 @@ struct GameCarousel<Menu: View>: View {
                                 if i == current {
                                     onLaunch(games[i].titleId)
                                 } else {
-                                    withAnimation(LibraryMotion.move) { focusedID = games[i].titleId }
+                                    withAnimation(Self.glide) { focusedID = games[i].titleId; position = Double(i) }
                                 }
                             }
                             .contextMenu { menu(games[i]) }
@@ -521,33 +524,46 @@ struct GameCarousel<Menu: View>: View {
         .sensoryFeedback(.selection, trigger: focusedID)
         .onChange(of: focusedID) { old, new in
             if old != nil, new != nil { UISounds.shared.play(.move) }
+            // Controller moves and taps: glide to the new card.
+            if let new, let index = games.firstIndex(where: { $0.titleId == new }),
+               abs(position - Double(index)) > 0.001 {
+                withAnimation(Self.glide) { position = Double(index) }
+            }
         }
         .onAppear {
             if !games.contains(where: { $0.titleId == focusedID }) {
                 focusedID = games.contains(where: { $0.titleId == initialID }) ? initialID : games.first?.titleId
             }
+            position = Double(currentIndex)
         }
     }
 
+    private static let glide = Animation.interpolatingSpring(stiffness: 230, damping: 25)
+
     private func dragGesture(stride: CGFloat, current: Int) -> some Gesture {
-        DragGesture(minimumDistance: 3)
+        DragGesture(minimumDistance: 4)
             .onChanged { value in
-                var translation = value.translation.width
+                let base = dragBase ?? position
+                dragBase = base
+                var raw = base - Double(value.translation.width / stride)
+                let last = Double(max(games.count - 1, 0))
                 // Rubber-band past the first and last game.
-                if (current == 0 && translation > 0) || (current == games.count - 1 && translation < 0) {
-                    translation *= 0.35
-                }
-                drag = translation
+                if raw < 0 { raw *= 0.35 } else if raw > last { raw = last + (raw - last) * 0.35 }
+                // A short interactive spring absorbs the jump when a touch
+                // lands while a glide is still running.
+                withAnimation(.interactiveSpring(response: 0.12, dampingFraction: 0.9)) { position = raw }
             }
             .onEnded { value in
-                var steps = Int((-value.predictedEndTranslation.width / stride).rounded())
-                if steps == 0, abs(value.translation.width) > 40 {
-                    steps = value.translation.width < 0 ? 1 : -1
-                }
-                steps = max(-4, min(4, steps))
-                let target = max(0, min(games.count - 1, current + steps))
-                withAnimation(LibraryMotion.move) {
-                    drag = 0
+                let base = dragBase ?? position
+                dragBase = nil
+                let projected = base - Double(value.predictedEndTranslation.width / stride) * 0.6
+                var target = Int(projected.rounded())
+                let moved = Int(position.rounded())
+                if target == moved, abs(value.translation.width) > 40 { target += value.translation.width < 0 ? 1 : -1 }
+                target = max(moved - 4, min(moved + 4, target))
+                target = max(0, min(games.count - 1, target))
+                withAnimation(Self.glide) {
+                    position = Double(target)
                     focusedID = games[target].titleId
                 }
             }

@@ -193,6 +193,7 @@ struct LibraryView: View {
         .scrollDismissesKeyboard(.interactively)
         .refreshable { controller.refreshApps() }
         .onChange(of: focusedID) { _, id in scrollTo(id, using: proxy) }
+        .onAppear { restoreScroll(using: proxy) }
         }
     }
 
@@ -214,17 +215,37 @@ struct LibraryView: View {
         .refreshable { controller.refreshApps() }
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { gridWidth = $0 }
         .onChange(of: focusedID) { _, id in scrollTo(id, using: proxy) }
+        .onAppear { restoreScroll(using: proxy) }
         }
+    }
+
+    /// Coming back from the carousel (or a layout switch) the new list has not
+    /// scrolled to the focused game yet; lazy rows also need a second pass once
+    /// their real heights are known.
+    private func restoreScroll(using proxy: ScrollViewProxy) {
+        guard let id = focusedID else { return }
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(60))
+            jump(to: id, using: proxy)
+            try? await Task.sleep(for: .milliseconds(250))
+            if focusedID == id { jump(to: id, using: proxy) }
+        }
+    }
+
+    private func jump(to id: String, using proxy: ScrollViewProxy) {
+        if id == games.first?.titleId { proxy.scrollTo("libraryTop", anchor: .top) }
+        else if id == games.last?.titleId { proxy.scrollTo("libraryBottom", anchor: .bottom) }
+        else { proxy.scrollTo(id, anchor: .center) }
     }
 
     private func scrollTo(_ id: String?, using proxy: ScrollViewProxy) {
         guard let id else { return }
-        withAnimation(.snappy) {
-            // Edge items scroll to the real top/bottom so they are never
-            // left half hidden behind the top bar or the floating bar.
-            if id == games.first?.titleId { proxy.scrollTo("libraryTop", anchor: .top) }
-            else if id == games.last?.titleId { proxy.scrollTo("libraryBottom", anchor: .bottom) }
-            else { proxy.scrollTo(id, anchor: .center) }
+        // Edge items scroll to the real top/bottom so they are never
+        // left half hidden behind the top bar or the floating bar.
+        withAnimation(.snappy) { jump(to: id, using: proxy) }
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(320))
+            if focusedID == id { jump(to: id, using: proxy) }
         }
     }
 
