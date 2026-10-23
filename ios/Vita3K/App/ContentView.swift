@@ -39,13 +39,6 @@ struct ContentView: View {
             // once by the control poller; an explicit call here would sync
             // again right after the JIT check.
         }
-        .onChange(of: pad.lastEvent) { _, event in
-            // B closes the settings sheet.
-            if showSettings, event?.button == .back {
-                UISounds.shared.play(.back)
-                showSettings = false
-            }
-        }
         .onChange(of: scenePhase) { _, phase in
             switch phase {
             case .background, .inactive:
@@ -92,7 +85,7 @@ struct ContentView: View {
                     showSettings = false
                     importKind = .game
                     showImporter = true
-                })
+                }, onClose: { showSettings = false })
                 .toolbar {
                     ToolbarItem(placement: .confirmationAction) {
                         Button("OK") { UISounds.shared.play(.back); showSettings = false }

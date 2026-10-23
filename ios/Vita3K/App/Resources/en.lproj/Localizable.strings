@@ -260,3 +260,7 @@
 "O emulador não está pronto para importar conteúdo." = "The emulator is not ready to import content.";
 "Encerre o jogo antes de importar conteúdo." = "Close the game before importing content.";
 "Falha ao copiar o conteúdo do jogo. Verifique o espaço disponível." = "Failed to copy the game content. Check the available space.";
+"Selecionar" = "Select";
+"Voltar" = "Back";
+"Seção" = "Section";
+"Config própria" = "Custom config";

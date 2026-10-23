@@ -49,17 +49,13 @@ struct GameConfigView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                header
+            Group {
                 if loaded {
-                    perGameSection
-                    loggingSection
-                    globalSection
-                    customSection
-                } else if !message.isEmpty {
-                    Section {
-                        Text(message).font(.subheadline).foregroundStyle(.secondary)
-                    }
+                    PadSettingsPage(sections: sections, status: message, onClose: onDone)
+                } else {
+                    ScrollView {
+                        Text(message).font(.subheadline).foregroundStyle(.secondary).padding(20)
+                    }.background(EmulatorTheme.background)
                 }
             }
             .navigationTitle("Config do jogo")
@@ -69,170 +65,107 @@ struct GameConfigView: View {
                     Button("Concluído") { onDone() }
                 }
             }
+            .confirmationDialog("Remover a configuração própria deste jogo?", isPresented: $confirmReset, titleVisibility: .visible) {
+                Button("Remover", role: .destructive) { reset() }
+            }
         }
         .onAppear { load() }
     }
 
-    // MARK: - Sections
+    // MARK: - Items
+
+    /// A bool setting saved to the game's config under `key`.
+    private func flag(_ id: String, _ title: LocalizedStringKey, _ key: String, _ value: Binding<Bool>,
+                      detail: LocalizedStringKey? = nil, enabled: Bool = true) -> SettingItem {
+        SettingItem(id: id, title: title, detail: detail, kind: .toggle(Binding(
+            get: { value.wrappedValue },
+            set: { new in
+                value.wrappedValue = new
+                if !loading { set(key, new ? "1" : "0") }
+            })), enabled: enabled)
+    }
+
+    /// A choice whose index maps to `values[index]` saved under `key`.
+    private func pick(_ id: String, _ title: LocalizedStringKey, _ key: String, _ index: Binding<Int>,
+                      labels: [String], values: [String], detail: LocalizedStringKey? = nil) -> SettingItem {
+        SettingItem(id: id, title: title, detail: detail, kind: .choice(Binding(
+            get: { index.wrappedValue },
+            set: { new in
+                if !loading, !set(key, values[new]) { return }
+                index.wrappedValue = new
+            }), labels))
+    }
+
+    private var jitCacheValues: [Int] {
+        var values = [0] + jitCacheSizes
+        // Show manually edited legacy values without silently changing them.
+        if jitCacheMiB != 0, !jitCacheSizes.contains(jitCacheMiB) { values.append(jitCacheMiB) }
+        return values
+    }
+
+    private var sections: [SettingSection] {
+        let values = jitCacheValues
+        let gameSection = SettingSection(id: "game", title: "CPU e GPU (este jogo)", items: [
+            flag("cpu-opt", "Enable CPU Optimizations", "cpu_opt", $cpuOpt),
+            flag("sw-pt", "Force Software Page Table", "force_software_page_table", $forceSoftwarePageTable),
+            pick("jit-cache", "Cache JIT por thread", "cpu_jit_cache_mib",
+                 Binding(get: { values.firstIndex(of: jitCacheMiB) ?? 0 },
+                         set: { jitCacheMiB = values[$0] }),
+                 labels: values.map { $0 == 0 ? L10n.text("Auto") : "\($0) MiB" },
+                 values: values.map(String.init),
+                 detail: LocalizedStringKey("Auto usa \(jitCacheAutoMiB) MiB para este jogo, conforme o padrão do core. Valores menores permitem mais threads, mas podem aumentar a recompilação. Aplicado ao reiniciar este jogo.")),
+            pick("accuracy", "Precisão de Renderização", "high_accuracy",
+                 Binding(get: { highAccuracy ? 1 : 0 }, set: { highAccuracy = $0 == 1 }),
+                 labels: [L10n.text("Padrão (Standard)"), L10n.text("Alta (High)")], values: ["0", "1"],
+                 detail: "Rendering Accuracy: Alta pode melhorar a precisão dos gráficos, com possível redução de desempenho."),
+            flag("surface-sync", "Disable Surface Sync", "disable_surface_sync", $disableSurfaceSync),
+            flag("async-pipe", "Asynchronous Pipeline Compilation", "async_pipeline_compilation", $asyncPipeline),
+            pick("resolution", "Internal Resolution Upscaling", "resolution_multiplier", $resolutionIdx,
+                 labels: resolutions.map { $0.formatted() + "x" }, values: resolutions.map { String($0) }),
+            pick("aniso", "Anisotropic Filtering", "anisotropic_filtering", $anisotropicIdx,
+                 labels: anisotropics.map { "\($0)x" }, values: anisotropics.map(String.init)),
+            flag("shader-cache", "Enable Shader Cache", "shader_cache", $shaderCache),
+            SettingItem(id: "clear-shaders", title: "Clear Shaders", symbol: "trash",
+                        kind: .action { clearShaders() }, enabled: !clearing),
+            flag("fps-hack", "FPS Hack", "fps_hack", $fpsHack),
+            flag("cap30", "Limit to 30 FPS", "frame_cap_30", $frameCap30),
+            flag("tex-cache", "Enable Texture Cache", "texture_cache", $textureCache),
+            flag("half-res", "Half-Resolution Textures", "half_res_textures", $halfResTextures),
+        ], footer: "Aplicados quando este jogo for (re)iniciado.",
+        accessory: AnyView(header))
+
+        let logSection = SettingSection(id: "logs", title: "Logs (este jogo)", items: [
+            pick("log-level", "Log Level", "log_level", $logLevel,
+                 labels: logLevels.map { L10n.text($0) }, values: logLevels.indices.map(String.init)),
+            flag("log-compat", "Log Compatibility Warnings", "log_compat_warn", $logCompatWarn, enabled: logLevel != 6),
+        ], footer: "Desativados por padrão. Aplicados ao iniciar este jogo. Os modos Compat Fix, Performance Fix e Graphics Fix ativam os logs automaticamente durante o diagnóstico.")
+
+        let globalSection = SettingSection(id: "global", title: "Emulador (todos os jogos)", items: [
+            flag("compile-hint", "Show Shader Compilation Hint", "show_compile_shaders", $showCompileHint),
+            SettingItem(id: "overlay", title: "Performance Overlay",
+                        detail: "FPS, tempo por quadro e memória.",
+                        kind: .toggle(Binding(get: { perfOverlay },
+                                              set: { perfOverlay = $0
+                                                     UserDefaults.standard.set($0, forKey: "emulation.showStatus") }))),
+        ], footer: "Estes itens são globais no núcleo: valem para todos os jogos.")
+
+        var result = [gameSection, logSection, globalSection]
+        if hasCustom {
+            result.append(SettingSection(id: "custom", title: "Config própria", items: [
+                SettingItem(id: "reset", title: "Remover config própria (restaurar padrões)", symbol: "arrow.uturn.backward",
+                            kind: .action { confirmReset = true }, destructive: true)
+            ]))
+        }
+        return result
+    }
 
     private var header: some View {
-        Section {
-            HStack(spacing: 12) {
-                GameArtwork(titleID: titleId)
-                    .frame(width: 52, height: 52)
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(title.isEmpty ? titleId : title).font(.headline).lineLimit(2)
-                    Text(titleId).font(.caption.monospaced()).foregroundStyle(.secondary)
-                }
+        HStack(spacing: 12) {
+            GameArtwork(titleID: titleId).frame(width: 52, height: 52)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title.isEmpty ? titleId : title).font(.headline).lineLimit(2)
+                Text(titleId).font(.caption.monospaced()).foregroundStyle(.secondary)
             }
-        }
-    }
-
-    private var perGameSection: some View {
-        Section {
-            Toggle("Enable CPU Optimizations", isOn: $cpuOpt)
-                .onChange(of: cpuOpt) { _, on in guard !loading else { return }; set("cpu_opt", on ? "1" : "0") }
-            Toggle("Force Software Page Table", isOn: $forceSoftwarePageTable)
-                .onChange(of: forceSoftwarePageTable) { _, on in guard !loading else { return }; set("force_software_page_table", on ? "1" : "0") }
-            Picker("Cache JIT por thread", selection: Binding(
-                get: { jitCacheMiB },
-                set: { size in
-                    if set("cpu_jit_cache_mib", String(size)) { jitCacheMiB = size }
-                }
-            )) {
-                Text("Auto").tag(0)
-                ForEach(jitCacheSizes, id: \.self) { size in
-                    Text("\(size) MiB").tag(size)
-                }
-                // Display manually edited legacy values without silently
-                // changing the saved budget just by opening this screen.
-                if jitCacheMiB != 0, !jitCacheSizes.contains(jitCacheMiB) {
-                    Text("\(jitCacheMiB) MiB (atual)").tag(jitCacheMiB).disabled(true)
-                }
-            }
-            .pickerStyle(.menu)
-            .accessibilityIdentifier("game-jit-cache")
-            Text("Auto usa \(jitCacheAutoMiB) MiB para este jogo, conforme o padrão do core. Valores menores permitem mais threads na memória JIT disponível, mas podem aumentar a recompilação de código. Aplicado ao reiniciar este jogo.")
-                .font(.caption).foregroundStyle(.secondary)
-            Picker("Precisão de Renderização", selection: Binding(
-                get: { highAccuracy },
-                set: { high in
-                    if set("high_accuracy", high ? "1" : "0") { highAccuracy = high }
-                }
-            )) {
-                Text("Padrão (Standard)").tag(false)
-                Text("Alta (High)").tag(true)
-            }
-            .pickerStyle(.menu)
-            .accessibilityIdentifier("game-rendering-accuracy")
-            Text("Rendering Accuracy: Alta pode melhorar a precisão dos gráficos, com possível redução de desempenho.")
-                .font(.caption).foregroundStyle(.secondary)
-            Toggle("Disable Surface Sync", isOn: $disableSurfaceSync)
-                .onChange(of: disableSurfaceSync) { _, on in guard !loading else { return }; set("disable_surface_sync", on ? "1" : "0") }
-            Toggle("Asynchronous Pipeline Compilation", isOn: $asyncPipeline)
-                .onChange(of: asyncPipeline) { _, on in guard !loading else { return }; set("async_pipeline_compilation", on ? "1" : "0") }
-            Picker("Internal Resolution Upscaling", selection: $resolutionIdx) {
-                ForEach(resolutions.indices, id: \.self) { i in
-                    Text(resolutions[i].formatted() + "x").tag(i)
-                }
-            }
-            .pickerStyle(.menu)
-            .onChange(of: resolutionIdx) { _, i in
-                guard !loading else { return }
-                set("resolution_multiplier", String(resolutions[i]))
-            }
-            Picker("Anisotropic Filtering", selection: $anisotropicIdx) {
-                ForEach(anisotropics.indices, id: \.self) { i in
-                    Text("\(anisotropics[i])x").tag(i)
-                }
-            }
-            .pickerStyle(.menu)
-            .onChange(of: anisotropicIdx) { _, i in
-                guard !loading else { return }
-                set("anisotropic_filtering", String(anisotropics[i]))
-            }
-            Toggle("Enable Shader Cache", isOn: $shaderCache)
-                .onChange(of: shaderCache) { _, on in guard !loading else { return }; set("shader_cache", on ? "1" : "0") }
-            Button {
-                clearShaders()
-            } label: {
-                HStack {
-                    Label("Clear Shaders", systemImage: "trash")
-                    Spacer()
-                    if clearing { ProgressView() }
-                }
-            }
-            .disabled(clearing)
-            Toggle("FPS Hack", isOn: $fpsHack)
-                .onChange(of: fpsHack) { _, on in guard !loading else { return }; set("fps_hack", on ? "1" : "0") }
-            Toggle("Limit to 30 FPS", isOn: $frameCap30)
-                .onChange(of: frameCap30) { _, on in guard !loading else { return }; set("frame_cap_30", on ? "1" : "0") }
-            Toggle("Enable Texture Cache", isOn: $textureCache)
-                .onChange(of: textureCache) { _, on in guard !loading else { return }; set("texture_cache", on ? "1" : "0") }
-            Toggle("Half-Resolution Textures", isOn: $halfResTextures)
-                .onChange(of: halfResTextures) { _, on in guard !loading else { return }; set("half_res_textures", on ? "1" : "0") }
-        } header: {
-            Text("CPU e GPU (este jogo)")
-        } footer: {
-            Text("Aplicados quando este jogo for (re)iniciado.")
-        }
-    }
-
-    private var loggingSection: some View {
-        Section {
-            Picker("Log Level", selection: $logLevel) {
-                ForEach(0..<logLevels.count, id: \.self) { i in
-                    Text(LocalizedStringKey(logLevels[i])).tag(i)
-                }
-            }
-            .pickerStyle(.menu)
-            .onChange(of: logLevel) { _, lvl in
-                guard !loading else { return }
-                set("log_level", String(lvl))
-            }
-            .accessibilityIdentifier("game-log-level")
-            Toggle("Log Compatibility Warnings", isOn: $logCompatWarn)
-                .onChange(of: logCompatWarn) { _, on in guard !loading else { return }; set("log_compat_warn", on ? "1" : "0") }
-                .disabled(logLevel == 6)
-        } header: {
-            Text("Logs (este jogo)")
-        } footer: {
-            Text("Desativados por padrão. Aplicados ao iniciar este jogo. Os modos Compat Fix, Performance Fix e Graphics Fix ativam os logs automaticamente durante o diagnóstico.")
-        }
-    }
-
-    private var globalSection: some View {
-        Section {
-            Toggle("Show Shader Compilation Hint", isOn: $showCompileHint)
-                .onChange(of: showCompileHint) { _, on in guard !loading else { return }; set("show_compile_shaders", on ? "1" : "0") }
-            Toggle("Performance Overlay", isOn: $perfOverlay)
-                .accessibilityIdentifier("performance-overlay-toggle")
-                .onChange(of: perfOverlay) { _, on in
-                    guard !loading else { return }
-                    UserDefaults.standard.set(on, forKey: "emulation.showStatus")
-                }
-            Text("FPS, tempo por quadro e memória. No iPhone, CPU e GPU compartilham RAM; as alocações da GPU são mostradas separadamente, sem somar ao total.")
-                .font(.caption).foregroundStyle(.secondary)
-        } header: {
-            Text("Emulador (todos os jogos)")
-        } footer: {
-            Text("Estes itens são globais no núcleo: valem para todos os jogos.")
-        }
-    }
-
-    private var customSection: some View {
-        Section {
-            if hasCustom {
-                Button("Remover config própria (restaurar padrões)", role: .destructive) {
-                    confirmReset = true
-                }
-            }
-            if !message.isEmpty {
-                Text(message).font(.caption).foregroundStyle(.orange)
-            }
-        }
-        .confirmationDialog("Remover a configuração própria deste jogo?", isPresented: $confirmReset, titleVisibility: .visible) {
-            Button("Remover", role: .destructive) { reset() }
         }
     }
 
