@@ -17,6 +17,7 @@ final class DeviceStatus: ObservableObject {
     @Published private(set) var batteryLevel: Float = -1
     @Published private(set) var batteryState: UIDevice.BatteryState = .unknown
     @Published private(set) var link: Link = .other
+    @Published private(set) var lowPowerMode = ProcessInfo.processInfo.isLowPowerModeEnabled
 
     private let monitor = NWPathMonitor()
 
@@ -28,6 +29,9 @@ final class DeviceStatus: ObservableObject {
             center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
                 MainActor.assumeIsolated { self?.refreshBattery() }
             }
+        }
+        center.addObserver(forName: .NSProcessInfoPowerStateDidChange, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.lowPowerMode = ProcessInfo.processInfo.isLowPowerModeEnabled }
         }
         monitor.pathUpdateHandler = { [weak self] path in
             let link: Link
@@ -48,15 +52,16 @@ final class DeviceStatus: ObservableObject {
     var isCharging: Bool { batteryState == .charging || batteryState == .full }
     var batteryPercent: Int? { batteryLevel < 0 ? nil : Int((batteryLevel * 100).rounded()) }
 
-    var batterySymbol: String {
-        guard let percent = batteryPercent else { return "battery.100" }
-        switch percent {
-        case 88...: return "battery.100"
-        case 63..<88: return "battery.75"
-        case 38..<63: return "battery.50"
-        case 13..<38: return "battery.25"
-        default: return "battery.0"
-        }
+    /// Fill level for the variable-value battery symbol (1 when unknown).
+    var batteryFill: Double { batteryLevel < 0 ? 1 : Double(max(0, min(1, batteryLevel))) }
+
+    /// Follows the system battery colors: green charging, yellow/orange in
+    /// Low Power Mode, red when low, otherwise the normal (white/black) fill.
+    var batteryFillColor: Color {
+        if isCharging { return .green }
+        if lowPowerMode { return .orange }
+        if let percent = batteryPercent, percent <= 20 { return .red }
+        return .primary
     }
 
     var linkSymbol: String {
@@ -138,11 +143,14 @@ struct LibraryTopBar: View {
             }
             Image(systemName: status.linkSymbol).font(.system(size: 13, weight: .semibold))
             HStack(spacing: 2) {
-                Image(systemName: status.batterySymbol)
-                    .font(.system(size: 15, weight: .regular))
-                    .foregroundStyle(batteryColor)
+                Image(systemName: "battery.100percent", variableValue: status.batteryFill)
+                    .symbolRenderingMode(.palette)
+                    .foregroundStyle(Color.primary.opacity(0.55), status.batteryFillColor)
+                    .font(.system(size: 17, weight: .regular))
                 if status.isCharging {
-                    Image(systemName: "bolt.fill").font(.system(size: 9, weight: .bold))
+                    Image(systemName: "bolt.fill")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(status.batteryFillColor)
                 }
             }
         }
@@ -154,13 +162,6 @@ struct LibraryTopBar: View {
         showDate
             ? Date.FormatStyle().day().month(.twoDigits).year(.twoDigits).hour().minute()
             : Date.FormatStyle().hour().minute()
-    }
-
-    private var batteryColor: Color {
-        if let percent = status.batteryPercent, percent <= 20, !status.isCharging {
-            return EmulatorTheme.warning
-        }
-        return .primary
     }
 
     private var jitSymbol: String {
@@ -327,6 +328,12 @@ struct GameCover: View {
 
 // MARK: - Landscape carousel
 
+enum LibraryMotion {
+    /// Quick, lightly damped spring: retargets smoothly when the focus
+    /// changes again mid-flight (rapid back-and-forth swipes).
+    static var move: Animation { .spring(response: 0.26, dampingFraction: 0.88) }
+}
+
 /// A centered cover row driven directly by the focused game and a drag
 /// offset (no ScrollView / scroll-position state), so swipes and gamepad
 /// moves can never get out of step with each other.
@@ -360,18 +367,18 @@ struct GameCarousel<Menu: View>: View {
                         let relative = CGFloat(i - current) + drag / stride
                         let distance = min(abs(relative), 1)
                         let depth = Double(abs(relative))
-                        let shade = Double(distance)
                         card(games[i], width: width)
                             .scaleEffect(1 - 0.14 * distance)
-                            .brightness(-0.25 * shade)
-                            .saturation(1.0 - 0.25 * shade)
+                            // Opacity is far cheaper than brightness/saturation
+                            // filters, which made quick swipes stutter.
+                            .opacity(1.0 - 0.4 * Double(distance))
                             .offset(x: relative * stride)
                             .zIndex(-depth)
                             .onTapGesture {
                                 if i == current {
                                     onLaunch(games[i].titleId)
                                 } else {
-                                    withAnimation(.smooth(duration: 0.38)) { focusedID = games[i].titleId }
+                                    withAnimation(LibraryMotion.move) { focusedID = games[i].titleId }
                                 }
                             }
                             .contextMenu { menu(games[i]) }
@@ -395,7 +402,7 @@ struct GameCarousel<Menu: View>: View {
     }
 
     private func dragGesture(stride: CGFloat, current: Int) -> some Gesture {
-        DragGesture(minimumDistance: 10)
+        DragGesture(minimumDistance: 3)
             .onChanged { value in
                 var translation = value.translation.width
                 // Rubber-band past the first and last game.
@@ -411,7 +418,7 @@ struct GameCarousel<Menu: View>: View {
                 }
                 steps = max(-4, min(4, steps))
                 let target = max(0, min(games.count - 1, current + steps))
-                withAnimation(.smooth(duration: 0.4)) {
+                withAnimation(LibraryMotion.move) {
                     drag = 0
                     focusedID = games[target].titleId
                 }

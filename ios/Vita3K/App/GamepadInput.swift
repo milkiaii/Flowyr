@@ -40,7 +40,7 @@ final class GamepadInput: ObservableObject {
     func start(owner: AnyHashable) {
         owners.insert(owner)
         guard timer == nil else { return }
-        let timer = Timer(timeInterval: 1.0 / 30.0, repeats: true) { [weak self] _ in
+        let timer = Timer(timeInterval: 1.0 / 60.0, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.poll() }
         }
         RunLoop.main.add(timer, forMode: .common)
@@ -91,8 +91,8 @@ final class GamepadInput: ObservableObject {
                 heldSince[button] = now
                 lastRepeat[button] = now
             } else if Self.repeatable.contains(button),
-                      let since = heldSince[button], now.timeIntervalSince(since) > 0.4,
-                      now.timeIntervalSince(lastRepeat[button] ?? now) > 0.12 {
+                      let since = heldSince[button], now.timeIntervalSince(since) > 0.32,
+                      now.timeIntervalSince(lastRepeat[button] ?? now) > 0.1 {
                 emit(button)
                 lastRepeat[button] = now
             }

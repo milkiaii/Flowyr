@@ -237,7 +237,7 @@ struct LibraryView: View {
         }
         let next = min(max(index + delta, 0), ids.count - 1)
         if showsCarousel {
-            withAnimation(.smooth(duration: 0.38)) { focusedID = ids[next] }
+            withAnimation(LibraryMotion.move) { focusedID = ids[next] }
         } else {
             if next != index { UISounds.shared.play(.move) }
             focusedID = ids[next]
