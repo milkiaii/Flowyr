@@ -123,7 +123,7 @@ struct LibraryView: View {
             }
             .refreshable { controller.refreshApps() }
         } else if showsCarousel {
-            GameCarousel(games: games, initialID: lastPlayed, scrolledID: $focusedID, onLaunch: launch) { game in
+            GameCarousel(games: games, initialID: lastPlayed, focusedID: $focusedID, onLaunch: launch) { game in
                 gameMenu(game)
             }
             .padding(.bottom, 84)
@@ -149,7 +149,7 @@ struct LibraryView: View {
             }
             .padding(.horizontal, 14).padding(.vertical, 10)
             .background(EmulatorTheme.panel, in: Capsule())
-            Button { favoritesOnly.toggle() } label: {
+            Button { UISounds.shared.play(.tap); favoritesOnly.toggle() } label: {
                 Image(systemName: favoritesOnly ? "star.fill" : "star")
                     .font(.system(size: 16, weight: .semibold))
                     .frame(width: 42, height: 42)
@@ -237,8 +237,9 @@ struct LibraryView: View {
         }
         let next = min(max(index + delta, 0), ids.count - 1)
         if showsCarousel {
-            withAnimation(.snappy) { focusedID = ids[next] }
+            withAnimation(.smooth(duration: 0.38)) { focusedID = ids[next] }
         } else {
+            if next != index { UISounds.shared.play(.move) }
             focusedID = ids[next]
         }
     }
@@ -254,8 +255,12 @@ struct LibraryView: View {
             else { moveFocus(by: 0) }
         case .x:
             if let id = focusedID, let game = games.first(where: { $0.titleId == id }) { configGame = game }
-        case .y: withAnimation(.snappy) { listLayout.toggle() }
-        case .start: openSettings()
+        case .y:
+            UISounds.shared.play(.tap)
+            withAnimation(.snappy) { listLayout.toggle() }
+        case .start:
+            UISounds.shared.play(.open)
+            openSettings()
         case .select:
             if controller.sessionInitialized, !controller.isImporting { importContent() }
         default: break

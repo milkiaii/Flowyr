@@ -445,6 +445,7 @@ final class EmulationViewController: UIViewController {
             frameSampler.reset()
         }
         homeMenu.isHidden = false
+        UISounds.shared.play(.open)
         view.bringSubviewToFront(homeMenu)
         setHomeFocus(0)
     }
@@ -501,8 +502,12 @@ final class EmulationViewController: UIViewController {
             return
         }
         switch button {
-        case .up: setHomeFocus(homeFocusIndex - 1)
-        case .down: setHomeFocus(homeFocusIndex + 1)
+        case .up:
+            UISounds.shared.play(.move)
+            setHomeFocus(homeFocusIndex - 1)
+        case .down:
+            UISounds.shared.play(.move)
+            setHomeFocus(homeFocusIndex + 1)
         case .confirm: homeButtons[homeFocusIndex].sendActions(for: .touchUpInside)
         case .back, .start: resumeGame()
         default: break
@@ -590,6 +595,7 @@ final class EmulationViewController: UIViewController {
         guard vita3k_ios_session_set_pause(1, 0) == 0 else { return }
         userPaused = false
         homeMenu.isHidden = true
+        UISounds.shared.play(.back)
         frameSampler.reset()
         // Back in the game: hide the HOME button again if the setting is on.
         homeShownTemporarily = false

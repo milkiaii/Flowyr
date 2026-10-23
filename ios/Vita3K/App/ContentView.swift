@@ -16,7 +16,7 @@ struct ContentView: View {
     @State private var launchError: String?
 
     var body: some View {
-        LibraryView(launch: launch, importContent: { showImporter = true }, openSettings: { showSettings = true },
+        LibraryView(launch: launch, importContent: { showImporter = true }, openSettings: { UISounds.shared.play(.open); showSettings = true },
                     inputEnabled: surfaceRequest == nil && !showSettings && !showImporter && !launchInFlight)
         .disabled(controller.isImporting || controller.isDeleting || controller.isSyncingSaves || launchInFlight)
         .task {
@@ -35,7 +35,10 @@ struct ContentView: View {
         }
         .onChange(of: pad.lastEvent) { _, event in
             // B closes the settings sheet.
-            if showSettings, event?.button == .back { showSettings = false }
+            if showSettings, event?.button == .back {
+                UISounds.shared.play(.back)
+                showSettings = false
+            }
         }
         .onChange(of: scenePhase) { _, phase in
             switch phase {
@@ -85,7 +88,7 @@ struct ContentView: View {
                 })
                 .toolbar {
                     ToolbarItem(placement: .confirmationAction) {
-                        Button("OK") { showSettings = false }
+                        Button("OK") { UISounds.shared.play(.back); showSettings = false }
                             .accessibilityIdentifier("settings-done")
                     }
                 }
@@ -156,6 +159,7 @@ struct ContentView: View {
         guard !launchInFlight, !controller.isImporting, !controller.isDeleting, !controller.memRunning,
               !controller.isSyncingSaves, !controller.isPreparingGame, !controller.isGamePresented,
               surfaceRequest == nil, controller.sessionInitialized else { return }
+        UISounds.shared.play(.confirm)
         launchInFlight = true
         controller.isPreparingGame = true
         Task {

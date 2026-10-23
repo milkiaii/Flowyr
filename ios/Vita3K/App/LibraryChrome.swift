@@ -210,7 +210,10 @@ struct LibraryFloatingBar: View {
     }
 
     private func barButton(_ symbol: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
+        Button {
+            UISounds.shared.play(.tap)
+            action()
+        } label: {
             Image(systemName: symbol)
                 .font(.system(size: 20, weight: .semibold))
                 .foregroundStyle(.primary)
@@ -280,23 +283,41 @@ struct GameCover: View {
     }
 
     var body: some View {
-        ZStack {
-            LinearGradient(colors: [EmulatorTheme.artworkBackground, EmulatorTheme.panel],
-                           startPoint: .topLeading, endPoint: .bottomTrailing)
-            if let image {
-                if isWide {
-                    Image(uiImage: image).resizable().scaledToFill()
-                } else {
-                    Image(uiImage: image).resizable().scaledToFit().padding(10)
+        Group {
+            if classicIcons {
+                // Classic icon: no backing box, fully rounded like an app icon.
+                GeometryReader { geo in
+                    Group {
+                        if let image {
+                            Image(uiImage: image).resizable().scaledToFill()
+                        } else {
+                            EmulatorTheme.panel
+                        }
+                    }
+                    .frame(width: geo.size.width, height: geo.size.height)
+                    .clipShape(RoundedRectangle(cornerRadius: geo.size.width * 0.24, style: .continuous))
                 }
+                .aspectRatio(1, contentMode: .fit)
             } else {
-                Image(systemName: "gamecontroller.fill")
-                    .font(.system(size: 32, weight: .light))
-                    .foregroundStyle(Color.secondary.opacity(0.7))
+                ZStack {
+                    LinearGradient(colors: [EmulatorTheme.artworkBackground, EmulatorTheme.panel],
+                                   startPoint: .topLeading, endPoint: .bottomTrailing)
+                    if let image {
+                        if isWide {
+                            Image(uiImage: image).resizable().scaledToFill()
+                        } else {
+                            Image(uiImage: image).resizable().scaledToFit().padding(10)
+                        }
+                    } else {
+                        Image(systemName: "gamecontroller.fill")
+                            .font(.system(size: 32, weight: .light))
+                            .foregroundStyle(Color.secondary.opacity(0.7))
+                    }
+                }
+                .aspectRatio(16.0 / 9.0, contentMode: .fit)
+                .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
             }
         }
-        .aspectRatio(classicIcons ? 1 : 16.0 / 9.0, contentMode: .fit)
-        .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
         .accessibilityHidden(true)
         .task(id: "\(titleID)|\(classicIcons)") {
             image = await GameCoverLoader.load(titleID, classic: classicIcons)
@@ -306,53 +327,93 @@ struct GameCover: View {
 
 // MARK: - Landscape carousel
 
+/// A centered cover row driven directly by the focused game and a drag
+/// offset (no ScrollView / scroll-position state), so swipes and gamepad
+/// moves can never get out of step with each other.
 struct GameCarousel<Menu: View>: View {
     let games: [CoreController.AppInfo]
     let initialID: String?
     /// The centered game. Shared with the library so a gamepad can move it.
-    @Binding var scrolledID: String?
+    @Binding var focusedID: String?
     let onLaunch: (String) -> Void
     @ViewBuilder let menu: (CoreController.AppInfo) -> Menu
 
     @AppStorage(GameIconStyle.preference) private var classicIcons = false
-    /// Local scroll position. It is committed to `scrolledID` only when the
-    /// scroll settles, so the library is not re-rendered (and the scroll
-    /// interrupted) on every cover that passes the center.
-    @State private var position: String?
+    @State private var drag: CGFloat = 0
+
+    private var currentIndex: Int {
+        games.firstIndex(where: { $0.titleId == focusedID }) ?? 0
+    }
 
     var body: some View {
         GeometryReader { proxy in
             let width = cardWidth(in: proxy.size)
-            ScrollView(.horizontal) {
-                LazyHStack(spacing: 22) {
-                    ForEach(games) { game in
-                        card(game, width: width).id(game.titleId)
+            let spacing: CGFloat = 22
+            let stride = width + spacing
+            let current = min(currentIndex, max(games.count - 1, 0))
+            let reach = Int(ceil(proxy.size.width / stride / 2)) + 1
+            let lo = max(0, current - reach)
+            let hi = min(games.count - 1, current + reach)
+            ZStack {
+                if !games.isEmpty, lo <= hi {
+                    ForEach(lo...hi, id: \.self) { i in
+                        let relative = CGFloat(i - current) + drag / stride
+                        let distance = min(abs(relative), 1)
+                        card(games[i], width: width)
+                            .scaleEffect(1 - 0.14 * distance)
+                            .brightness(-0.25 * distance)
+                            .saturation(1 - 0.25 * distance)
+                            .offset(x: relative * stride)
+                            .zIndex(-Double(abs(relative)))
+                            .onTapGesture {
+                                if i == current {
+                                    onLaunch(games[i].titleId)
+                                } else {
+                                    withAnimation(.smooth(duration: 0.38)) { focusedID = games[i].titleId }
+                                }
+                            }
+                            .contextMenu { menu(games[i]) }
                     }
                 }
-                .scrollTargetLayout()
             }
-            // Inset the content (not the layout) so snapping stays measured
-            // on the covers themselves.
-            .safeAreaPadding(.horizontal, max(0, (proxy.size.width - width) / 2))
-            .scrollTargetBehavior(.viewAligned)
-            .scrollPosition(id: $position, anchor: .center)
-            .scrollIndicators(.hidden)
-            .sensoryFeedback(.selection, trigger: position)
-            .onScrollPhaseChange { _, phase in
-                if phase == .idle, let position, position != scrolledID { scrolledID = position }
-            }
-            // Gamepad (or anything else) moved the focus: follow it.
-            .onChange(of: scrolledID) { _, new in
-                guard let new, new != position else { return }
-                withAnimation(.snappy) { position = new }
-            }
-            .onAppear {
-                let start = games.contains(where: { $0.titleId == scrolledID }) ? scrolledID
-                    : (games.contains(where: { $0.titleId == initialID }) ? initialID : games.first?.titleId)
-                position = start
-                scrolledID = start
+            .frame(width: proxy.size.width, height: proxy.size.height)
+            .contentShape(Rectangle())
+            .gesture(dragGesture(stride: stride, current: current))
+            .clipped()
+        }
+        .sensoryFeedback(.selection, trigger: focusedID)
+        .onChange(of: focusedID) { old, new in
+            if old != nil, new != nil { UISounds.shared.play(.move) }
+        }
+        .onAppear {
+            if !games.contains(where: { $0.titleId == focusedID }) {
+                focusedID = games.contains(where: { $0.titleId == initialID }) ? initialID : games.first?.titleId
             }
         }
+    }
+
+    private func dragGesture(stride: CGFloat, current: Int) -> some Gesture {
+        DragGesture(minimumDistance: 10)
+            .onChanged { value in
+                var translation = value.translation.width
+                // Rubber-band past the first and last game.
+                if (current == 0 && translation > 0) || (current == games.count - 1 && translation < 0) {
+                    translation *= 0.35
+                }
+                drag = translation
+            }
+            .onEnded { value in
+                var steps = Int((-value.predictedEndTranslation.width / stride).rounded())
+                if steps == 0, abs(value.translation.width) > 40 {
+                    steps = value.translation.width < 0 ? 1 : -1
+                }
+                steps = max(-4, min(4, steps))
+                let target = max(0, min(games.count - 1, current + steps))
+                withAnimation(.smooth(duration: 0.4)) {
+                    drag = 0
+                    focusedID = games[target].titleId
+                }
+            }
     }
 
     private func cardWidth(in size: CGSize) -> CGFloat {
@@ -373,19 +434,6 @@ struct GameCarousel<Menu: View>: View {
                 .foregroundStyle(.secondary)
         }
         .frame(width: width)
-        .visualEffect { content, proxy in
-            let frame = proxy.frame(in: .scrollView(axis: .horizontal))
-            let viewport = proxy.bounds(of: .scrollView(axis: .horizontal)) ?? .zero
-            let stride = max(frame.width + 22, 1)
-            let distance = Double(min(abs(frame.midX - viewport.midX) / stride, 1))
-            return content
-                .scaleEffect(CGFloat(1 - 0.14 * distance))
-                .brightness(-0.25 * distance)
-                .saturation(1 - 0.25 * distance)
-        }
-        .contentShape(.rect)
-        .onTapGesture { onLaunch(game.titleId) }
-        .contextMenu { menu(game) }
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isButton)
         .accessibilityIdentifier("game-\(game.titleId)")

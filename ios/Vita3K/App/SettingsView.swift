@@ -11,6 +11,7 @@ struct SettingsView: View {
     @AppStorage(AppOrientation.preference) private var forceLandscape = false
     @AppStorage(EmulatorTheme.lightModePreference) private var lightMode = false
     @AppStorage(GameIconStyle.preference) private var classicIcons = false
+    @AppStorage(UISounds.preference) private var uiSounds = true
     @AppStorage(AppLanguage.preference) private var language = AppLanguage.english.rawValue
 
     var body: some View {
@@ -30,6 +31,8 @@ struct SettingsView: View {
                 EmulatorCard(title: "Aparência") {
                     Toggle("Tema claro", isOn: $lightMode)
                         .accessibilityIdentifier("light-mode-toggle")
+                    Toggle("Sons da interface", isOn: $uiSounds)
+                        .accessibilityIdentifier("ui-sounds-toggle")
                     Picker("Ícones dos jogos", selection: $classicIcons) {
                         Text("Arte larga").tag(false)
                         Text("Ícone clássico").tag(true)
