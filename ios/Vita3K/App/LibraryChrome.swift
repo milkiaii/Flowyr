@@ -359,12 +359,13 @@ struct GameCarousel<Menu: View>: View {
                     ForEach(lo...hi, id: \.self) { i in
                         let relative = CGFloat(i - current) + drag / stride
                         let distance = min(abs(relative), 1)
+                        let depth: Double = Double(abs(relative))
                         card(games[i], width: width)
                             .scaleEffect(1 - 0.14 * distance)
                             .brightness(-0.25 * distance)
                             .saturation(1 - 0.25 * distance)
                             .offset(x: relative * stride)
-                            .zIndex(-Double(abs(relative)))
+                            .zIndex(-depth)
                             .onTapGesture {
                                 if i == current {
                                     onLaunch(games[i].titleId)
