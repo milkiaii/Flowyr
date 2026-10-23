@@ -979,6 +979,29 @@ int vita3k_ios_session_trophies(char *out, size_t out_size) {
     return fits ? 0 : -4;
 }
 
+int vita3k_ios_session_active_trophy_id(char *out, size_t out_size) {
+    auto &s = state();
+    std::lock_guard<std::mutex> lock(s.lock);
+    if (!s.initialized || !s.emuenv)
+        return -1;
+    std::string id;
+    {
+        auto &trophies = s.emuenv->np.trophy_state;
+        std::lock_guard<std::mutex> trophy_lock(trophies.access_mutex);
+        for (const auto &context : trophies.contexts) {
+            if (!context.valid)
+                continue;
+            id = fmt::format("{}_{:0>2d}", std::string(context.comm_id.data, 9), context.comm_id.num);
+            break;
+        }
+    }
+    if (id.empty())
+        return 1;
+    bool fits = false;
+    write_report_or(out, out_size, id, fits);
+    return fits ? 0 : -4;
+}
+
 int vita3k_ios_session_pop_trophy(char *meta, size_t meta_size, uint8_t *icon, size_t icon_size, size_t *icon_len) {
     app::PendingTrophy trophy;
     if (!app::pop_pending_trophy(trophy))

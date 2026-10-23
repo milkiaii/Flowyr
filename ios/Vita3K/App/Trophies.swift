@@ -72,6 +72,15 @@ extension Vita3KCore {
         return rc == 0 ? CText.string(buffer) : ""
     }
 
+    /// Trophy set of the running game, if it has one yet.
+    static func activeTrophyID() -> String? {
+        var buffer = [Int8](repeating: 0, count: 64)
+        let rc = buffer.withUnsafeMutableBufferPointer { ptr in
+            vita3k_ios_session_active_trophy_id(ptr.baseAddress!, 64)
+        }
+        return rc == 0 ? CText.string(buffer) : nil
+    }
+
     static func popTrophy() -> TrophyUnlock? {
         var meta = [Int8](repeating: 0, count: 2048)
         var icon = [UInt8](repeating: 0, count: 1 << 20)
@@ -202,6 +211,8 @@ struct ProgressBar: View {
 // MARK: - Browser
 
 struct TrophiesView: View {
+    /// Opens straight into this trophy set (the running game).
+    var openID: String?
     let onClose: () -> Void
     @StateObject private var store = TrophyStore()
     @ObservedObject private var pad = GamepadInput.shared
@@ -229,7 +240,12 @@ struct TrophiesView: View {
         .background(EmulatorTheme.background)
         .tint(EmulatorTheme.accent)
         .preferredColorScheme(lightMode ? .light : .dark)
-        .task { await store.reload() }
+        .task {
+            await store.reload()
+            if let openID, let match = store.collections.first(where: { $0.id == openID }) {
+                selected = match
+            }
+        }
         .onAppear { pad.start(owner: owner) }
         .onDisappear { pad.stop(owner: owner) }
         .onChange(of: pad.lastEvent) { _, event in

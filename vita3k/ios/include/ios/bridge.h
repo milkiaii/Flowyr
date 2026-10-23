@@ -249,6 +249,11 @@ int vita3k_ios_session_get_apps(char *out, size_t out_size);
 /// initialized, -4 when the buffer is too small.
 int vita3k_ios_session_trophies(char *out, size_t out_size);
 
+/// Trophy set id ("NPWR00000_00") of the running game, once it has created
+/// its trophy context. 0 with the id in `out`, 1 when there is none yet,
+/// -1 when not initialized, -4 when the buffer is too small.
+int vita3k_ios_session_active_trophy_id(char *out, size_t out_size);
+
 /// Pops the oldest trophy unlocked during play. `meta` receives
 /// "<np_com_id>\t<trophy_id>\t<grade 1-4>\t<name>\t<detail>" and the PNG icon
 /// goes to `icon` (length in `icon_len`). Returns 1 when one was popped,

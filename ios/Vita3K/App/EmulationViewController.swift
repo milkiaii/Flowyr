@@ -579,7 +579,7 @@ final class EmulationViewController: UIViewController {
     /// Trophy browser over the paused game.
     private func openTrophies() {
         guard presentedViewController == nil else { return }
-        let host = UIHostingController(rootView: TrophiesView(onClose: { [weak self] in
+        let host = UIHostingController(rootView: TrophiesView(openID: Vita3KCore.activeTrophyID(), onClose: { [weak self] in
             self?.dismiss(animated: true)
         }))
         present(host, animated: true)
