@@ -77,9 +77,25 @@
 #endif
 
 #include <algorithm>
+#include <deque>
 #include <fstream>
+#include <mutex>
 
 namespace app {
+
+namespace {
+std::mutex pending_trophy_mutex;
+std::deque<PendingTrophy> pending_trophies;
+} // namespace
+
+bool pop_pending_trophy(PendingTrophy &out) {
+    std::lock_guard lock(pending_trophy_mutex);
+    if (pending_trophies.empty())
+        return false;
+    out = std::move(pending_trophies.front());
+    pending_trophies.pop_front();
+    return true;
+}
 
 static float sdl_axis_to_float(int16_t axis, float mult) {
     const float unsigned_axis = static_cast<float>(axis - INT16_MIN);
@@ -668,6 +684,16 @@ void apply_renderer_config(EmuEnvState &emuenv) {
         });
 
     emuenv.np.trophy_state.add_trophy_unlock_callback([&emuenv](NpTrophyUnlockCallbackData &data) {
+#if defined(__APPLE__) && TARGET_OS_IOS
+        // On iOS the shell shows its own notification (same design as the app).
+        {
+            std::lock_guard lock(pending_trophy_mutex);
+            if (pending_trophies.size() < 32)
+                pending_trophies.push_back({ data.np_com_id, data.trophy_id, data.trophy_name, data.trophy_detail,
+                    static_cast<int>(data.trophy_kind), data.icon_buf });
+        }
+        return;
+#endif
         if (!emuenv.overlay_manager)
             return;
         auto notif = emuenv.overlay_manager->get<overlay::trophy_notification>();

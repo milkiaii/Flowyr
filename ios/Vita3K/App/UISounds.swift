@@ -17,6 +17,7 @@ final class UISounds {
         case confirm = "ui-confirm"
         case back = "ui-back"
         case open = "ui-open"
+        case trophy = "ui-trophy"
 
         var volume: Float {
             switch self {
@@ -25,6 +26,7 @@ final class UISounds {
             case .confirm: 0.7
             case .back: 0.6
             case .open: 0.6
+            case .trophy: 0.8
             }
         }
     }

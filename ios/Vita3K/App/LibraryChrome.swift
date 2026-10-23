@@ -315,10 +315,11 @@ struct LibraryFloatingBar: View {
     let onLayout: () -> Void
     let isAddOpen: Bool
     let onAdd: () -> Void
+    let onTrophies: () -> Void
     let onSettings: () -> Void
 
     var body: some View {
-        HStack(spacing: 26) {
+        HStack(spacing: 22) {
             barButton(layoutSymbol, action: onLayout)
                 .accessibilityLabel(Text(layoutLabel))
                 .accessibilityIdentifier("layout-toggle")
@@ -326,6 +327,9 @@ struct LibraryFloatingBar: View {
                 .disabled(importDisabled)
             .accessibilityLabel(Text("Importar"))
             .accessibilityIdentifier("import-content")
+            barButton("trophy.fill", action: onTrophies)
+                .accessibilityLabel(Text("Troféus"))
+                .accessibilityIdentifier("open-trophies")
             barButton("gearshape.fill", action: onSettings)
                 .accessibilityLabel(Text("Opções"))
                 .accessibilityIdentifier("open-settings")

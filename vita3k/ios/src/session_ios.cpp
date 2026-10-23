@@ -69,6 +69,7 @@
 #include <kernel/thread/thread_state.h>
 #include <motion/event_handler.h>
 #include <modules/module_parent.h>
+#include <np/trophy/collection.h>
 #include <packages/functions.h>
 #include <packages/license.h>
 #include <packages/pkg.h>
@@ -933,6 +934,66 @@ int vita3k_ios_session_get_apps(char *out, size_t out_size) {
     bool fits = false;
     write_report_or(out, out_size, report, fits);
     return fits ? 0 : -4;
+}
+
+namespace {
+std::string clean_field(std::string text) {
+    for (char &c : text)
+        if (c == '\t' || c == '\n' || c == '\r')
+            c = ' ';
+    return text;
+}
+} // namespace
+
+int vita3k_ios_session_trophies(char *out, size_t out_size) {
+    auto &s = state();
+    std::lock_guard<std::mutex> lock(s.lock);
+    if (!s.initialized || !s.emuenv)
+        return -1;
+
+    np::trophy::CollectionSource source;
+    source.io = &s.emuenv->io;
+    source.vita_fs_path = s.emuenv->vita_fs_path;
+    source.user_id = s.emuenv->io.user_id;
+    source.lang = static_cast<uint32_t>(s.emuenv->cfg.sys_lang);
+
+    std::string report;
+    try {
+        for (const auto &id : np::trophy::list_collection_ids(source)) {
+            np::trophy::CollectionSnapshot snap;
+            if (!np::trophy::load_collection(source, id, snap))
+                continue;
+            report += fmt::format("C\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n", id, clean_field(snap.title), snap.icon_path,
+                snap.total, snap.unlocked, snap.grade_unlocked[1], snap.grade_unlocked[2], snap.grade_unlocked[3], snap.grade_unlocked[4]);
+            for (const auto &t : snap.trophies) {
+                report += fmt::format("T\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n", t.id, t.grade, t.hidden ? 1 : 0, t.earned ? 1 : 0,
+                    t.timestamp, clean_field(t.name), clean_field(t.detail), t.icon_path);
+            }
+        }
+    } catch (const std::exception &error) {
+        LOG_ERROR("iOS trophies: {}", error.what());
+    }
+
+    bool fits = false;
+    write_report_or(out, out_size, report, fits);
+    return fits ? 0 : -4;
+}
+
+int vita3k_ios_session_pop_trophy(char *meta, size_t meta_size, uint8_t *icon, size_t icon_size, size_t *icon_len) {
+    app::PendingTrophy trophy;
+    if (!app::pop_pending_trophy(trophy))
+        return 0;
+    const std::string line = fmt::format("{}\t{}\t{}\t{}\t{}", clean_field(trophy.np_com_id), clean_field(trophy.trophy_id),
+        trophy.grade, clean_field(trophy.name), clean_field(trophy.detail));
+    if (meta && meta_size > 0)
+        std::snprintf(meta, meta_size, "%s", line.c_str());
+    size_t copied = 0;
+    if (icon && icon_len) {
+        copied = std::min(icon_size, trophy.icon.size());
+        std::memcpy(icon, trophy.icon.data(), copied);
+        *icon_len = copied;
+    }
+    return 1;
 }
 
 int vita3k_ios_session_scan_apps(void) {

@@ -178,6 +178,8 @@ final class EmulationViewController: UIViewController {
     private var homeShownTemporarily = false
     private let homeMenu = UIView()
     private let homeModel = GameMenuModel()
+    private let trophyBanner = TrophyBannerModel()
+    private var trophyTimer: Timer?
     private var userPaused = false
     // Physical gamepad: Start + Select opens the menu; the D-pad / A / B drive it.
     private var padCancellables = Set<AnyCancellable>()
@@ -335,6 +337,7 @@ final class EmulationViewController: UIViewController {
         root.bringSubviewToFront(homeHotspot)
         root.bringSubviewToFront(imeBar)
         root.bringSubviewToFront(homeMenu)
+        installTrophyBanner()
 
         NSLayoutConstraint.activate([
             performanceOverlay.leadingAnchor.constraint(equalTo: root.safeAreaLayoutGuide.leadingAnchor, constant: 12),
@@ -431,7 +434,36 @@ final class EmulationViewController: UIViewController {
         homeModel.focus = GamepadInput.shared.connected ? homeFocusIndex : nil
     }
 
+    private func startTrophyWatcher() {
+        trophyTimer?.invalidate()
+        let timer = Timer(timeInterval: 0.6, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self, self.isSessionMode else { return }
+                while let unlock = Vita3KCore.popTrophy() { self.trophyBanner.enqueue(unlock) }
+            }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        trophyTimer = timer
+    }
+
+    private func installTrophyBanner() {
+        let host = UIHostingController(rootView: TrophyBannerView(model: trophyBanner))
+        host.view.backgroundColor = .clear
+        host.view.isUserInteractionEnabled = false
+        host.view.translatesAutoresizingMaskIntoConstraints = false
+        host.sizingOptions = [.intrinsicContentSize]
+        addChild(host)
+        view.addSubview(host.view)
+        host.didMove(toParent: self)
+        NSLayoutConstraint.activate([
+            host.view.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8),
+            host.view.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            host.view.widthAnchor.constraint(lessThanOrEqualTo: view.widthAnchor),
+        ])
+    }
+
     private func startGamepad() {
+        startTrophyWatcher()
         padCancellables.removeAll()
         GamepadInput.shared.start(owner: ObjectIdentifier(self))
         GamepadInput.shared.$lastEvent
@@ -450,6 +482,9 @@ final class EmulationViewController: UIViewController {
     }
 
     private func stopGamepad() {
+        trophyTimer?.invalidate()
+        trophyTimer = nil
+        trophyBanner.reset()
         padCancellables.removeAll()
         GamepadInput.shared.stop(owner: ObjectIdentifier(self))
     }

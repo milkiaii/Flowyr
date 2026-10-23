@@ -38,6 +38,7 @@ targets:
       - path: App/SettingsView.swift
       - path: App/PadSettings.swift
       - path: App/ActionMenu.swift
+      - path: App/Trophies.swift
       - path: App/Vita3KCore.swift
       - path: App/ImportStore.swift
       - path: App/SaveSyncEngine.swift

@@ -242,6 +242,19 @@ int vita3k_ios_session_install_zrif(const char *zrif, char *out, size_t out_size
 /// -4 when the buffer is too small.
 int vita3k_ios_session_get_apps(char *out, size_t out_size);
 
+/// Every trophy collection (one per game with trophy data), as text:
+///   C\t<np_com_id>\t<title>\t<icon path>\t<total>\t<unlocked>\t<plat>\t<gold>\t<silver>\t<bronze>
+///   T\t<id>\t<grade 1-4>\t<hidden 0/1>\t<earned 0/1>\t<unix time>\t<name>\t<detail>\t<icon path>
+/// (T lines belong to the preceding C line). 0 on success, -1 when not
+/// initialized, -4 when the buffer is too small.
+int vita3k_ios_session_trophies(char *out, size_t out_size);
+
+/// Pops the oldest trophy unlocked during play. `meta` receives
+/// "<np_com_id>\t<trophy_id>\t<grade 1-4>\t<name>\t<detail>" and the PNG icon
+/// goes to `icon` (length in `icon_len`). Returns 1 when one was popped,
+/// 0 when none is pending, -1 when not initialized.
+int vita3k_ios_session_pop_trophy(char *meta, size_t meta_size, uint8_t *icon, size_t icon_size, size_t *icon_len);
+
 /// Force a re-scan of <vita>/ux0/app. Returns 0 on success, -1 when the
 /// environment is not initialized.
 int vita3k_ios_session_scan_apps(void);

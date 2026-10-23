@@ -116,4 +116,17 @@ std::string create_user(EmuEnvState &emuenv, const std::string &name);
 void delete_user(EmuEnvState &emuenv, const std::string &user_id);
 bool activate_user(EmuEnvState &emuenv, const std::string &user_id);
 
+/// A trophy unlocked during play, waiting for the iOS shell to show it.
+struct PendingTrophy {
+    std::string np_com_id;
+    std::string trophy_id;
+    std::string name;
+    std::string detail;
+    int grade = 0;
+    std::vector<uint8_t> icon;
+};
+
+/// Pops the oldest unshown trophy unlock; false when there is none.
+bool pop_pending_trophy(PendingTrophy &out);
+
 } // namespace app

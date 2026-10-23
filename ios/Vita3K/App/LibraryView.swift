@@ -15,6 +15,7 @@ struct LibraryView: View {
     @State private var focusedID: String?
     @State private var gridWidth: CGFloat = 0
     @State private var showAdd = false
+    @State private var showTrophies = false
     @State private var actionsGame: CoreController.AppInfo?
     @State private var actionFocus = 0
     /// A long press also ends with the button's tap; swallow that one.
@@ -67,6 +68,7 @@ struct LibraryView: View {
                 onLayout: { withAnimation(.snappy) { listLayout.toggle() } },
                 isAddOpen: showAdd,
                 onAdd: { withAnimation(addAnimation) { showAdd.toggle() } },
+                onTrophies: { UISounds.shared.play(.open); showTrophies = true },
                 onSettings: openSettings
             )
             .padding(.bottom, 10)
@@ -101,11 +103,14 @@ struct LibraryView: View {
         .onAppear { pad.start(owner: PadOwner.library) }
         .onDisappear { pad.stop(owner: PadOwner.library) }
         .onChange(of: pad.lastEvent) { _, event in
-            guard inputEnabled, configGame == nil, deleteGame == nil, let event else { return }
+            guard inputEnabled, !showTrophies, configGame == nil, deleteGame == nil, let event else { return }
             handlePad(event.button)
         }
         .onChange(of: games.map(\.titleId)) { _, ids in
             if let focusedID, !ids.contains(focusedID) { self.focusedID = nil }
+        }
+        .sheet(isPresented: $showTrophies) {
+            TrophiesView(onClose: { showTrophies = false })
         }
         .sheet(item: $configGame) { game in
             GameConfigView(titleId: game.titleId, title: game.title, onDone: {
@@ -338,6 +343,9 @@ struct LibraryView: View {
         case .y:
             UISounds.shared.play(.tap)
             withAnimation(.snappy) { listLayout.toggle() }
+        case .r1:
+            UISounds.shared.play(.open)
+            showTrophies = true
         case .start:
             UISounds.shared.play(.open)
             openSettings()

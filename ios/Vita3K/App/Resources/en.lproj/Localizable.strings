@@ -264,3 +264,14 @@
 "Voltar" = "Back";
 "Seção" = "Section";
 "Config própria" = "Custom config";
+"Troféus" = "Trophies";
+"Troféu desbloqueado" = "Trophy unlocked";
+"Nenhum troféu ainda" = "No trophies yet";
+"Jogue um jogo com troféus para vê-los aqui." = "Play a game with trophies and they'll show up here.";
+"Troféu oculto" = "Hidden trophy";
+"Continue jogando para revelar." = "Keep playing to reveal it.";
+"Platina" = "Platinum";
+"Ouro" = "Gold";
+"Prata" = "Silver";
+"%d de %d" = "%d of %d";
+"Conquistado em %@" = "Earned %@";
