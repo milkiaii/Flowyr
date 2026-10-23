@@ -402,21 +402,3 @@ std::string read_pkg_content_id(const fs::path &pkg_path) {
 
     return std::string(pkg_header.content_id, strnlen(pkg_header.content_id, sizeof(pkg_header.content_id)));
 }
-
-std::string find_pkg_zrif(const fs::path &pkg_path, const fs::path &vita_fs_path) {
-    const std::string content_id = read_pkg_content_id(pkg_path);
-    if (content_id.size() < 16)
-        return {};
-
-    const std::string title_id = content_id.substr(7, 9);
-    const auto rif_path = vita_fs_path / "ux0/license" / title_id / (content_id + ".rif");
-    if (!fs::exists(rif_path))
-        return {};
-
-    LOG_INFO("Found license file: {}", rif_path);
-    fs::ifstream binfile(rif_path, std::ios::in | std::ios::binary | std::ios::ate);
-    if (!binfile)
-        return {};
-
-    return rif2zrif(binfile);
-}
