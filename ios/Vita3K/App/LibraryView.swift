@@ -226,14 +226,10 @@ struct LibraryView: View {
     /// their real heights are known.
     private func restoreScroll(using proxy: ScrollViewProxy) {
         guard let id = focusedID else { return }
-        Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(60))
-            jump(to: id, using: proxy)
-            try? await Task.sleep(for: .milliseconds(250))
-            if focusedID == id { jump(to: id, using: proxy) }
-            try? await Task.sleep(for: .milliseconds(450))
-            if focusedID == id { jump(to: id, using: proxy) }
-        }
+        // One jump, before the first frame is shown. Rows are laid out
+        // eagerly, so no delayed corrections are needed (they used to yank
+        // the list while the user was already scrolling).
+        jump(to: id, using: proxy)
     }
 
     private func jump(to id: String, using proxy: ScrollViewProxy) {
@@ -247,10 +243,6 @@ struct LibraryView: View {
         // Edge items scroll to the real top/bottom so they are never
         // left half hidden behind the top bar or the floating bar.
         withAnimation(.snappy) { jump(to: id, using: proxy) }
-        Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(320))
-            if focusedID == id { jump(to: id, using: proxy) }
-        }
     }
 
     // MARK: - Gamepad
