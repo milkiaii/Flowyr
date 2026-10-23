@@ -76,13 +76,10 @@ struct SettingsView: View {
             ], footer: "No iPhone, abra o Veeb pelo StikDebug usando o script Universal. A disponibilidade do JIT é verificada ao abrir o app e antes de iniciar um jogo.",
                            accessory: AnyView(JITBadge(status: controller.jitStatus))),
             SettingSection(id: "controls", title: "Controles e tela", items: [
-                SettingItem(id: "landscape", title: "Forçar rotacionamento na horizontal", symbol: "rotate.right.fill",
-                            detail: "Mantém a interface e os jogos na horizontal, mesmo com o aparelho em pé.", kind: .toggle($forceLandscape)),
-                SettingItem(id: "controls", title: "Controles na tela", symbol: "gamecontroller.fill",
-                            detail: "Ocultados automaticamente ao conectar um controle físico.", kind: .toggle($showControls)),
+                SettingItem(id: "landscape", title: "Forçar rotacionamento na horizontal", detail: "Mantém a interface e os jogos na horizontal, mesmo com o aparelho em pé.", symbol: "rotate.right.fill", kind: .toggle($forceLandscape)),
+                SettingItem(id: "controls", title: "Controles na tela", detail: "Ocultados automaticamente ao conectar um controle físico.", symbol: "gamecontroller.fill", kind: .toggle($showControls)),
                 SettingItem(id: "opacity", title: "Opacidade", kind: .slider($controlOpacity, 0.25...1, 0.05, "%"), enabled: showControls),
-                SettingItem(id: "overlay", title: "Performance Overlay", symbol: "speedometer",
-                            detail: "FPS, tempo por quadro e memória.", kind: .toggle($showStatus)),
+                SettingItem(id: "overlay", title: "Performance Overlay", detail: "FPS, tempo por quadro e memória.", symbol: "speedometer", kind: .toggle($showStatus)),
             ]),
             SettingSection(id: "library", title: "Biblioteca", items: [
                 SettingItem(id: "list", title: "Exibir como lista", symbol: "list.bullet", kind: .toggle($listLayout)),
