@@ -17,6 +17,8 @@ struct LibraryView: View {
     @State private var showAdd = false
     @State private var actionsGame: CoreController.AppInfo?
     @State private var actionFocus = 0
+    /// A long press also ends with the button's tap; swallow that one.
+    @State private var suppressTap = false
     @AppStorage(GameIconStyle.preference) private var classicIcons = false
     @State private var search = ""
     @State private var favoritesOnly = false
@@ -371,6 +373,11 @@ struct LibraryView: View {
     }
 
     private func openActions(_ game: CoreController.AppInfo) {
+        suppressTap = true
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(600))
+            suppressTap = false
+        }
         actionFocus = 0
         UISounds.shared.play(.open)
         withAnimation(addAnimation) { actionsGame = game }
@@ -379,7 +386,7 @@ struct LibraryView: View {
     private func closeActions() { withAnimation(addAnimation) { actionsGame = nil } }
 
     private func gameTile(_ game: CoreController.AppInfo) -> some View {
-        Button { launch(game.titleId) } label: {
+        Button { if !suppressTap { launch(game.titleId) } } label: {
             VStack(alignment: .leading, spacing: 8) {
                 GameCover(titleID: game.titleId, cornerRadius: 14)
                     .overlay(alignment: .topTrailing) {
@@ -407,7 +414,7 @@ struct LibraryView: View {
     }
 
     private func gameRow(_ game: CoreController.AppInfo) -> some View {
-        Button { launch(game.titleId) } label: {
+        Button { if !suppressTap { launch(game.titleId) } } label: {
             HStack(spacing: 14) {
                 GameCover(titleID: game.titleId, cornerRadius: 12).frame(width: classicIcons ? 72 : 132)
                 VStack(alignment: .leading, spacing: 5) {
