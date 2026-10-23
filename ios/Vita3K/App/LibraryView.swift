@@ -222,13 +222,10 @@ struct LibraryView: View {
     }
 
     /// Coming back from the carousel (or a layout switch) the new list has not
-    /// scrolled to the focused game yet; lazy rows also need a second pass once
-    /// their real heights are known.
+    /// scrolled to the focused game yet.
     private func restoreScroll(using proxy: ScrollViewProxy) {
         guard let id = focusedID else { return }
-        // One jump, before the first frame is shown. Rows are laid out
-        // eagerly, so no delayed corrections are needed (they used to yank
-        // the list while the user was already scrolling).
+        // A single jump; delayed corrections would yank a list being scrolled.
         jump(to: id, using: proxy)
     }
 
