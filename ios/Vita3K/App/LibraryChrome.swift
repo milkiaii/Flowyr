@@ -142,17 +142,7 @@ struct LibraryTopBar: View {
                     .lineLimit(1).fixedSize()
             }
             Image(systemName: status.linkSymbol).font(.system(size: 13, weight: .semibold))
-            HStack(spacing: 2) {
-                Image(systemName: "battery.100percent", variableValue: status.batteryFill)
-                    .symbolRenderingMode(.palette)
-                    .foregroundStyle(Color.primary.opacity(0.55), status.batteryFillColor)
-                    .font(.system(size: 17, weight: .regular))
-                if status.isCharging {
-                    Image(systemName: "bolt.fill")
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundStyle(status.batteryFillColor)
-                }
-            }
+            BatteryIcon(level: status.batteryFill, fill: status.batteryFillColor, charging: status.isCharging)
         }
         .padding(.horizontal, 12).frame(height: 34)
         .accessibilityElement(children: .combine)
@@ -178,6 +168,46 @@ struct LibraryTopBar: View {
         case .checking: .secondary
         case .unavailable: EmulatorTheme.warning
         }
+    }
+}
+
+// MARK: - Battery icon
+
+/// iOS-style battery: gray outline, colored fill *inside* it sized to the
+/// charge level, and a bolt over the fill while charging.
+struct BatteryIcon: View {
+    let level: Double
+    let fill: Color
+    let charging: Bool
+
+    private let bodyWidth: CGFloat = 25
+    private let bodyHeight: CGFloat = 12
+    private let inset: CGFloat = 1.8
+
+    var body: some View {
+        HStack(spacing: 1.5) {
+            ZStack(alignment: .leading) {
+                RoundedRectangle(cornerRadius: 4, style: .continuous)
+                    .strokeBorder(Color.primary.opacity(0.45), lineWidth: 1.2)
+                RoundedRectangle(cornerRadius: 2.4, style: .continuous)
+                    .fill(fill)
+                    .frame(width: max(3, (bodyWidth - inset * 2) * CGFloat(max(0, min(1, level)))),
+                           height: bodyHeight - inset * 2)
+                    .padding(.leading, inset)
+                if charging {
+                    Image(systemName: "bolt.fill")
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundStyle(.white)
+                        .shadow(color: .black.opacity(0.4), radius: 0.6)
+                        .frame(width: bodyWidth, height: bodyHeight)
+                }
+            }
+            .frame(width: bodyWidth, height: bodyHeight)
+            RoundedRectangle(cornerRadius: 1, style: .continuous)
+                .fill(Color.primary.opacity(0.45))
+                .frame(width: 2, height: 4.5)
+        }
+        .accessibilityHidden(true)
     }
 }
 
