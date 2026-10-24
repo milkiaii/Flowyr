@@ -79,8 +79,8 @@ struct SettingsView: View {
             SettingSection(id: "controls", title: "Controles e tela", items: [
                 SettingItem(id: "landscape", title: "Forçar rotacionamento na horizontal", detail: "Mantém a interface e os jogos na horizontal, mesmo com o aparelho em pé.", symbol: "rotate.right.fill", kind: .toggle($forceLandscape)),
                 SettingItem(id: "controls", title: "Controles na tela", detail: "Ocultados automaticamente ao conectar um controle físico.", symbol: "gamecontroller.fill", kind: .toggle($showControls)),
-                SettingItem(id: "dynamic", title: "Analógicos dinâmicos", symbol: "hand.point.up.left.fill",
-                            detail: "O analógico aparece onde você toca nas áreas livres da esquerda e da direita.", kind: .toggle($dynamicSticks)),
+                SettingItem(id: "dynamic", title: "Analógicos dinâmicos",
+                            detail: "O analógico aparece onde você toca nas áreas livres da esquerda e da direita.", symbol: "hand.point.up.left.fill", kind: .toggle($dynamicSticks)),
                 SettingItem(id: "opacity", title: "Opacidade", kind: .slider($controlOpacity, 0.25...1, 0.05, "%"), enabled: showControls),
                 SettingItem(id: "overlay", title: "Performance Overlay", detail: "FPS, tempo por quadro e memória.", symbol: "speedometer", kind: .toggle($showStatus)),
             ]),
