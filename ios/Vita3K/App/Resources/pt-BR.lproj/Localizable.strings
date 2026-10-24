@@ -301,3 +301,11 @@
 "Todos os botões" = "Todos os botões";
 "Analógicos dinâmicos" = "Analógicos dinâmicos";
 "O analógico aparece onde você toca nas áreas livres da esquerda e da direita." = "O analógico aparece onde você toca nas áreas livres da esquerda e da direita.";
+"Chave zRIF inválida. Cole a chave inteira, sem texto extra." = "Chave zRIF inválida. Cole a chave inteira, sem texto extra.";
+"Encerre a sessão antes de apagar um jogo." = "Encerre a sessão antes de apagar um jogo.";
+"Aguarde a operação em andamento e tente novamente." = "Aguarde a operação em andamento e tente novamente.";
+"A biblioteca ainda não foi inicializada." = "A biblioteca ainda não foi inicializada.";
+"Identificador de jogo inválido." = "Identificador de jogo inválido.";
+"O jogo não foi encontrado ou tem um caminho inválido. Atualize a biblioteca." = "O jogo não foi encontrado ou tem um caminho inválido. Atualize a biblioteca.";
+"Uma pasta do jogo usa um caminho inválido. Verifique os arquivos e tente novamente." = "Uma pasta do jogo usa um caminho inválido. Verifique os arquivos e tente novamente.";
+"Não foi possível remover todos os arquivos do jogo. Verifique o armazenamento e tente novamente." = "Não foi possível remover todos os arquivos do jogo. Verifique o armazenamento e tente novamente.";

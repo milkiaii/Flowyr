@@ -489,7 +489,7 @@ final class CoreController: ObservableObject {
         }.value
         isDeleting = false
         refreshApps()
-        guard rc == 0 else { return report.isEmpty ? L10n.format("Não foi possível apagar o jogo (código %d).", rc) : report }
+        guard rc == 0 else { return report.isEmpty ? L10n.format("Não foi possível apagar o jogo (código %d).", rc) : CoreMessage.localized(report) }
 
         let defaults = UserDefaults.standard
         let favorites = (defaults.string(forKey: "library.favorites") ?? "")
