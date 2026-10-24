@@ -94,12 +94,14 @@ struct GameMenuView: View {
     let onResume: () -> Void
     let onSettings: () -> Void
     let onTrophies: () -> Void
+    let onControls: () -> Void
     let onExit: () -> Void
     @AppStorage(EmulatorTheme.lightModePreference) private var lightMode = false
 
     static let actions: [MenuAction] = [
         MenuAction(id: "resume", title: "Continuar", symbol: "play.fill"),
         MenuAction(id: "settings", title: "Configurações", symbol: "slider.horizontal.3"),
+        MenuAction(id: "controls", title: "Editar controles", symbol: "gamecontroller.fill"),
         MenuAction(id: "trophies", title: "Troféus", symbol: "trophy.fill"),
         MenuAction(id: "exit", title: "Voltar à biblioteca", symbol: "rectangle.portrait.and.arrow.right"),
     ]
@@ -113,6 +115,7 @@ struct GameMenuView: View {
             switch action.id {
             case "resume": onResume()
             case "settings": onSettings()
+            case "controls": onControls()
             case "trophies": onTrophies()
             default: onExit()
             }
