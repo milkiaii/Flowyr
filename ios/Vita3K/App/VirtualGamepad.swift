@@ -85,6 +85,17 @@ struct ControlTransform: Codable, Equatable {
     var dx: Double = 0
     var dy: Double = 0
     var scale: Double = 1
+    var opacity: Double = 1
+
+    init() {}
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        dx = try c.decodeIfPresent(Double.self, forKey: .dx) ?? 0
+        dy = try c.decodeIfPresent(Double.self, forKey: .dy) ?? 0
+        scale = try c.decodeIfPresent(Double.self, forKey: .scale) ?? 1
+        opacity = try c.decodeIfPresent(Double.self, forKey: .opacity) ?? 1
+    }
 }
 
 typealias ControlsLayout = [String: ControlTransform]
@@ -347,7 +358,7 @@ final class VirtualGamepadView: UIView {
         didSet { notifySelection(); updateOverlay() }
     }
     /// Reports (title, scale) of the selection, or nil when nothing is selected.
-    var onSelectionChange: (((title: String, scale: Double)?) -> Void)?
+    var onSelectionChange: (((title: String, scale: Double, opacity: Double)?) -> Void)?
     private var layoutBeforeEditing: ControlsLayout = [:]
     private let overlay = CAShapeLayer()
     private let selectedOverlay = CAShapeLayer()
@@ -474,6 +485,7 @@ final class VirtualGamepadView: UIView {
             v.isHidden = !shown
             v.frame = frame(of: element, defaults: defaults)
             v.isUserInteractionEnabled = !isEditing
+            v.alpha = CGFloat(layout[element.rawValue]?.opacity ?? 1)
             if v is VirtualStickView, v.bounds.width > 0 {
                 (v as? VirtualStickView)?.knobSize(v.bounds.width * 0.4)
             }
@@ -663,10 +675,21 @@ final class VirtualGamepadView: UIView {
         notifySelection()
     }
 
+    func setSelectionOpacity(_ value: Double) {
+        for m in targets {
+            var t = layout[m.rawValue] ?? ControlTransform()
+            t.opacity = min(max(value, 0.15), 1)
+            layout[m.rawValue] = t
+        }
+        setNeedsLayout()
+        layoutIfNeeded()
+    }
+
     private func notifySelection() {
         guard isEditing, let selected else { onSelectionChange?(nil); return }
         let title = editMode == .group ? selected.group.title : selected.title
-        onSelectionChange?((title, layout[selected.rawValue]?.scale ?? 1))
+        let t = layout[selected.rawValue] ?? ControlTransform()
+        onSelectionChange?((title, t.scale, t.opacity))
     }
 
     private func element(at point: CGPoint) -> PadElement? {
@@ -747,8 +770,10 @@ final class ControlsEditorModel: ObservableObject {
     @Published var scopeIsGame = false
     @Published var selectionTitle: String?
     @Published var scale: Double = 1
+    @Published var opacity: Double = 1
     var onModeChange: ((Bool) -> Void)?
     var onScale: ((Double) -> Void)?
+    var onOpacity: ((Double) -> Void)?
     var onReset: (() -> Void)?
     var onCancel: (() -> Void)?
     var onSave: ((LayoutScope) -> Void)?
@@ -769,13 +794,13 @@ struct ControlsEditorBar: View {
                     .font(.caption.weight(.semibold)).foregroundStyle(.secondary).lineLimit(1)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
-            HStack(spacing: 10) {
-                Image(systemName: "minus.magnifyingglass").font(.caption).foregroundStyle(.secondary)
-                Slider(value: Binding(get: { model.scale }, set: { model.scale = $0; model.onScale?($0) }), in: 0.5...2.2)
-                    .disabled(model.selectionTitle == nil)
-                Image(systemName: "plus.magnifyingglass").font(.caption).foregroundStyle(.secondary)
-                Text(verbatim: "\(Int((model.scale * 100).rounded()))%")
-                    .font(.caption.monospacedDigit()).foregroundStyle(.secondary).frame(width: 42, alignment: .trailing)
+            HStack(alignment: .top, spacing: 16) {
+                sliderColumn(icon: "arrow.up.left.and.arrow.down.right", label: "Tamanho",
+                             value: Binding(get: { model.scale }, set: { model.scale = $0; model.onScale?($0) }),
+                             range: 0.5...2.2)
+                sliderColumn(icon: "circle.lefthalf.filled", label: "Opacidade",
+                             value: Binding(get: { model.opacity }, set: { model.opacity = $0; model.onOpacity?($0) }),
+                             range: 0.15...1)
             }
             HStack(spacing: 8) {
                 Picker("", selection: $model.scopeIsGame) {
@@ -802,5 +827,20 @@ struct ControlsEditorBar: View {
         .padding(.horizontal, 12)
         .environment(\.colorScheme, .dark)
         .tint(EmulatorTheme.accent)
+    }
+}
+
+private extension ControlsEditorBar {
+    func sliderColumn(icon: String, label: String, value: Binding<Double>, range: ClosedRange<Double>) -> some View {
+        VStack(spacing: 2) {
+            HStack(spacing: 5) {
+                Image(systemName: icon).font(.caption2)
+                Text(L10n.text(label)).font(.caption.weight(.semibold))
+                Spacer(minLength: 0)
+                Text(verbatim: "\(Int((value.wrappedValue * 100).rounded()))%").font(.caption.monospacedDigit())
+            }
+            .foregroundStyle(.secondary)
+            Slider(value: value, in: range).disabled(model.selectionTitle == nil)
+        }
     }
 }

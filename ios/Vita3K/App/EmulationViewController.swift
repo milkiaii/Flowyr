@@ -262,11 +262,13 @@ final class EmulationViewController: UIViewController {
         // Fullscreen: no top bar. HOME (top center) pauses the game and
         // shows a small menu with "Continuar" / "Voltar à biblioteca".
         homeButton.translatesAutoresizingMaskIntoConstraints = false
-        homeButton.backgroundColor = .black.withAlphaComponent(0.5)
-        homeButton.layer.cornerRadius = 22
-        homeButton.configuration?.image = UIImage(systemName: "house.fill",
-                                                 withConfiguration: UIImage.SymbolConfiguration(pointSize: 18))
+        // A bare white house (no round plate), readable on any game via a soft shadow.
+        homeButton.configuration?.image = HomeIcon.image()
         homeButton.tintColor = .white
+        homeButton.layer.shadowColor = UIColor.black.cgColor
+        homeButton.layer.shadowOpacity = 0.6
+        homeButton.layer.shadowRadius = 3
+        homeButton.layer.shadowOffset = CGSize(width: 0, height: 1)
         homeButton.accessibilityLabel = L10n.text("Home")
         homeButton.accessibilityIdentifier = "home-button"
         homeButton.isHidden = true
@@ -596,12 +598,16 @@ final class EmulationViewController: UIViewController {
         guard editorHost == nil else { return }
         editorModel.onModeChange = { [weak self] group in self?.vpad.editMode = group ? .group : .individual }
         editorModel.onScale = { [weak self] value in self?.vpad.setSelectionScale(value) }
+        editorModel.onOpacity = { [weak self] value in self?.vpad.setSelectionOpacity(value) }
         editorModel.onReset = { [weak self] in self?.vpad.resetLayoutToDefault() }
         editorModel.onCancel = { [weak self] in self?.finishControlsEditing(save: nil) }
         editorModel.onSave = { [weak self] scope in self?.finishControlsEditing(save: scope) }
         vpad.onSelectionChange = { [weak self] selection in
             self?.editorModel.selectionTitle = selection?.title
-            if let scale = selection?.scale { self?.editorModel.scale = scale }
+            if let selection {
+                self?.editorModel.scale = selection.scale
+                self?.editorModel.opacity = selection.opacity
+            }
         }
         let host = UIHostingController(rootView: ControlsEditorBar(model: editorModel))
         host.view.backgroundColor = .clear
@@ -631,7 +637,6 @@ final class EmulationViewController: UIViewController {
         editorModel.selectionTitle = nil
         vpad.editMode = .individual
         setVpadVisible(true)
-        vpad.alpha = 1
         vpad.beginEditing()
         if let host = editorHost {
             view.bringSubviewToFront(host.view)
@@ -645,7 +650,6 @@ final class EmulationViewController: UIViewController {
         vpad.endEditing(save: scope)
         editingControls = false
         editorHost?.view.isHidden = true
-        vpad.alpha = UserDefaults.standard.object(forKey: "emulation.controlOpacity") as? Double ?? 0.8
         // Back to the pause menu; the poll hides the pad again when it is not wanted.
         let wantVpad = Vita3KCore.gamepadCount() == 0 && Self.showControls
         if !wantVpad { setVpadVisible(false) }
@@ -1130,4 +1134,38 @@ enum SceCtrl {
     static let extR2: UInt32 = 0x00000200
     static let extL3: UInt32 = 0x00000002
     static let extR3: UInt32 = 0x00000004
+}
+
+/// The HOME key: a solid white house with a door cut-out.
+enum HomeIcon {
+    static func image() -> UIImage {
+        let size = CGSize(width: 32, height: 30)
+        let renderer = UIGraphicsImageRenderer(size: size)
+        let image = renderer.image { _ in
+            let house = UIBezierPath()
+            house.move(to: CGPoint(x: 16, y: 2))
+            house.addLine(to: CGPoint(x: 30, y: 15))
+            house.addLine(to: CGPoint(x: 26.5, y: 15))
+            house.addLine(to: CGPoint(x: 26.5, y: 28))
+            house.addLine(to: CGPoint(x: 5.5, y: 28))
+            house.addLine(to: CGPoint(x: 5.5, y: 15))
+            house.addLine(to: CGPoint(x: 2, y: 15))
+            house.close()
+            // Door.
+            house.move(to: CGPoint(x: 12, y: 28))
+            house.addLine(to: CGPoint(x: 12, y: 21))
+            house.addArc(withCenter: CGPoint(x: 16, y: 21), radius: 4, startAngle: .pi, endAngle: 0, clockwise: true)
+            house.addLine(to: CGPoint(x: 20, y: 28))
+            house.close()
+            house.usesEvenOddFillRule = true
+            house.lineJoinStyle = .round
+            UIColor.white.setFill()
+            house.fill()
+            // Slightly rounded corners on the outline.
+            UIColor.white.setStroke()
+            house.lineWidth = 1.4
+            house.stroke()
+        }
+        return image.withRenderingMode(.alwaysTemplate)
+    }
 }
