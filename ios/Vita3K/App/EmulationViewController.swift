@@ -463,7 +463,7 @@ final class EmulationViewController: UIViewController {
     }
 
     private func installTrophyBanner() {
-        let host = UIHostingController(rootView: TrophyBannerView(model: trophyBanner))
+        let host = UIHostingController(rootView: TrophyBannerView(model: trophyBanner).appTheme())
         host.view.backgroundColor = .clear
         host.view.isUserInteractionEnabled = false
         host.view.translatesAutoresizingMaskIntoConstraints = false
@@ -588,7 +588,7 @@ final class EmulationViewController: UIViewController {
             self?.dismiss(animated: true)
         }, onRestart: { [weak self] in
             self?.dismiss(animated: true) { self?.restartGame() }
-        }))
+        }).appTheme())
         present(host, animated: true)
     }
 
@@ -610,7 +610,7 @@ final class EmulationViewController: UIViewController {
                 self?.editorModel.opacity = selection.opacity
             }
         }
-        let host = UIHostingController(rootView: ControlsEditorBar(model: editorModel))
+        let host = UIHostingController(rootView: ControlsEditorBar(model: editorModel).appTheme())
         host.view.backgroundColor = .clear
         host.view.translatesAutoresizingMaskIntoConstraints = false
         host.sizingOptions = [.intrinsicContentSize]
@@ -666,7 +666,7 @@ final class EmulationViewController: UIViewController {
         guard presentedViewController == nil else { return }
         let host = UIHostingController(rootView: TrophiesView(openID: Vita3KCore.activeTrophyID(), onClose: { [weak self] in
             self?.dismiss(animated: true)
-        }))
+        }).appTheme())
         present(host, animated: true)
     }
 

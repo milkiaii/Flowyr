@@ -239,7 +239,6 @@ struct TrophiesView: View {
             }
         }
         .background { ThemedBackground() }
-        .appTheme()
         .task {
             await store.reload()
             if let openID, let match = store.collections.first(where: { $0.id == openID }) {

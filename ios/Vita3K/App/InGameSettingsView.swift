@@ -58,7 +58,6 @@ struct InGameSettingsView: View {
         } message: {
             Text("Unsaved progress will be lost.")
         }
-        .appTheme()
         .onAppear { load() }
     }
 

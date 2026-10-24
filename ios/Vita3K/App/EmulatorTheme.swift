@@ -53,7 +53,7 @@ extension Color {
 }
 
 private struct PaletteKey: EnvironmentKey {
-    static let defaultValue = AppTheme.dark.palette
+    static let defaultValue = AppTheme.vita.palette
 }
 
 extension EnvironmentValues {
@@ -71,7 +71,7 @@ enum EmulatorTheme {
 struct AppThemeModifier: ViewModifier {
     @AppStorage(EmulatorTheme.themePreference) private var raw = ""
     @AppStorage(EmulatorTheme.lightModePreference) private var legacyLight = false
-    private var theme: AppTheme { AppTheme(rawValue: raw) ?? (legacyLight ? .light : .dark) }
+    private var theme: AppTheme { AppTheme(rawValue: raw) ?? (legacyLight ? .light : .vita) }
     func body(content: Content) -> some View {
         let p = theme.palette
         content

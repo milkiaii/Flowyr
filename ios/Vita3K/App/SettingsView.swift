@@ -13,7 +13,7 @@ struct SettingsView: View {
     @AppStorage(EmulatorTheme.themePreference) private var themeRaw = ""
     @AppStorage(EmulatorTheme.lightModePreference) private var legacyLight = false
     private var themeIndex: Binding<Int> {
-        Binding(get: { (AppTheme(rawValue: themeRaw) ?? (legacyLight ? .light : .dark)).index },
+        Binding(get: { (AppTheme(rawValue: themeRaw) ?? (legacyLight ? .light : .vita)).index },
                 set: { themeRaw = AppTheme.allCases[$0].rawValue })
     }
     @AppStorage(GameIconStyle.preference) private var classicIcons = false
