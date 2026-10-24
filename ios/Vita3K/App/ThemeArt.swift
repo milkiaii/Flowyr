@@ -27,7 +27,7 @@ struct SwirlArt: View {
                 g = LCG(21)
                 for (cx, cy, spread) in [(0.04, 0.66, 0.26), (0.10, 0.28, 0.18)] {
                     for _ in 0..<46 {
-                        let a = g.next() * 2 * .pi, d = g.next().squareRoot() * spread
+                        let a = g.next() * 2 * Double.pi, d = g.next().squareRoot() * spread
                         let x = cx + cos(a) * d * 0.8, y = cy + sin(a) * d
                         let r = (0.006 + g.next() * 0.016) * u
                         let c = P(x, y), al = 0.45 * (1 - d / spread) + 0.1
@@ -122,10 +122,10 @@ struct SwirlArt: View {
         let nx = -ty * dir, ny = tx * dir
         let cx = end.x + nx * r0, cy = end.y + ny * r0
         let th0 = atan2(end.y - cy, end.x - cx)
-        return (1...n).map { i in
+        return (1...n).map { (i: Int) -> CGPoint in
             let t = Double(i) / Double(n)
-            let r = r0 * pow(1 - 0.9 * t, 1.15)
-            let th = th0 + dir * turns * 2 * .pi * t
+            let r: Double = r0 * pow(1 - 0.9 * t, 1.15)
+            let th: Double = th0 + dir * turns * 2 * Double.pi * t
             return CGPoint(x: cx + r * cos(th), y: cy + r * sin(th))
         }
     }
@@ -162,7 +162,7 @@ struct SwirlArt: View {
     static func flower(_ l: inout GraphicsContext, c: CGPoint, R: Double, rotation: Double, seed: UInt32, ink: Color, soft: Color) {
         let lw = max(1, 0.012 * R)
         for k in 0..<5 {
-            let ang = rotation + Double(k) * 2 * .pi / 5
+            let ang = rotation + Double(k) * 2 * Double.pi / 5
             var petal = Path()
             petal.move(to: CGPoint(x: 0.1 * R, y: 0))
             petal.addCurve(to: CGPoint(x: 0.93 * R, y: -0.08 * R), control1: CGPoint(x: 0.15 * R, y: -0.9 * R), control2: CGPoint(x: 1.05 * R, y: -0.85 * R))
