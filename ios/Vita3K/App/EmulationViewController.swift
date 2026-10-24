@@ -183,6 +183,9 @@ final class EmulationViewController: UIViewController {
     private var userPaused = false
     // Physical gamepad: Start + Select opens the menu; the D-pad / A / B drive it.
     private var padCancellables = Set<AnyCancellable>()
+    /// Unique per screen: an object address can be reused by the next game's
+    /// screen, and its late stop() would then switch the new one's polling off.
+    private let padOwner = UUID()
     private var homeFocusIndex = 0
     private var padHintShown = false
     private var jitWarningShown = false
@@ -466,7 +469,7 @@ final class EmulationViewController: UIViewController {
     private func startGamepad() {
         startTrophyWatcher()
         padCancellables.removeAll()
-        GamepadInput.shared.start(owner: ObjectIdentifier(self))
+        GamepadInput.shared.start(owner: padOwner)
         GamepadInput.shared.$lastEvent
             .compactMap { $0 }
             .sink { [weak self] event in MainActor.assumeIsolated { self?.handlePad(event.button) } }
@@ -487,7 +490,7 @@ final class EmulationViewController: UIViewController {
         trophyTimer = nil
         trophyBanner.reset()
         padCancellables.removeAll()
-        GamepadInput.shared.stop(owner: ObjectIdentifier(self))
+        GamepadInput.shared.stop(owner: padOwner)
     }
 
     private func handlePad(_ button: PadButton) {

@@ -525,6 +525,10 @@ void launch_worker(Session &s, const std::string &app_path, int width, int heigh
                 // thread is blocked on op_lock (held by this worker) until
                 // the loop exits on stop_requested, then it runs
                 // controller->stop().
+                // SDL only announces pads when its gamepad subsystem starts, so
+                // on a second launch no ADDED event arrives: scan explicitly.
+                refresh_controllers(s.emuenv->ctrl, *s.emuenv);
+
                 SDL_Event event;
                 while (!s.stop_requested.load(std::memory_order_relaxed) &&
                        s.phase.load() == FacadePhase::Running &&
