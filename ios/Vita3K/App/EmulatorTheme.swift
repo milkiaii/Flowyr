@@ -96,6 +96,7 @@ extension View {
 }
 
 struct EmulatorCard<Content: View>: View {
+    @Environment(\.palette) private var palette
     let title: LocalizedStringKey
     @ViewBuilder let content: Content
     var body: some View {
@@ -104,16 +105,17 @@ struct EmulatorCard<Content: View>: View {
             content
         }
         .padding(20).frame(maxWidth: .infinity, alignment: .leading)
-        .background(EmulatorTheme.panel, in: RoundedRectangle(cornerRadius: 22))
+        .background(palette.panel, in: RoundedRectangle(cornerRadius: 22))
     }
 }
 
 struct JITBadge: View {
+    @Environment(\.palette) private var palette
     let status: CoreController.JITStatus
     var body: some View {
         Label(LocalizedStringKey(status.rawValue), systemImage: status == .ready ? "bolt.fill" : status == .checking ? "clock" : "bolt.slash.fill")
             .font(.caption.weight(.semibold))
-            .foregroundStyle(status == .ready ? EmulatorTheme.accent : status == .checking ? Color.secondary : EmulatorTheme.warning)
+            .foregroundStyle(status == .ready ? palette.accent : status == .checking ? Color.secondary : palette.warning)
             .padding(.horizontal, 12).padding(.vertical, 8)
             .background(.primary.opacity(0.06), in: Capsule())
             .accessibilityIdentifier("jit-status")
@@ -121,6 +123,7 @@ struct JITBadge: View {
 }
 
 struct LoggingModeBanner: View {
+    @Environment(\.palette) private var palette
     let mode: Vita3KCore.LoggingMode
 
     private var label: String {
@@ -146,9 +149,9 @@ struct LoggingModeBanner: View {
     private var tint: Color {
         switch mode {
         case .off: .secondary
-        case .debug: EmulatorTheme.debug
-        case .compat: EmulatorTheme.warning
-        case .performance: EmulatorTheme.performance
+        case .debug: palette.debug
+        case .compat: palette.warning
+        case .performance: palette.performance
         case .graphics: .purple
         }
     }
@@ -165,7 +168,7 @@ struct LoggingModeBanner: View {
         .padding(.horizontal, 20).padding(.vertical, 10)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(tint.opacity(0.12), in: Rectangle())
-        .background(EmulatorTheme.background)
+        .background(palette.background)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text("\(Text(LocalizedStringKey(label))) ativo"))
         .accessibilityIdentifier("logging-mode")
@@ -174,17 +177,18 @@ struct LoggingModeBanner: View {
 }
 
 struct GameArtwork: View {
+    @Environment(\.palette) private var palette
     let titleID: String
     @State private var artwork: UIImage?
     var body: some View {
         ZStack {
-            LinearGradient(colors: [EmulatorTheme.artworkBackground, EmulatorTheme.panel],
+            LinearGradient(colors: [palette.artworkBackground, palette.panel],
                            startPoint: .topLeading, endPoint: .bottomTrailing)
             if let artwork {
                 Image(uiImage: artwork).resizable().scaledToFit()
             } else {
                 Image(systemName: "gamecontroller.fill")
-                    .font(.system(size: 44, weight: .light)).foregroundStyle(EmulatorTheme.accent.opacity(0.7))
+                    .font(.system(size: 44, weight: .light)).foregroundStyle(palette.accent.opacity(0.7))
             }
         }
         .aspectRatio(1, contentMode: .fit)
