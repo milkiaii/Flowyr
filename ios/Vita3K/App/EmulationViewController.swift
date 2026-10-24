@@ -596,7 +596,8 @@ final class EmulationViewController: UIViewController {
 
     private func installEditorBar() {
         guard editorHost == nil else { return }
-        editorModel.onModeChange = { [weak self] group in self?.vpad.editMode = group ? .group : .individual }
+        editorModel.onModeChange = { [weak self] mode in self?.vpad.editMode = VirtualGamepadView.EditMode(rawValue: mode) ?? .individual }
+        editorModel.onDynamicChange = { [weak self] in self?.vpad.setNeedsLayout() }
         editorModel.onScale = { [weak self] value in self?.vpad.setSelectionScale(value) }
         editorModel.onOpacity = { [weak self] value in self?.vpad.setSelectionOpacity(value) }
         editorModel.onReset = { [weak self] in self?.vpad.resetLayoutToDefault() }
@@ -632,7 +633,7 @@ final class EmulationViewController: UIViewController {
         homeMenu.isHidden = true
         homeButton.isHidden = true
         homeHotspot.isHidden = true
-        editorModel.groupMode = false
+        editorModel.mode = 0
         editorModel.scopeIsGame = vpad.gameHasOwnLayout
         editorModel.selectionTitle = nil
         vpad.editMode = .individual

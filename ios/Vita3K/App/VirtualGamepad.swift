@@ -291,7 +291,11 @@ final class VirtualStickView: UIView {
 
     private func handle(_ touch: UITouch?) {
         guard let touch else { return }
-        let p = touch.location(in: self)
+        track(at: touch.location(in: self))
+    }
+
+    /// Moves the knob toward `p` (in this view's coordinates).
+    func track(at p: CGPoint) {
         let cx = bounds.width / 2
         let cy = bounds.height / 2
         var dx = p.x - cx
@@ -349,7 +353,7 @@ final class VirtualGamepadView: UIView {
     }
 
     // Editing
-    enum EditMode { case individual, group }
+    enum EditMode: Int { case individual, group, all }
     private(set) var isEditing = false
     var editMode: EditMode = .individual {
         didSet { if editMode != oldValue { notifySelection(); updateOverlay() } }
@@ -364,6 +368,12 @@ final class VirtualGamepadView: UIView {
     private let selectedOverlay = CAShapeLayer()
     private var lastPan: CGPoint = .zero
     private var editGestures: [UIGestureRecognizer] = []
+    /// Fingers currently driving a floating stick.
+    private var floating: [PadElement: UITouch] = [:]
+    static let dynamicSticksPreference = "emulation.dynamicSticks"
+    private var dynamicSticks: Bool {
+        UserDefaults.standard.bool(forKey: Self.dynamicSticksPreference)
+    }
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -378,6 +388,7 @@ final class VirtualGamepadView: UIView {
     private func commonInit() {
         backgroundColor = .clear
         isUserInteractionEnabled = true
+        isMultipleTouchEnabled = true
         addSubview(leftStickView)
         addSubview(rightStickView)
 
@@ -480,11 +491,16 @@ final class VirtualGamepadView: UIView {
         reloadLayoutIfNeeded()
         let shown = isActive || isEditing
         let defaults = defaultFrames()
+        let dynamic = dynamicSticks && !isEditing
         for element in PadElement.allCases {
             let v = view(for: element)
-            v.isHidden = !shown
+            let isStick = element == .leftStick || element == .rightStick
+            // A floating stick keeps the place where the finger landed.
+            if isStick, floating[element] != nil { continue }
+            // Dynamic sticks only appear under a finger.
+            v.isHidden = !shown || (isStick && dynamic)
             v.frame = frame(of: element, defaults: defaults)
-            v.isUserInteractionEnabled = !isEditing
+            v.isUserInteractionEnabled = !isEditing && !(isStick && dynamicSticks)
             v.alpha = CGFloat(layout[element.rawValue]?.opacity ?? 1)
             if v is VirtualStickView, v.bounds.width > 0 {
                 (v as? VirtualStickView)?.knobSize(v.bounds.width * 0.4)
@@ -498,13 +514,87 @@ final class VirtualGamepadView: UIView {
         // Editing: the whole pad area is the canvas. Otherwise empty overlay
         // space belongs to the game's front touchscreen.
         if isEditing { return true }
+        if isActive, dynamicSticks, dynamicElement(at: point) != nil { return true }
         return isActive && subviews.contains { !$0.isHidden && $0.frame.contains(point) }
+    }
+
+    // MARK: Dynamic sticks
+
+    /// Which floating stick a touch starting at `point` would drive, or nil.
+    /// Only empty space in the lower left / lower right counts: never on a key
+    /// (with a margin), and never in the middle or top, which stay free for
+    /// the game's own touch screen.
+    private func dynamicElement(at point: CGPoint) -> PadElement? {
+        let W = bounds.width, H = bounds.height
+        guard W > 0, H > 0 else { return nil }
+        let top = landscape ? H * 0.28 : 0
+        guard point.y >= top else { return nil }
+        let element: PadElement
+        if point.x < W * 0.4 { element = .leftStick }
+        else if point.x > W * 0.6 { element = .rightStick }
+        else { return nil }
+        let defaults = defaultFrames()
+        for key in PadElement.allCases where key != .leftStick && key != .rightStick {
+            if frame(of: key, defaults: defaults).insetBy(dx: -14, dy: -14).contains(point) { return nil }
+        }
+        return element
+    }
+
+    private func stickView(_ element: PadElement) -> VirtualStickView {
+        element == .leftStick ? leftStickView : rightStickView
+    }
+
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard isActive, dynamicSticks, !isEditing else { return super.touchesBegan(touches, with: event) }
+        for touch in touches {
+            let p = touch.location(in: self)
+            guard let element = dynamicElement(at: p), floating[element] == nil else { continue }
+            let stick = stickView(element)
+            let size = frame(of: element, defaults: defaultFrames()).size
+            var origin = CGPoint(x: p.x - size.width / 2, y: p.y - size.height / 2)
+            origin.x = min(max(origin.x, 0), bounds.width - size.width)
+            origin.y = min(max(origin.y, 0), bounds.height - size.height)
+            floating[element] = touch
+            stick.frame = CGRect(origin: origin, size: size)
+            stick.knobSize(size.width * 0.4)
+            stick.alpha = CGFloat(layout[element.rawValue]?.opacity ?? 1)
+            stick.isHidden = false
+            stick.track(at: touch.location(in: stick))
+        }
+    }
+
+    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard !floating.isEmpty else { return super.touchesMoved(touches, with: event) }
+        for (element, touch) in floating where touches.contains(touch) {
+            let stick = stickView(element)
+            stick.track(at: touch.location(in: stick))
+        }
+    }
+
+    private func endFloating(_ touches: Set<UITouch>) {
+        for (element, touch) in floating where touches.contains(touch) {
+            floating[element] = nil
+            let stick = stickView(element)
+            stick.center()
+            stick.isHidden = true
+        }
+    }
+
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        endFloating(touches)
+        super.touchesEnded(touches, with: event)
+    }
+
+    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
+        endFloating(touches)
+        super.touchesCancelled(touches, with: event)
     }
 
     func resetInput() {
         pressed.removeAll()
         pressedExt.removeAll()
         for button in buttonCache.values { button.isHighlighted = false }
+        floating.removeAll()
         leftStickView.center()
         rightStickView.center()
         leftStick = (0, 0)
@@ -609,6 +699,7 @@ final class VirtualGamepadView: UIView {
     // MARK: - Layout editing
 
     private var targets: [PadElement] {
+        if editMode == .all { return PadElement.allCases }
         guard let selected else { return [] }
         return editMode == .group ? selected.group.members : [selected]
     }
@@ -650,7 +741,7 @@ final class VirtualGamepadView: UIView {
     func setSelectionScale(_ value: Double) {
         let members = targets
         guard let first = members.first else { return }
-        let old = layout[first.rawValue]?.scale ?? 1
+        let old = layout[(editMode == .all ? PadElement.cross : first).rawValue]?.scale ?? 1
         let ratio = value / max(old, 0.01)
         let defaults = defaultFrames()
         let centers = members.map { m -> CGPoint in
@@ -662,7 +753,7 @@ final class VirtualGamepadView: UIView {
         for (i, m) in members.enumerated() {
             var t = layout[m.rawValue] ?? ControlTransform()
             t.scale = min(max(t.scale * ratio, 0.5), 2.2)
-            if members.count > 1, let base = defaults[m] {
+            if members.count > 1, editMode != .all, let base = defaults[m] {
                 let c = CGPoint(x: centroid.x + (centers[i].x - centroid.x) * ratio,
                                 y: centroid.y + (centers[i].y - centroid.y) * ratio)
                 t.dx = Double((c.x - base.midX) / bounds.width)
@@ -686,7 +777,13 @@ final class VirtualGamepadView: UIView {
     }
 
     private func notifySelection() {
-        guard isEditing, let selected else { onSelectionChange?(nil); return }
+        guard isEditing else { onSelectionChange?(nil); return }
+        if editMode == .all {
+            let t = layout[PadElement.cross.rawValue] ?? ControlTransform()
+            onSelectionChange?((L10n.text("Todos os botões"), t.scale, t.opacity))
+            return
+        }
+        guard let selected else { onSelectionChange?(nil); return }
         let title = editMode == .group ? selected.group.title : selected.title
         let t = layout[selected.rawValue] ?? ControlTransform()
         onSelectionChange?((title, t.scale, t.opacity))
@@ -707,6 +804,7 @@ final class VirtualGamepadView: UIView {
     @objc private func handleTap(_ gesture: UITapGestureRecognizer) {
         guard isEditing else { return }
         selected = element(at: gesture.location(in: self))
+        if editMode == .all { notifySelection() }
     }
 
     @objc private func handlePan(_ gesture: UIPanGestureRecognizer) {
@@ -715,6 +813,7 @@ final class VirtualGamepadView: UIView {
         case .began:
             lastPan = .zero
             if let hit = element(at: gesture.location(in: self)) { selected = hit }
+            else if editMode != .all { selected = nil }
         case .changed:
             let t = gesture.translation(in: self)
             var dx = t.x - lastPan.x
@@ -747,7 +846,7 @@ final class VirtualGamepadView: UIView {
 
     private func updateOverlay() {
         overlay.isHidden = !isEditing
-        selectedOverlay.isHidden = !isEditing || selected == nil
+        selectedOverlay.isHidden = !isEditing || (selected == nil && editMode != .all)
         guard isEditing else { return }
         overlay.frame = bounds
         selectedOverlay.frame = bounds
@@ -766,12 +865,13 @@ final class VirtualGamepadView: UIView {
 
 @MainActor
 final class ControlsEditorModel: ObservableObject {
-    @Published var groupMode = false
+    @Published var mode = 0   // 0 individual, 1 group, 2 all
     @Published var scopeIsGame = false
     @Published var selectionTitle: String?
     @Published var scale: Double = 1
     @Published var opacity: Double = 1
-    var onModeChange: ((Bool) -> Void)?
+    var onModeChange: ((Int) -> Void)?
+    var onDynamicChange: (() -> Void)?
     var onScale: ((Double) -> Void)?
     var onOpacity: ((Double) -> Void)?
     var onReset: (() -> Void)?
@@ -781,15 +881,17 @@ final class ControlsEditorModel: ObservableObject {
 
 struct ControlsEditorBar: View {
     @ObservedObject var model: ControlsEditorModel
+    @AppStorage(VirtualGamepadView.dynamicSticksPreference) private var dynamicSticks = false
 
     var body: some View {
         VStack(spacing: 10) {
             HStack(spacing: 10) {
-                Picker("", selection: Binding(get: { model.groupMode }, set: { model.groupMode = $0; model.onModeChange?($0) })) {
-                    Text("Individual").tag(false)
-                    Text("Grupo").tag(true)
+                Picker("", selection: Binding(get: { model.mode }, set: { model.mode = $0; model.onModeChange?($0) })) {
+                    Text("Individual").tag(0)
+                    Text("Grupo").tag(1)
+                    Text("Todos").tag(2)
                 }
-                .pickerStyle(.segmented).frame(maxWidth: 190)
+                .pickerStyle(.segmented).frame(maxWidth: 250)
                 Text(model.selectionTitle ?? L10n.text("Toque num botão para selecioná-lo"))
                     .font(.caption.weight(.semibold)).foregroundStyle(.secondary).lineLimit(1)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -801,6 +903,10 @@ struct ControlsEditorBar: View {
                 sliderColumn(icon: "circle.lefthalf.filled", label: "Opacidade",
                              value: Binding(get: { model.opacity }, set: { model.opacity = $0; model.onOpacity?($0) }),
                              range: 0.15...1)
+            }
+            Toggle(isOn: Binding(get: { dynamicSticks }, set: { dynamicSticks = $0; model.onDynamicChange?() })) {
+                Label("Analógicos dinâmicos", systemImage: "hand.point.up.left.fill")
+                    .font(.footnote.weight(.semibold))
             }
             HStack(spacing: 8) {
                 Picker("", selection: $model.scopeIsGame) {
