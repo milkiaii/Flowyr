@@ -37,6 +37,7 @@ struct SettingSection: Identifiable {
 }
 
 struct PadSettingsPage: View {
+    @Environment(\.palette) private var palette
     let sections: [SettingSection]
     /// False while another screen is pushed on top: the pad then belongs to it.
     var isActive = true
@@ -63,7 +64,7 @@ struct PadSettingsPage: View {
                 }
                 .padding(20).frame(maxWidth: 680).frame(maxWidth: .infinity)
             }
-            .background(EmulatorTheme.background)
+            .background { ThemedBackground() }
             .onChange(of: pad.lastEvent) { _, event in
                 guard isActive, let event else { return }
                 handle(event.button, proxy: proxy)
@@ -89,7 +90,7 @@ struct PadSettingsPage: View {
                 ForEach(section.items) { item in row(item).id(item.id) }
             }
             .padding(6)
-            .background(EmulatorTheme.panel, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .background(palette.panel, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
             if let footer = section.footer {
                 Text(footer).font(.caption).foregroundStyle(.secondary).padding(.horizontal, 6)
             }
@@ -167,7 +168,7 @@ struct PadSettingsPage: View {
             }
             VStack(alignment: .leading, spacing: 3) {
                 Text(item.title).font(.body)
-                    .foregroundStyle(item.destructive ? EmulatorTheme.warning : .primary)
+                    .foregroundStyle(item.destructive ? palette.warning : .primary)
                 if let detail = item.detail {
                     Text(detail).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }

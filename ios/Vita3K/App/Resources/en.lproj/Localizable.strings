@@ -309,3 +309,7 @@
 "O jogo não foi encontrado ou tem um caminho inválido. Atualize a biblioteca." = "The game was not found or has an invalid path. Refresh the library.";
 "Uma pasta do jogo usa um caminho inválido. Verifique os arquivos e tente novamente." = "A game folder uses an invalid path. Check the files and try again.";
 "Não foi possível remover todos os arquivos do jogo. Verifique o armazenamento e tente novamente." = "Could not remove all of the game's files. Check storage and try again.";
+"Tema" = "Theme";
+"Escuro" = "Dark";
+"Claro" = "Light";
+"Vita" = "Vita";

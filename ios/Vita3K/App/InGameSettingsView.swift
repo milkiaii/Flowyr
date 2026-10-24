@@ -7,6 +7,7 @@ import SwiftUI
 import Vita3KCore
 
 struct InGameSettingsView: View {
+    @Environment(\.palette) private var palette
     let titleId: String
     var onDone: () -> Void
     /// Stops and relaunches the game (the caller closes the sheet).
@@ -25,7 +26,6 @@ struct InGameSettingsView: View {
     @AppStorage("emulation.hideHome") private var hideHome = false
     // The sheet is hosted from UIKit, so it does not inherit the app-wide
     // tint and color scheme set in ContentView: apply them here.
-    @AppStorage(EmulatorTheme.lightModePreference) private var lightMode = false
     @State private var loaded = false
     @State private var loading = false
     @State private var message = ""
@@ -40,7 +40,7 @@ struct InGameSettingsView: View {
                     PadSettingsPage(sections: sections, status: message, onClose: onDone)
                 } else {
                     ScrollView { Text(message.isEmpty ? "…" : message).foregroundStyle(.secondary).padding(20) }
-                        .background(EmulatorTheme.background)
+                        .background { ThemedBackground() }
                 }
             }
             .navigationTitle("In-Game Settings")
@@ -58,8 +58,6 @@ struct InGameSettingsView: View {
         } message: {
             Text("Unsaved progress will be lost.")
         }
-        .tint(EmulatorTheme.accent)
-        .preferredColorScheme(lightMode ? .light : .dark)
         .onAppear { load() }
     }
 

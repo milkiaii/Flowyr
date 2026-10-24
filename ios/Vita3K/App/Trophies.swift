@@ -155,6 +155,7 @@ enum TrophyImageLoader {
 }
 
 struct TrophyImage: View {
+    @Environment(\.palette) private var palette
     let path: String
     var radius: CGFloat = 12
     @State private var image: UIImage?
@@ -162,7 +163,7 @@ struct TrophyImage: View {
     var body: some View {
         // The image is an overlay so its fill size never changes the layout
         // size (a wide icon used to push the text underneath it).
-        Rectangle().fill(EmulatorTheme.artworkBackground)
+        Rectangle().fill(palette.artworkBackground)
             .overlay {
                 if let image {
                     Image(uiImage: image).resizable().scaledToFill()
@@ -211,12 +212,12 @@ struct ProgressBar: View {
 // MARK: - Browser
 
 struct TrophiesView: View {
+    @Environment(\.palette) private var palette
     /// Opens straight into this trophy set (the running game).
     var openID: String?
     let onClose: () -> Void
     @StateObject private var store = TrophyStore()
     @ObservedObject private var pad = GamepadInput.shared
-    @AppStorage(EmulatorTheme.lightModePreference) private var lightMode = false
     @State private var selected: TrophyCollection?
     @State private var focus = 0
     @State private var detailFocus = 0
@@ -237,9 +238,7 @@ struct TrophiesView: View {
                 }
             }
         }
-        .background(EmulatorTheme.background)
-        .tint(EmulatorTheme.accent)
-        .preferredColorScheme(lightMode ? .light : .dark)
+        .background { ThemedBackground() }
         .task {
             await store.reload()
             if let openID, let match = store.collections.first(where: { $0.id == openID }) {
@@ -319,7 +318,7 @@ struct TrophiesView: View {
             }
         }
         .padding(12)
-        .background(EmulatorTheme.panel, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .background(palette.panel, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
         .contentShape(Rectangle())
     }
 
@@ -350,7 +349,7 @@ struct TrophiesView: View {
                         GradeCounts(counts: c.counts).frame(maxWidth: .infinity, alignment: .leading)
                     }
                     .padding(16)
-                    .background(EmulatorTheme.panel, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+                    .background(palette.panel, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
                     ForEach(Array(c.trophies.enumerated()), id: \.element.id) { index, trophy in
                         row(trophy)
                             .overlay { ring(pad.connected && detailFocus == index, radius: 18) }
@@ -370,7 +369,7 @@ struct TrophiesView: View {
         HStack(spacing: 12) {
             ZStack(alignment: .bottomTrailing) {
                 if t.isSecret {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous).fill(EmulatorTheme.artworkBackground)
+                    RoundedRectangle(cornerRadius: 12, style: .continuous).fill(palette.artworkBackground)
                         .overlay(Image(systemName: "questionmark").foregroundStyle(.secondary))
                 } else {
                     TrophyImage(path: t.iconPath, radius: 12)
@@ -395,7 +394,7 @@ struct TrophiesView: View {
         }
         .padding(10)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(EmulatorTheme.panel.opacity(t.earned ? 1 : 0.6), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background(palette.panel.opacity(t.earned ? 1 : 0.6), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 
     // MARK: Navigation
@@ -467,6 +466,7 @@ final class TrophyBannerModel: ObservableObject {
 }
 
 struct TrophyBannerView: View {
+    @Environment(\.palette) private var palette
     @ObservedObject var model: TrophyBannerModel
 
     var body: some View {
@@ -477,7 +477,7 @@ struct TrophyBannerView: View {
                         if let icon = unlock.icon {
                             Image(uiImage: icon).resizable().scaledToFill()
                         } else {
-                            Rectangle().fill(EmulatorTheme.artworkBackground)
+                            Rectangle().fill(palette.artworkBackground)
                             Image(systemName: "trophy.fill").foregroundStyle(unlock.grade.tint)
                         }
                     }

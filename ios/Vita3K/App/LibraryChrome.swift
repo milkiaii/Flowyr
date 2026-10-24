@@ -75,15 +75,21 @@ final class DeviceStatus: ObservableObject {
 
 // MARK: - Top bar
 
-private extension View {
-    func chromePill() -> some View {
-        self
-            .background(EmulatorTheme.panel, in: Capsule())
+private struct ChromePill: ViewModifier {
+    @Environment(\.palette) private var palette
+    func body(content: Content) -> some View {
+        content
+            .background(palette.panel, in: Capsule())
             .overlay(Capsule().strokeBorder(Color.primary.opacity(0.10), lineWidth: 1))
     }
 }
 
+private extension View {
+    func chromePill() -> some View { modifier(ChromePill()) }
+}
+
 struct LibraryTopBar: View {
+    @Environment(\.palette) private var palette
     @ObservedObject var status: DeviceStatus
     let jitStatus: CoreController.JITStatus
     let onJITTap: () -> Void
@@ -100,14 +106,14 @@ struct LibraryTopBar: View {
         HStack(spacing: 8) {
             Image("LogoMark")
                 .resizable().scaledToFit()
-                .frame(width: 28, height: 28)
-                .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+                .frame(width: 22, height: 22)
+                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
             Text(verbatim: "VEEB-SE")
-                .font(.system(size: 14, weight: .heavy, design: .rounded))
-                .tracking(1.4)
+                .font(.system(size: 12, weight: .semibold))
+                .tracking(1.2)
                 .lineLimit(1)
         }
-        .padding(.leading, 8).padding(.trailing, 14).padding(.vertical, 7)
+        .padding(.leading, 10).padding(.trailing, 14).frame(height: 34)
         .chromePill()
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(verbatim: "Veeb-SE"))
@@ -166,7 +172,7 @@ struct LibraryTopBar: View {
         switch jitStatus {
         case .ready: .primary
         case .checking: .secondary
-        case .unavailable: EmulatorTheme.warning
+        case .unavailable: palette.warning
         }
     }
 }
@@ -205,6 +211,7 @@ enum AddAction: CaseIterable, Identifiable {
 
 /// A floating card above the bottom bar: one tile per kind of content.
 struct AddContentPanel: View {
+    @Environment(\.palette) private var palette
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     let onSelect: (AddAction) -> Void
 
@@ -253,7 +260,7 @@ struct AddContentPanel: View {
             .foregroundStyle(.primary)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 9)
-            .background(EmulatorTheme.panel.opacity(0.7), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .background(palette.panel.opacity(0.7), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -335,9 +342,8 @@ struct LibraryFloatingBar: View {
                 .accessibilityIdentifier("open-settings")
         }
         .padding(.horizontal, 22).padding(.vertical, 6)
-        .background(.regularMaterial, in: Capsule())
-        .overlay(Capsule().strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
-        .shadow(color: .black.opacity(0.25), radius: 14, y: 6)
+        .chromePill()
+        .shadow(color: .black.opacity(0.18), radius: 12, y: 5)
     }
 
     private func barButton(_ symbol: String, rotated: Bool = false, action: @escaping () -> Void) -> some View {
@@ -405,6 +411,7 @@ enum GameCoverLoader {
 /// 16:9 cover. Wide artwork fills the frame; square icons are fitted on the
 /// panel gradient instead of being cropped.
 struct GameCover: View {
+    @Environment(\.palette) private var palette
     let titleID: String
     var cornerRadius: CGFloat = 16
     @AppStorage(GameIconStyle.preference) private var classicIcons = false
@@ -424,7 +431,7 @@ struct GameCover: View {
                         if let image {
                             Image(uiImage: image).resizable().scaledToFill()
                         } else {
-                            EmulatorTheme.panel
+                            palette.panel
                         }
                     }
                     .frame(width: geo.size.width, height: geo.size.height)
@@ -433,7 +440,7 @@ struct GameCover: View {
                 .aspectRatio(1, contentMode: .fit)
             } else {
                 ZStack {
-                    LinearGradient(colors: [EmulatorTheme.artworkBackground, EmulatorTheme.panel],
+                    LinearGradient(colors: [palette.artworkBackground, palette.panel],
                                    startPoint: .topLeading, endPoint: .bottomTrailing)
                     if let image {
                         if isWide {
@@ -589,10 +596,11 @@ struct GameCarousel: View {
             GameCover(titleID: game.titleId, cornerRadius: 22)
                 .frame(width: width)
             Text(game.title.isEmpty ? game.titleId : game.title)
-                .font(.subheadline.weight(.semibold))
+                .font(.system(size: 15, weight: .regular))
                 .lineLimit(1)
             Text(game.titleId)
-                .font(.caption2.monospaced())
+                .font(.system(size: 11, weight: .light))
+                .tracking(0.6)
                 .foregroundStyle(.secondary)
         }
         .frame(width: width)

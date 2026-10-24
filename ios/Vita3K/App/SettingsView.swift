@@ -10,7 +10,12 @@ struct SettingsView: View {
     @AppStorage("emulation.showStatus") private var showStatus = false
     @AppStorage(VirtualGamepadView.dynamicSticksPreference) private var dynamicSticks = false
     @AppStorage(AppOrientation.preference) private var forceLandscape = false
-    @AppStorage(EmulatorTheme.lightModePreference) private var lightMode = false
+    @AppStorage(EmulatorTheme.themePreference) private var themeRaw = ""
+    @AppStorage(EmulatorTheme.lightModePreference) private var legacyLight = false
+    private var themeIndex: Binding<Int> {
+        Binding(get: { (AppTheme(rawValue: themeRaw) ?? (legacyLight ? .light : .vita)).index },
+                set: { themeRaw = AppTheme.allCases[$0].rawValue })
+    }
     @AppStorage(GameIconStyle.preference) private var classicIcons = false
     @AppStorage(UISounds.preference) private var uiSounds = true
     @AppStorage(AppLanguage.preference) private var language = AppLanguage.english.rawValue
@@ -63,7 +68,8 @@ struct SettingsView: View {
                             kind: .choice(languageIndex, AppLanguage.allCases.map(\.name)))
             ], footer: "A alteração é aplicada imediatamente e fica salva para a próxima abertura. O idioma dos jogos não é alterado."),
             SettingSection(id: "appearance", title: "Aparência", items: [
-                SettingItem(id: "light", title: "Tema claro", symbol: "sun.max.fill", kind: .toggle($lightMode)),
+                SettingItem(id: "light", title: "Tema", symbol: "paintpalette.fill",
+                            kind: .choice(themeIndex, AppTheme.allCases.map { L10n.text($0.label) })),
                 SettingItem(id: "sounds", title: "Sons da interface", symbol: "speaker.wave.2.fill", kind: .toggle($uiSounds)),
                 SettingItem(id: "icons", title: "Ícones dos jogos", detail: "Arte larga usa a imagem de fundo do jogo. Ícone clássico usa o ícone quadrado do jogo.",
                             symbol: "square.grid.2x2.fill",
@@ -114,6 +120,7 @@ struct SettingsView: View {
 }
 
 struct DiagnosticsView: View {
+    @Environment(\.palette) private var palette
     @EnvironmentObject var controller: CoreController
     @State private var jitDetails = ""
     @Environment(\.dismiss) private var dismiss
@@ -138,7 +145,7 @@ struct DiagnosticsView: View {
                 reportCard("Log", controller.log)
             }.padding(20).frame(maxWidth: 1000).frame(maxWidth: .infinity)
         }
-        .background(EmulatorTheme.background)
+        .background { ThemedBackground() }
         .navigationTitle("Diagnóstico").navigationBarTitleDisplayMode(.inline)
         .onAppear { pad.start(owner: padOwner) }
         .onDisappear { pad.stop(owner: padOwner) }

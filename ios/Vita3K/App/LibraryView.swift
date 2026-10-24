@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct LibraryView: View {
+    @Environment(\.palette) private var palette
     @EnvironmentObject var controller: CoreController
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Environment(\.locale) private var locale
@@ -48,7 +49,7 @@ struct LibraryView: View {
 
     var body: some View {
         ZStack {
-            EmulatorTheme.background.ignoresSafeArea()
+            ThemedBackground()
             VStack(spacing: 0) {
                 LibraryTopBar(status: deviceStatus, jitStatus: controller.jitStatus) {
                     Task { _ = await controller.checkJIT() }
@@ -186,12 +187,12 @@ struct LibraryView: View {
                 }
             }
             .padding(.horizontal, 14).padding(.vertical, 10)
-            .background(EmulatorTheme.panel, in: Capsule())
+            .background(palette.panel, in: Capsule())
             Button { UISounds.shared.play(.tap); favoritesOnly.toggle() } label: {
                 Image(systemName: favoritesOnly ? "star.fill" : "star")
                     .font(.system(size: 16, weight: .semibold))
                     .frame(width: 42, height: 42)
-                    .background(EmulatorTheme.panel, in: Circle())
+                    .background(palette.panel, in: Circle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel(Text("Favoritos"))
@@ -410,7 +411,7 @@ struct LibraryView: View {
             }
             .padding(10)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(EmulatorTheme.panel, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .background(palette.panel, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain).accessibilityIdentifier("game-\(game.titleId)")
