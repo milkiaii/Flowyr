@@ -180,7 +180,7 @@ final class EmulationViewController: UIViewController {
     private let homeModel = GameMenuModel()
     private let trophyBanner = TrophyBannerModel()
     private let editorModel = ControlsEditorModel()
-    private var editorHost: UIHostingController<ControlsEditorBar>?
+    private var editorHost: UIHostingController<AnyView>?
     private var editingControls = false
     private var trophyTimer: Timer?
     private var userPaused = false
@@ -610,7 +610,7 @@ final class EmulationViewController: UIViewController {
                 self?.editorModel.opacity = selection.opacity
             }
         }
-        let host = UIHostingController(rootView: ControlsEditorBar(model: editorModel).appTheme())
+        let host = UIHostingController(rootView: AnyView(ControlsEditorBar(model: editorModel).appTheme()))
         host.view.backgroundColor = .clear
         host.view.translatesAutoresizingMaskIntoConstraints = false
         host.sizingOptions = [.intrinsicContentSize]
