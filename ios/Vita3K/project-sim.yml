@@ -36,6 +36,7 @@ targets:
       - path: App/Resources
       - path: App/ContentView.swift
       - path: App/EmulatorTheme.swift
+      - path: App/ThemeArt.swift
       - path: App/LibraryView.swift
       - path: App/LibraryChrome.swift
       - path: App/GamepadInput.swift

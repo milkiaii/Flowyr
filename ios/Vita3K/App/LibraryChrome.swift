@@ -75,15 +75,21 @@ final class DeviceStatus: ObservableObject {
 
 // MARK: - Top bar
 
-private extension View {
-    func chromePill() -> some View {
-        self
-            .background(EmulatorTheme.panel, in: Capsule())
+private struct ChromePill: ViewModifier {
+    @Environment(\.palette) private var palette
+    func body(content: Content) -> some View {
+        content
+            .background(palette.panel, in: Capsule())
             .overlay(Capsule().strokeBorder(Color.primary.opacity(0.10), lineWidth: 1))
     }
 }
 
+private extension View {
+    func chromePill() -> some View { modifier(ChromePill()) }
+}
+
 struct LibraryTopBar: View {
+    @Environment(\.palette) private var palette
     @ObservedObject var status: DeviceStatus
     let jitStatus: CoreController.JITStatus
     let onJITTap: () -> Void
@@ -166,7 +172,7 @@ struct LibraryTopBar: View {
         switch jitStatus {
         case .ready: .primary
         case .checking: .secondary
-        case .unavailable: EmulatorTheme.warning
+        case .unavailable: palette.warning
         }
     }
 }
@@ -205,6 +211,7 @@ enum AddAction: CaseIterable, Identifiable {
 
 /// A floating card above the bottom bar: one tile per kind of content.
 struct AddContentPanel: View {
+    @Environment(\.palette) private var palette
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     let onSelect: (AddAction) -> Void
 
@@ -253,7 +260,7 @@ struct AddContentPanel: View {
             .foregroundStyle(.primary)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 9)
-            .background(EmulatorTheme.panel.opacity(0.7), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .background(palette.panel.opacity(0.7), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -405,6 +412,7 @@ enum GameCoverLoader {
 /// 16:9 cover. Wide artwork fills the frame; square icons are fitted on the
 /// panel gradient instead of being cropped.
 struct GameCover: View {
+    @Environment(\.palette) private var palette
     let titleID: String
     var cornerRadius: CGFloat = 16
     @AppStorage(GameIconStyle.preference) private var classicIcons = false
@@ -424,7 +432,7 @@ struct GameCover: View {
                         if let image {
                             Image(uiImage: image).resizable().scaledToFill()
                         } else {
-                            EmulatorTheme.panel
+                            palette.panel
                         }
                     }
                     .frame(width: geo.size.width, height: geo.size.height)
@@ -433,7 +441,7 @@ struct GameCover: View {
                 .aspectRatio(1, contentMode: .fit)
             } else {
                 ZStack {
-                    LinearGradient(colors: [EmulatorTheme.artworkBackground, EmulatorTheme.panel],
+                    LinearGradient(colors: [palette.artworkBackground, palette.panel],
                                    startPoint: .topLeading, endPoint: .bottomTrailing)
                     if let image {
                         if isWide {

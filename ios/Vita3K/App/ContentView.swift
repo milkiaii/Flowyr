@@ -3,9 +3,9 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct ContentView: View {
+    @Environment(\.palette) private var palette
     @EnvironmentObject var controller: CoreController
     @Environment(\.scenePhase) private var scenePhase
-    @AppStorage(EmulatorTheme.lightModePreference) private var lightMode = false
     @State private var surfaceRequest: SurfaceRequest?
     @State private var showImporter = false
     @State private var importKind: ImportKind = .game
@@ -94,8 +94,7 @@ struct ContentView: View {
                 }
             }
             .environmentObject(controller)
-            .tint(EmulatorTheme.accent)
-            .preferredColorScheme(lightMode ? .light : .dark)
+            .appTheme()
         }
         .fileImporter(isPresented: $showImporter,
                       allowedContentTypes: importTypes,
@@ -149,7 +148,7 @@ struct ContentView: View {
         .overlay {
             if controller.isImporting || controller.isDeleting || controller.isSyncingSaves || launchInFlight {
                 VStack(spacing: 12) {
-                    ProgressView().tint(EmulatorTheme.accent)
+                    ProgressView().tint(palette.accent)
                     Text(LocalizedStringKey(controller.isDeleting ? "Apagando jogo…" : (controller.isImporting ? "Importando conteúdo…" : (controller.isSyncingSaves ? "Sincronizando saves…" : "Preparando o jogo…"))))
                         .font(.subheadline.weight(.medium))
                 }
@@ -157,8 +156,7 @@ struct ContentView: View {
                 .accessibilityIdentifier("operation-progress")
             }
         }
-        .tint(EmulatorTheme.accent)
-        .preferredColorScheme(lightMode ? .light : .dark)
+        .appTheme()
     }
 
     /// File picker filter for the chosen "+" menu entry.
