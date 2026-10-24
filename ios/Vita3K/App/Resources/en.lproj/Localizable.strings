@@ -301,3 +301,11 @@
 "Todos os botões" = "All buttons";
 "Analógicos dinâmicos" = "Dynamic sticks";
 "O analógico aparece onde você toca nas áreas livres da esquerda e da direita." = "The stick appears where you touch in the free areas on the left and right.";
+"Chave zRIF inválida. Cole a chave inteira, sem texto extra." = "Invalid zRIF key. Paste the whole key, without extra text.";
+"Encerre a sessão antes de apagar um jogo." = "End the session before deleting a game.";
+"Aguarde a operação em andamento e tente novamente." = "Wait for the current operation to finish and try again.";
+"A biblioteca ainda não foi inicializada." = "The library has not been initialized yet.";
+"Identificador de jogo inválido." = "Invalid game identifier.";
+"O jogo não foi encontrado ou tem um caminho inválido. Atualize a biblioteca." = "The game was not found or has an invalid path. Refresh the library.";
+"Uma pasta do jogo usa um caminho inválido. Verifique os arquivos e tente novamente." = "A game folder uses an invalid path. Check the files and try again.";
+"Não foi possível remover todos os arquivos do jogo. Verifique o armazenamento e tente novamente." = "Could not remove all of the game's files. Check storage and try again.";

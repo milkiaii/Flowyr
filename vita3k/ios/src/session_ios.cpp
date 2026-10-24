@@ -908,10 +908,20 @@ int vita3k_ios_session_install_zrif(const char *zrif, char *out, size_t out_size
     if (!s.initialized || !s.emuenv || !zrif)
         return fail(-1, "O emulador não está pronto para importar conteúdo.");
     try {
-        std::string key(zrif);
-        key.erase(std::remove_if(key.begin(), key.end(), [](unsigned char c) { return std::isspace(c); }), key.end());
+        // Keep only base64 characters: pasted keys often carry spaces, line
+        // breaks, quotes or invisible characters. The URL-safe alphabet
+        // ('-' and '_', as used in file names) is mapped to the standard one.
+        std::string key;
+        for (const char raw : std::string(zrif)) {
+            char c = raw;
+            if (c == '-') c = '+';
+            else if (c == '_') c = '/';
+            if (std::isalnum(static_cast<unsigned char>(c)) || c == '+' || c == '/' || c == '=')
+                key.push_back(c);
+        }
+        LOG_INFO("iOS zRIF install: key length {}", key.size());
         if (!validate_zrif(key))
-            return fail(-2, "Chave zRIF inválida.");
+            return fail(-2, "Chave zRIF inválida. Cole a chave inteira, sem texto extra.");
         if (!create_license(*s.emuenv, key))
             return fail(-4, "Não foi possível instalar a licença a partir da chave zRIF.");
         report += "Licença instalada a partir da chave zRIF.\n";

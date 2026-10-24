@@ -184,6 +184,7 @@ enum ImportReport {
         let prefixes: [(String, String)] = [
             ("Este PKG precisa de uma licença", "Este PKG precisa de uma licença. Toque em + e adicione a licença ou a chave zRIF; depois instale o PKG de novo."),
             ("Arquivo de importação não encontrado", "Arquivo de importação não encontrado."),
+            ("Chave zRIF inválida", "Chave zRIF inválida. Cole a chave inteira, sem texto extra."),
             ("Falha na importação", "Falha na importação."),
         ]
         var out: [String] = []
@@ -194,5 +195,15 @@ enum ImportReport {
             if t != line || line.first?.isUppercase == true { out.append(t) }
         }
         return out.isEmpty ? L10n.format("Falha na importação (código %d)", rc) : out.joined(separator: "\n")
+    }
+}
+
+
+/// Messages produced by the core are written in Portuguese: show them in the app language.
+enum CoreMessage {
+    static func localized(_ report: String) -> String {
+        report.split(separator: "\n", omittingEmptySubsequences: true)
+            .map { L10n.text(String($0)) }
+            .joined(separator: "\n")
     }
 }
