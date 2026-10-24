@@ -880,6 +880,7 @@ final class ControlsEditorModel: ObservableObject {
 }
 
 struct ControlsEditorBar: View {
+    @Environment(\.palette) private var palette
     @ObservedObject var model: ControlsEditorModel
     @AppStorage(VirtualGamepadView.dynamicSticksPreference) private var dynamicSticks = false
 
@@ -932,7 +933,7 @@ struct ControlsEditorBar: View {
         .shadow(color: .black.opacity(0.3), radius: 18, y: 8)
         .padding(.horizontal, 12)
         .environment(\.colorScheme, .dark)
-        .tint(EmulatorTheme.accent)
+        .tint(palette.accent)
     }
 }
 

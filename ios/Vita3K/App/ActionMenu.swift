@@ -12,6 +12,7 @@ struct MenuAction: Identifiable {
 }
 
 struct ActionMenuCard<Header: View>: View {
+    @Environment(\.palette) private var palette
     let actions: [MenuAction]
     /// Index with the controller highlight, or nil when no pad is in use.
     var focus: Int?
@@ -49,10 +50,10 @@ struct ActionMenuCard<Header: View>: View {
                 Text(action.title).font(.body.weight(.medium))
                 Spacer(minLength: 0)
             }
-            .foregroundStyle(action.destructive ? EmulatorTheme.warning : .primary)
+            .foregroundStyle(action.destructive ? palette.warning : .primary)
             .padding(.horizontal, 10).padding(.vertical, 9)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(focused ? Color.primary.opacity(0.10) : EmulatorTheme.panel.opacity(0.6),
+            .background(focused ? Color.primary.opacity(0.10) : palette.panel.opacity(0.6),
                         in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .strokeBorder(Color.primary.opacity(focused ? 0.55 : 0), lineWidth: 2))
@@ -96,7 +97,6 @@ struct GameMenuView: View {
     let onTrophies: () -> Void
     let onControls: () -> Void
     let onExit: () -> Void
-    @AppStorage(EmulatorTheme.lightModePreference) private var lightMode = false
 
     static let actions: [MenuAction] = [
         MenuAction(id: "resume", title: "Continuar", symbol: "play.fill"),
@@ -120,7 +120,6 @@ struct GameMenuView: View {
             default: onExit()
             }
         }, onDismiss: onResume)
-        .tint(EmulatorTheme.accent)
-        .preferredColorScheme(lightMode ? .light : .dark)
+        .appTheme()
     }
 }

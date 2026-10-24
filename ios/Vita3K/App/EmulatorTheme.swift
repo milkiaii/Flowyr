@@ -1,29 +1,98 @@
 import SwiftUI
 import UIKit
 
+struct ArtColors: Sendable {
+    let bg0: Color, bg1: Color, ink: Color, soft: Color
+}
+
+struct Palette: Sendable {
+    let background: Color
+    let panel: Color
+    let artworkBackground: Color
+    let accent: Color
+    let warning: Color
+    let debug: Color
+    let performance: Color
+    let scheme: ColorScheme
+    var art: ArtColors? = nil
+}
+
+enum AppTheme: String, CaseIterable, Sendable {
+    case dark, light, pink, miku
+
+    var index: Int { Self.allCases.firstIndex(of: self) ?? 0 }
+
+    var label: String {
+        switch self {
+        case .dark: "Escuro"
+        case .light: "Claro"
+        case .pink: "Rosa"
+        case .miku: "Miku"
+        }
+    }
+
+    var palette: Palette {
+        switch self {
+        case .dark:
+            Palette(background: Color(hex: 0x000000), panel: Color(hex: 0x1C1C1E), artworkBackground: Color(hex: 0x2C2C2E),
+                    accent: Color(hex: 0xAEAEB2), warning: Color(hex: 0xFF6B61), debug: Color(hex: 0xFFD60A),
+                    performance: Color(hex: 0x64D2FF), scheme: .dark)
+        case .light:
+            Palette(background: Color(hex: 0xFFFFFF), panel: Color(hex: 0xF2F2F4), artworkBackground: Color(hex: 0xE3E3E8),
+                    accent: Color(hex: 0x48484A), warning: Color(hex: 0xB3261E), debug: Color(hex: 0x805500),
+                    performance: Color(hex: 0x006B80), scheme: .light)
+        case .pink:
+            Palette(background: Color(hex: 0xFDDCE9), panel: Color(hex: 0xFFF4F8, alpha: 0.82), artworkBackground: Color(hex: 0xF8C4DA),
+                    accent: Color(hex: 0xC93F7A), warning: Color(hex: 0xB3261E), debug: Color(hex: 0x805500),
+                    performance: Color(hex: 0x8A3FA8), scheme: .light,
+                    art: ArtColors(bg0: Color(hex: 0xFDDCE9), bg1: Color(hex: 0xF8C4DA), ink: Color(hex: 0xDE6C98), soft: Color(hex: 0xF4A3C2)))
+        case .miku:
+            Palette(background: Color(hex: 0xDDF7F6), panel: Color(hex: 0xF3FFFE, alpha: 0.82), artworkBackground: Color(hex: 0xBFEBEB),
+                    accent: Color(hex: 0x1B8F92), warning: Color(hex: 0xB3261E), debug: Color(hex: 0x805500),
+                    performance: Color(hex: 0x1F6FA8), scheme: .light,
+                    art: ArtColors(bg0: Color(hex: 0xDDF7F6), bg1: Color(hex: 0xBFEBEB), ink: Color(hex: 0x3DB5B7), soft: Color(hex: 0x86D8D8)))
+        }
+    }
+}
+
+extension Color {
+    init(hex: UInt32, alpha: Double = 1) {
+        self.init(.sRGB, red: Double((hex >> 16) & 0xFF) / 255, green: Double((hex >> 8) & 0xFF) / 255,
+                  blue: Double(hex & 0xFF) / 255, opacity: alpha)
+    }
+}
+
+private struct PaletteKey: EnvironmentKey {
+    static let defaultValue = AppTheme.dark.palette
+}
+
+extension EnvironmentValues {
+    var palette: Palette {
+        get { self[PaletteKey.self] }
+        set { self[PaletteKey.self] = newValue }
+    }
+}
+
 enum EmulatorTheme {
     static let lightModePreference = "interface.lightMode"
+    static let themePreference = "interface.theme"
+}
 
-    // Monochrome palette: black / gray / white in dark mode, inverted in light.
-    static let background = adaptive(light: 0xFFFFFF, dark: 0x000000)
-    static let panel = adaptive(light: 0xF2F2F4, dark: 0x1C1C1E)
-    static let artworkBackground = adaptive(light: 0xE3E3E8, dark: 0x2C2C2E)
-    // Soft gray rather than pure white/black so switches and tinted controls
-    // keep a visible knob/contrast against their track.
-    static let accent = adaptive(light: 0x48484A, dark: 0xAEAEB2)
-    // Red, so warnings stay distinct from the orange accent.
-    static let warning = adaptive(light: 0xB3261E, dark: 0xFF6B61)
-    static let debug = adaptive(light: 0x805500, dark: 0xFFD60A)
-    static let performance = adaptive(light: 0x006B80, dark: 0x64D2FF)
-
-    private static func adaptive(light: UInt32, dark: UInt32) -> Color {
-        Color(uiColor: UIColor { traits in
-            let rgb = traits.userInterfaceStyle == .dark ? dark : light
-            return UIColor(red: CGFloat((rgb >> 16) & 0xFF) / 255,
-                           green: CGFloat((rgb >> 8) & 0xFF) / 255,
-                           blue: CGFloat(rgb & 0xFF) / 255, alpha: 1)
-        })
+struct AppThemeModifier: ViewModifier {
+    @AppStorage(EmulatorTheme.themePreference) private var raw = ""
+    @AppStorage(EmulatorTheme.lightModePreference) private var legacyLight = false
+    private var theme: AppTheme { AppTheme(rawValue: raw) ?? (legacyLight ? .light : .dark) }
+    func body(content: Content) -> some View {
+        let p = theme.palette
+        content
+            .environment(\.palette, p)
+            .tint(p.accent)
+            .preferredColorScheme(p.scheme)
     }
+}
+
+extension View {
+    func appTheme() -> some View { modifier(AppThemeModifier()) }
 }
 
 struct EmulatorCard<Content: View>: View {

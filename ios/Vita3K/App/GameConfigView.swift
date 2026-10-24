@@ -8,6 +8,7 @@ import SwiftUI
 import Vita3KCore
 
 struct GameConfigView: View {
+    @Environment(\.palette) private var palette
     let titleId: String
     let title: String
     var onDone: () -> Void
@@ -55,7 +56,7 @@ struct GameConfigView: View {
                 } else {
                     ScrollView {
                         Text(message).font(.subheadline).foregroundStyle(.secondary).padding(20)
-                    }.background(EmulatorTheme.background)
+                    }.background(palette.background)
                 }
             }
             .navigationTitle("Config do jogo")
