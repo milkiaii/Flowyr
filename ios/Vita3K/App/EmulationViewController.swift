@@ -350,10 +350,17 @@ final class EmulationViewController: UIViewController {
         root.bringSubviewToFront(homeMenu)
         installTrophyBanner()
 
+        // Top-left, level with the HOME button, in both orientations; it shrinks rather
+        // than run under the button on narrow screens.
+        let perfTrailing = performanceOverlay.trailingAnchor.constraint(lessThanOrEqualTo: homeButton.leadingAnchor, constant: -6)
+        perfTrailing.priority = .defaultHigh
         NSLayoutConstraint.activate([
-            performanceOverlay.leadingAnchor.constraint(equalTo: root.safeAreaLayoutGuide.leadingAnchor, constant: 12),
-            performanceOverlay.topAnchor.constraint(equalTo: root.safeAreaLayoutGuide.topAnchor, constant: 8),
-            performanceOverlay.trailingAnchor.constraint(lessThanOrEqualTo: homeButton.leadingAnchor, constant: -8),
+            performanceOverlay.leadingAnchor.constraint(equalTo: root.safeAreaLayoutGuide.leadingAnchor, constant: 8),
+            performanceOverlay.centerYAnchor.constraint(equalTo: homeButton.centerYAnchor),
+            perfTrailing,
+        ])
+
+        NSLayoutConstraint.activate([
 
             homeButton.topAnchor.constraint(equalTo: root.safeAreaLayoutGuide.topAnchor),
             homeButton.centerXAnchor.constraint(equalTo: root.centerXAnchor),

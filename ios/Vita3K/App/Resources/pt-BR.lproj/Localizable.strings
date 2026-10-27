@@ -317,3 +317,8 @@
 "Paisagem" = "Paisagem";
 "Mais" = "Mais";
 "Menos" = "Menos";
+"Cool" = "Frio";
+"Warm" = "Morno";
+"Hot" = "Quente";
+"Critical" = "Crítico";
+"Bateria" = "Bateria";

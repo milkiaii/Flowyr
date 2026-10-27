@@ -313,7 +313,15 @@
 "Escuro" = "Dark";
 "Claro" = "Light";
 "Vita" = "Vita";
+<<<<<<< HEAD
 "Retrato" = "Portrait";
 "Paisagem" = "Landscape";
 "Mais" = "More";
 "Menos" = "Less";
+=======
+"Cool" = "Cool";
+"Warm" = "Warm";
+"Hot" = "Hot";
+"Critical" = "Critical";
+"Bateria" = "Battery";
+>>>>>>> performance-overlay
