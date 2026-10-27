@@ -313,3 +313,8 @@
 "Escuro" = "Dark";
 "Claro" = "Light";
 "Vita" = "Vita";
+"Cool" = "Cool";
+"Warm" = "Warm";
+"Hot" = "Hot";
+"Critical" = "Critical";
+"Bateria" = "Battery";

@@ -350,10 +350,20 @@ final class EmulationViewController: UIViewController {
         root.bringSubviewToFront(homeMenu)
         installTrophyBanner()
 
-        NSLayoutConstraint.activate([
+        // Landscape: the pill sits beside the HOME button. Portrait: there is no room
+        // next to it, so it drops to a row of its own right under the button.
+        perfLandscapeConstraints = [
             performanceOverlay.leadingAnchor.constraint(equalTo: root.safeAreaLayoutGuide.leadingAnchor, constant: 12),
-            performanceOverlay.topAnchor.constraint(equalTo: root.safeAreaLayoutGuide.topAnchor, constant: 8),
+            performanceOverlay.centerYAnchor.constraint(equalTo: homeButton.centerYAnchor),
             performanceOverlay.trailingAnchor.constraint(lessThanOrEqualTo: homeButton.leadingAnchor, constant: -8),
+        ]
+        perfPortraitConstraints = [
+            performanceOverlay.centerXAnchor.constraint(equalTo: root.centerXAnchor),
+            performanceOverlay.topAnchor.constraint(equalTo: homeButton.bottomAnchor, constant: 6),
+        ]
+        updatePerformanceOverlayPlacement()
+
+        NSLayoutConstraint.activate([
 
             homeButton.topAnchor.constraint(equalTo: root.safeAreaLayoutGuide.topAnchor),
             homeButton.centerXAnchor.constraint(equalTo: root.centerXAnchor),
@@ -379,8 +389,21 @@ final class EmulationViewController: UIViewController {
         ])
     }
 
+    private var perfLandscapeConstraints: [NSLayoutConstraint] = []
+    private var perfPortraitConstraints: [NSLayoutConstraint] = []
+
+    private func updatePerformanceOverlayPlacement() {
+        let portrait = view.bounds.height > view.bounds.width
+        let on = portrait ? perfPortraitConstraints : perfLandscapeConstraints
+        let off = portrait ? perfLandscapeConstraints : perfPortraitConstraints
+        guard !on.isEmpty, !on[0].isActive else { return }
+        NSLayoutConstraint.deactivate(off)
+        NSLayoutConstraint.activate(on)
+    }
+
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
+        updatePerformanceOverlayPlacement()
         // Fullscreen: the surface fills the safe area (no top bar). In
         // portrait the game sits on top and the on-screen pad below it.
         let safe = view.safeAreaLayoutGuide.layoutFrame
