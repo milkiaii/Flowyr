@@ -69,14 +69,17 @@ final class PerformanceOverlayView: UIView {
     private func caption(_ text: String) -> UILabel {
         let l = UILabel()
         l.text = text
-        l.font = .systemFont(ofSize: 9.5, weight: .medium)
+        l.font = .systemFont(ofSize: 8, weight: .medium)
         l.textColor = UIColor.white.withAlphaComponent(0.6)
         l.textAlignment = .center
         return l
     }
 
     private func style(_ l: UILabel) {
-        l.font = .monospacedDigitSystemFont(ofSize: 15, weight: .semibold)
+        l.font = .monospacedDigitSystemFont(ofSize: 12, weight: .semibold)
+        l.adjustsFontSizeToFitWidth = true
+        l.minimumScaleFactor = 0.7
+        l.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         l.textColor = .white
         l.textAlignment = .center
         l.text = "—"
@@ -95,7 +98,7 @@ final class PerformanceOverlayView: UIView {
         v.backgroundColor = UIColor.white.withAlphaComponent(0.16)
         v.translatesAutoresizingMaskIntoConstraints = false
         v.widthAnchor.constraint(equalToConstant: 1).isActive = true
-        v.heightAnchor.constraint(equalToConstant: 24).isActive = true
+        v.heightAnchor.constraint(equalToConstant: 18).isActive = true
         return v
     }
 
@@ -104,7 +107,7 @@ final class PerformanceOverlayView: UIView {
         isUserInteractionEnabled = false
         isAccessibilityElement = true
         accessibilityIdentifier = "performance-overlay"
-        layer.cornerRadius = 16
+        layer.cornerRadius = 12
         layer.cornerCurve = .continuous
         layer.borderWidth = 1
         layer.borderColor = UIColor.white.withAlphaComponent(0.14).cgColor
@@ -113,13 +116,13 @@ final class PerformanceOverlayView: UIView {
         addSubview(blur)
         [fpsValue, memoryValue, batteryValue, tempValue].forEach(style)
 
-        tempDot.layer.cornerRadius = 4
+        tempDot.layer.cornerRadius = 3
         tempDot.translatesAutoresizingMaskIntoConstraints = false
-        tempDot.widthAnchor.constraint(equalToConstant: 8).isActive = true
-        tempDot.heightAnchor.constraint(equalToConstant: 8).isActive = true
-        tempValue.font = .systemFont(ofSize: 15, weight: .semibold)
+        tempDot.widthAnchor.constraint(equalToConstant: 6).isActive = true
+        tempDot.heightAnchor.constraint(equalToConstant: 6).isActive = true
+        tempValue.font = .systemFont(ofSize: 12, weight: .semibold)
         let tempRow = UIStackView(arrangedSubviews: [tempDot, tempValue])
-        tempRow.spacing = 4
+        tempRow.spacing = 3
         tempRow.alignment = .center
 
         let stack = UIStackView(arrangedSubviews: [
@@ -130,16 +133,16 @@ final class PerformanceOverlayView: UIView {
         ])
         stack.axis = .horizontal
         stack.alignment = .center
-        stack.spacing = 10
+        stack.spacing = 5
         stack.translatesAutoresizingMaskIntoConstraints = false
         addSubview(stack)
         NSLayoutConstraint.activate([
             blur.leadingAnchor.constraint(equalTo: leadingAnchor), blur.trailingAnchor.constraint(equalTo: trailingAnchor),
             blur.topAnchor.constraint(equalTo: topAnchor), blur.bottomAnchor.constraint(equalTo: bottomAnchor),
-            stack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12),
-            stack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12),
-            stack.topAnchor.constraint(equalTo: topAnchor, constant: 6),
-            stack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -6),
+            stack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 9),
+            stack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -9),
+            stack.topAnchor.constraint(equalTo: topAnchor, constant: 4),
+            stack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -4),
         ])
         UIDevice.current.isBatteryMonitoringEnabled = true
     }
