@@ -175,6 +175,12 @@ final class PadKeyButton: UIButton {
 
     override var isHighlighted: Bool { didSet { refresh() } }
 
+    /// Small keys keep a finger-sized touch target (44 pt) however far they are scaled down.
+    override func point(inside point: CGPoint, with event: UIEvent?) -> Bool {
+        let dx = max(0, (44 - bounds.width) / 2), dy = max(0, (44 - bounds.height) / 2)
+        return bounds.insetBy(dx: -dx, dy: -dy).contains(point)
+    }
+
     private func refresh() {
         let on = isHighlighted
         backgroundColor = on ? UIColor.white.withAlphaComponent(0.9) : UIColor.black.withAlphaComponent(0.34)
@@ -364,6 +370,12 @@ final class VirtualGamepadView: UIView {
     /// Reports (title, scale) of the selection, or nil when nothing is selected.
     var onSelectionChange: (((title: String, scale: Double, opacity: Double)?) -> Void)?
     private var layoutBeforeEditing: ControlsLayout = [:]
+    /// While editing, each orientation keeps its own working copy so rotating the
+    /// phone never leaks edits from one orientation into the other.
+    private var editLandscape = false
+    private var editOriginal: [Bool: ControlsLayout] = [:]
+    private var editStash: [Bool: ControlsLayout] = [:]
+    var onEditOrientationChange: ((Bool) -> Void)?
     private let overlay = CAShapeLayer()
     private let selectedOverlay = CAShapeLayer()
     private var lastPan: CGPoint = .zero
@@ -479,6 +491,11 @@ final class VirtualGamepadView: UIView {
 
     private var landscape: Bool { bounds.width > bounds.height }
 
+    private func hitFrame(_ v: UIView) -> CGRect {
+        guard v is PadKeyButton else { return v.frame }
+        return v.frame.insetBy(dx: -max(0, (44 - v.frame.width) / 2), dy: -max(0, (44 - v.frame.height) / 2))
+    }
+
     private func reloadLayoutIfNeeded() {
         let key = "\(titleID ?? "-")|\(landscape)"
         guard key != loadedKey, !isEditing else { return }
@@ -486,8 +503,22 @@ final class VirtualGamepadView: UIView {
         layout = ControlsLayoutStore.load(titleID: titleID, landscape: landscape)
     }
 
+    private func switchEditOrientationIfNeeded() {
+        guard isEditing, bounds.width > 0, landscape != editLandscape else { return }
+        editStash[editLandscape] = layout
+        editLandscape = landscape
+        if editOriginal[landscape] == nil {
+            editOriginal[landscape] = ControlsLayoutStore.load(titleID: titleID, landscape: landscape)
+        }
+        layout = editStash[landscape] ?? editOriginal[landscape] ?? [:]
+        selected = nil
+        notifySelection()
+        onEditOrientationChange?(landscape)
+    }
+
     override func layoutSubviews() {
         super.layoutSubviews()
+        switchEditOrientationIfNeeded()
         reloadLayoutIfNeeded()
         let shown = isActive || isEditing
         let defaults = defaultFrames()
@@ -515,7 +546,7 @@ final class VirtualGamepadView: UIView {
         // space belongs to the game's front touchscreen.
         if isEditing { return true }
         if isActive, dynamicSticks, dynamicElement(at: point) != nil { return true }
-        return isActive && subviews.contains { !$0.isHidden && $0.frame.contains(point) }
+        return isActive && subviews.contains { !$0.isHidden && hitFrame($0).contains(point) }
     }
 
     // MARK: Dynamic sticks
@@ -707,7 +738,11 @@ final class VirtualGamepadView: UIView {
     func beginEditing() {
         resetInput()
         layoutBeforeEditing = layout
+        editLandscape = landscape
+        editOriginal = [landscape: layout]
+        editStash = [:]
         isEditing = true
+        onEditOrientationChange?(landscape)
         editGestures.forEach { $0.isEnabled = true }
         selected = nil
         isUserInteractionEnabled = true
@@ -716,11 +751,17 @@ final class VirtualGamepadView: UIView {
 
     /// Ends editing; `scope` saves the layout (nil discards the changes).
     func endEditing(save scope: LayoutScope?) {
+        editStash[editLandscape] = layout
         if let scope {
-            ControlsLayoutStore.save(layout, scope: scope, titleID: titleID, landscape: landscape)
+            // Only orientations that were actually changed are written.
+            for (orientation, edited) in editStash where edited != (editOriginal[orientation] ?? [:]) {
+                ControlsLayoutStore.save(edited, scope: scope, titleID: titleID, landscape: orientation)
+            }
         } else {
             layout = layoutBeforeEditing
         }
+        editStash = [:]
+        editOriginal = [:]
         isEditing = false
         editGestures.forEach { $0.isEnabled = false }
         selected = nil
@@ -793,7 +834,8 @@ final class VirtualGamepadView: UIView {
         let defaults = defaultFrames()
         var best: (PadElement, CGFloat)?
         for element in PadElement.allCases {
-            let f = frame(of: element, defaults: defaults).insetBy(dx: -8, dy: -8)
+            let base = frame(of: element, defaults: defaults)
+            let f = base.insetBy(dx: -max(8, (44 - base.width) / 2), dy: -max(8, (44 - base.height) / 2))
             guard f.contains(point) else { continue }
             let d = hypot(f.midX - point.x, f.midY - point.y)
             if best == nil || d < best!.1 { best = (element, d) }
@@ -870,6 +912,8 @@ final class ControlsEditorModel: ObservableObject {
     @Published var selectionTitle: String?
     @Published var scale: Double = 1
     @Published var opacity: Double = 1
+    @Published var expanded = false
+    @Published var landscape = false
     var onModeChange: ((Int) -> Void)?
     var onDynamicChange: (() -> Void)?
     var onScale: ((Double) -> Void)?
@@ -885,19 +929,22 @@ struct ControlsEditorBar: View {
     @AppStorage(VirtualGamepadView.dynamicSticksPreference) private var dynamicSticks = false
 
     var body: some View {
-        VStack(spacing: 10) {
-            HStack(spacing: 10) {
+        VStack(spacing: 8) {
+            HStack(spacing: 8) {
                 Picker("", selection: Binding(get: { model.mode }, set: { model.mode = $0; model.onModeChange?($0) })) {
                     Text("Individual").tag(0)
                     Text("Grupo").tag(1)
                     Text("Todos").tag(2)
                 }
-                .pickerStyle(.segmented).frame(maxWidth: 250)
-                Text(model.selectionTitle ?? L10n.text("Toque num botão para selecioná-lo"))
-                    .font(.caption.weight(.semibold)).foregroundStyle(.secondary).lineLimit(1)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                .pickerStyle(.segmented)
+                Button(L10n.text("Cancelar")) { model.onCancel?() }
+                    .buttonStyle(.bordered)
+                Button(L10n.text("Salvar")) { model.onSave?(model.scopeIsGame ? .game : .global) }
+                    .buttonStyle(.borderedProminent)
             }
-            HStack(alignment: .top, spacing: 16) {
+            .controlSize(.small)
+            .font(.footnote.weight(.semibold))
+            HStack(alignment: .top, spacing: 14) {
                 sliderColumn(icon: "arrow.up.left.and.arrow.down.right", label: "Tamanho",
                              value: Binding(get: { model.scale }, set: { model.scale = $0; model.onScale?($0) }),
                              range: 0.5...2.2)
@@ -905,28 +952,41 @@ struct ControlsEditorBar: View {
                              value: Binding(get: { model.opacity }, set: { model.opacity = $0; model.onOpacity?($0) }),
                              range: 0.15...1)
             }
-            Toggle(isOn: Binding(get: { dynamicSticks }, set: { dynamicSticks = $0; model.onDynamicChange?() })) {
-                Label("Analógicos dinâmicos", systemImage: "hand.point.up.left.fill")
-                    .font(.footnote.weight(.semibold))
-            }
-            HStack(spacing: 8) {
-                Picker("", selection: $model.scopeIsGame) {
-                    Text("Todos os jogos").tag(false)
-                    Text("Este jogo").tag(true)
+            HStack(spacing: 6) {
+                Label(L10n.text(model.landscape ? "Paisagem" : "Retrato"),
+                      systemImage: model.landscape ? "rectangle.landscape.rotate" : "rectangle.portrait.rotate")
+                    .font(.caption2.weight(.bold))
+                    .padding(.horizontal, 7).padding(.vertical, 3)
+                    .background(Color.primary.opacity(0.12), in: Capsule())
+                    .fixedSize()
+                Text(model.selectionTitle ?? L10n.text("Toque num botão para selecioná-lo"))
+                    .font(.caption.weight(.semibold)).foregroundStyle(.secondary).lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) { model.expanded.toggle() }
+                } label: {
+                    Label(L10n.text(model.expanded ? "Menos" : "Mais"), systemImage: model.expanded ? "chevron.up" : "chevron.down")
+                        .font(.caption.weight(.semibold))
                 }
-                .pickerStyle(.segmented)
-                Button(L10n.text("Redefinir")) { model.onReset?() }
-                    .font(.footnote.weight(.semibold)).buttonStyle(.bordered)
+                .buttonStyle(.plain)
             }
-            HStack(spacing: 10) {
-                Button(L10n.text("Cancelar")) { model.onCancel?() }
-                    .frame(maxWidth: .infinity).buttonStyle(.bordered)
-                Button(L10n.text("Salvar")) { model.onSave?(model.scopeIsGame ? .game : .global) }
-                    .frame(maxWidth: .infinity).buttonStyle(.borderedProminent)
+            if model.expanded {
+                Toggle(isOn: Binding(get: { dynamicSticks }, set: { dynamicSticks = $0; model.onDynamicChange?() })) {
+                    Label("Analógicos dinâmicos", systemImage: "hand.point.up.left.fill")
+                        .font(.footnote.weight(.semibold))
+                }
+                HStack(spacing: 8) {
+                    Picker("", selection: $model.scopeIsGame) {
+                        Text("Todos os jogos").tag(false)
+                        Text("Este jogo").tag(true)
+                    }
+                    .pickerStyle(.segmented)
+                    Button(L10n.text("Redefinir")) { model.onReset?() }
+                        .font(.footnote.weight(.semibold)).buttonStyle(.bordered).controlSize(.small)
+                }
             }
-            .font(.subheadline.weight(.semibold))
         }
-        .padding(14)
+        .padding(10)
         .frame(maxWidth: 440)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))

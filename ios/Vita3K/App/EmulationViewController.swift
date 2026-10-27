@@ -603,6 +603,7 @@ final class EmulationViewController: UIViewController {
         editorModel.onReset = { [weak self] in self?.vpad.resetLayoutToDefault() }
         editorModel.onCancel = { [weak self] in self?.finishControlsEditing(save: nil) }
         editorModel.onSave = { [weak self] scope in self?.finishControlsEditing(save: scope) }
+        vpad.onEditOrientationChange = { [weak self] landscape in self?.editorModel.landscape = landscape }
         vpad.onSelectionChange = { [weak self] selection in
             self?.editorModel.selectionTitle = selection?.title
             if let selection {
@@ -634,6 +635,7 @@ final class EmulationViewController: UIViewController {
         homeButton.isHidden = true
         homeHotspot.isHidden = true
         editorModel.mode = 0
+        editorModel.expanded = false
         editorModel.scopeIsGame = vpad.gameHasOwnLayout
         editorModel.selectionTitle = nil
         vpad.editMode = .individual
