@@ -313,3 +313,7 @@
 "Escuro" = "Dark";
 "Claro" = "Light";
 "Vita" = "Vita";
+"Retrato" = "Portrait";
+"Paisagem" = "Landscape";
+"Mais" = "More";
+"Menos" = "Less";
