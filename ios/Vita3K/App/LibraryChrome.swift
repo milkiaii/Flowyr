@@ -130,6 +130,8 @@ struct LibraryTopBar: View {
                 Image(systemName: jitSymbol)
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(jitColor)
+                    .shadow(color: jitStatus == .ready ? jitColor.opacity(0.9) : .clear, radius: 5)
+                    .shadow(color: jitStatus == .ready ? jitColor.opacity(0.5) : .clear, radius: 10)
                     .frame(width: 40, height: 34)
             }
             .buttonStyle(.plain)
@@ -170,7 +172,7 @@ struct LibraryTopBar: View {
 
     private var jitColor: Color {
         switch jitStatus {
-        case .ready: .primary
+        case .ready: Color(red: 0.25, green: 0.88, blue: 0.45)
         case .checking: .secondary
         case .unavailable: palette.warning
         }
