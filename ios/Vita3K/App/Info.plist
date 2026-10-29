@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-	<string>Veeb-SE</string>
+	<string>Flowyr</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -13,7 +13,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>Veeb-SE</string>
+	<string>Flowyr</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -28,12 +28,12 @@
 	<dict>
 		<!-- Xcode expands build settings in values, not dictionary keys.
 		     Keep this key in sync with ICLOUD_CONTAINER_IDENTIFIER. -->
-		<key>iCloud.dev.vita3k.VeebSE</key>
+		<key>iCloud.dev.vita3k.Flowyr</key>
 		<dict>
 			<key>NSUbiquitousContainerIsDocumentScopePublic</key>
 			<true/>
 			<key>NSUbiquitousContainerName</key>
-			<string>Veeb-SE</string>
+			<string>Flowyr</string>
 			<key>NSUbiquitousContainerSupportedFolderLevels</key>
 			<string>Any</string>
 		</dict>

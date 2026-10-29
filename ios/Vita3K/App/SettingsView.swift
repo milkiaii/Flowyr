@@ -13,7 +13,7 @@ struct SettingsView: View {
     @AppStorage(EmulatorTheme.themePreference) private var themeRaw = ""
     @AppStorage(EmulatorTheme.lightModePreference) private var legacyLight = false
     private var themeIndex: Binding<Int> {
-        Binding(get: { (AppTheme(rawValue: themeRaw) ?? (legacyLight ? .light : .vita)).index },
+        Binding(get: { (AppTheme(rawValue: themeRaw) ?? (legacyLight ? .light : .flowyr)).index },
                 set: { themeRaw = AppTheme.allCases[$0].rawValue })
     }
     @AppStorage(GameIconStyle.preference) private var classicIcons = false
@@ -80,7 +80,7 @@ struct SettingsView: View {
                 SettingItem(id: "jit-check", title: "Verificar JIT agora", symbol: "bolt.fill",
                             kind: .action { Task { _ = await controller.checkJIT() } },
                             enabled: controller.jitStatus != .checking)
-            ], footer: "No iPhone, abra o Veeb pelo StikDebug usando o script Universal. A disponibilidade do JIT é verificada ao abrir o app e antes de iniciar um jogo.",
+            ], footer: "No iPhone, abra o Flowyr pelo StikDebug usando o script Universal. A disponibilidade do JIT é verificada ao abrir o app e antes de iniciar um jogo.",
                            accessory: AnyView(JITBadge(status: controller.jitStatus))),
             SettingSection(id: "controls", title: "Controles e tela", items: [
                 SettingItem(id: "landscape", title: "Forçar rotacionamento na horizontal", detail: "Mantém a interface e os jogos na horizontal, mesmo com o aparelho em pé.", symbol: "rotate.right.fill", kind: .toggle($forceLandscape)),
@@ -105,12 +105,12 @@ struct SettingsView: View {
                             kind: .info(L10n.text(controller.firmwareMask == 7 ? "Instalado" : "Incompleto"))),
                 SettingItem(id: "import", title: "Importar conteúdo", symbol: "square.and.arrow.down",
                             kind: .action(importContent), enabled: !controller.isImporting && controller.sessionInitialized),
-            ], footer: "Importe firmware PUP ou conteúdo de jogos VPK, ZIP, PKG e pastas. Ou use o app Arquivos: abra “No Meu iPhone” → “Veeb” — copie jogos para imports/ (instalados automaticamente) ou remova arquivos, ex. um jogo em vita/ux0/app."),
-            SettingSection(id: "about", title: "Sobre o Veeb", items: [
+            ], footer: "Importe firmware PUP ou conteúdo de jogos VPK, ZIP, PKG e pastas. Ou use o app Arquivos: abra “No Meu iPhone” → “Flowyr” — copie jogos para imports/ (instalados automaticamente) ou remova arquivos, ex. um jogo em vita/ux0/app."),
+            SettingSection(id: "about", title: "Sobre o Flowyr", items: [
                 SettingItem(id: "core", title: "Núcleo", kind: .info(controller.version.isEmpty ? L10n.text("Carregando…") : controller.version)),
                 SettingItem(id: "diagnostics", title: "Diagnóstico avançado", symbol: "waveform.path.ecg",
                             kind: .action { showDiagnostics = true }),
-            ], footer: "Vita is for Weebs · Emulador experimental de PlayStation Vita para iOS. Compatibilidade e desempenho variam por jogo."),
+            ], footer: "Emulador experimental de PlayStation Vita para iOS. Compatibilidade e desempenho variam por jogo."),
         ]
     }
 

@@ -310,22 +310,22 @@ endif()
 
 if(APPLE AND NOT IOS)
 	add_custom_command(
-		OUTPUT Veeb.icns
-		COMMAND mkdir -p Veeb.iconset
-		COMMAND sips -z 16 16     "${CMAKE_SOURCE_DIR}/logo.png" --out Veeb.iconset/icon_16x16.png
-		COMMAND sips -z 32 32     "${CMAKE_SOURCE_DIR}/logo.png" --out Veeb.iconset/icon_16x16@2x.png
-		COMMAND sips -z 32 32     "${CMAKE_SOURCE_DIR}/logo.png" --out Veeb.iconset/icon_32x32.png
-		COMMAND sips -z 64 64     "${CMAKE_SOURCE_DIR}/logo.png" --out Veeb.iconset/icon_32x32@2x.png
-		COMMAND sips -z 128 128   "${CMAKE_SOURCE_DIR}/logo.png" --out Veeb.iconset/icon_128x128.png
-		COMMAND sips -z 256 256   "${CMAKE_SOURCE_DIR}/logo.png" --out Veeb.iconset/icon_128x128@2x.png
-		COMMAND sips -z 256 256   "${CMAKE_SOURCE_DIR}/logo.png" --out Veeb.iconset/icon_256x256.png
-		COMMAND sips -z 512 512   "${CMAKE_SOURCE_DIR}/logo.png" --out Veeb.iconset/icon_256x256@2x.png
-		COMMAND sips -z 512 512   "${CMAKE_SOURCE_DIR}/logo.png" --out Veeb.iconset/icon_512x512.png
-		COMMAND sips -z 1024 1024 "${CMAKE_SOURCE_DIR}/logo.png" --out Veeb.iconset/icon_512x512@2x.png
-		COMMAND iconutil -c icns Veeb.iconset
-		COMMAND rm -r Veeb.iconset
+		OUTPUT Flowyr.icns
+		COMMAND mkdir -p Flowyr.iconset
+		COMMAND sips -z 16 16     "${CMAKE_SOURCE_DIR}/logo.png" --out Flowyr.iconset/icon_16x16.png
+		COMMAND sips -z 32 32     "${CMAKE_SOURCE_DIR}/logo.png" --out Flowyr.iconset/icon_16x16@2x.png
+		COMMAND sips -z 32 32     "${CMAKE_SOURCE_DIR}/logo.png" --out Flowyr.iconset/icon_32x32.png
+		COMMAND sips -z 64 64     "${CMAKE_SOURCE_DIR}/logo.png" --out Flowyr.iconset/icon_32x32@2x.png
+		COMMAND sips -z 128 128   "${CMAKE_SOURCE_DIR}/logo.png" --out Flowyr.iconset/icon_128x128.png
+		COMMAND sips -z 256 256   "${CMAKE_SOURCE_DIR}/logo.png" --out Flowyr.iconset/icon_128x128@2x.png
+		COMMAND sips -z 256 256   "${CMAKE_SOURCE_DIR}/logo.png" --out Flowyr.iconset/icon_256x256.png
+		COMMAND sips -z 512 512   "${CMAKE_SOURCE_DIR}/logo.png" --out Flowyr.iconset/icon_256x256@2x.png
+		COMMAND sips -z 512 512   "${CMAKE_SOURCE_DIR}/logo.png" --out Flowyr.iconset/icon_512x512.png
+		COMMAND sips -z 1024 1024 "${CMAKE_SOURCE_DIR}/logo.png" --out Flowyr.iconset/icon_512x512@2x.png
+		COMMAND iconutil -c icns Flowyr.iconset
+		COMMAND rm -r Flowyr.iconset
 		DEPENDS "${CMAKE_SOURCE_DIR}/logo.png")
-	set_source_files_properties(Veeb.icns PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
+	set_source_files_properties(Flowyr.icns PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
 
 	add_custom_command(
 		TARGET vita3k
@@ -353,14 +353,14 @@ if(APPLE AND NOT IOS)
 		string(APPEND vita3k_link_flags " -ld64")
 	endif()
 	set_target_properties(vita3k PROPERTIES LINK_FLAGS "${vita3k_link_flags}")
-	target_sources(vita3k PRIVATE Veeb.icns)
-	set(MACOSX_BUNDLE_ICON_FILE Veeb.icns)
+	target_sources(vita3k PRIVATE Flowyr.icns)
+	set(MACOSX_BUNDLE_ICON_FILE Flowyr.icns)
 	set(MACOSX_BUNDLE_GUI_IDENTIFIER "dev.vita3k.Vita3KIos")
-	set(MACOSX_BUNDLE_BUNDLE_NAME "Veeb")
-	set_target_properties(vita3k PROPERTIES OUTPUT_NAME Veeb
+	set(MACOSX_BUNDLE_BUNDLE_NAME "Flowyr")
+	set_target_properties(vita3k PROPERTIES OUTPUT_NAME Flowyr
 		MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/macos/Info.plist.in")
 	add_custom_command(TARGET vita3k POST_BUILD
-		COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:veeb-cloud>" "$<TARGET_FILE_DIR:vita3k>/../Frameworks/")
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:flowyr-cloud>" "$<TARGET_FILE_DIR:vita3k>/../Frameworks/")
 
 	message(STATUS "MoltenVK dylib path: ${MOLTENVK_DYLIB}")
 	target_sources(vita3k PRIVATE ${MOLTENVK_DYLIB})

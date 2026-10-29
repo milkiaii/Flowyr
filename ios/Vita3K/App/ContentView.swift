@@ -72,7 +72,7 @@ struct ContentView: View {
             Button("Verificar novamente") { Task { _ = await controller.checkJIT() } }
             Button("Continuar na biblioteca", role: .cancel) {}
         } message: {
-            Text("O JIT não está disponível nesta sessão. Abra o StikDebug, selecione o script Universal e inicie o Veeb por ele. Você pode organizar sua biblioteca sem JIT, mas precisa ativá-lo para jogar.")
+            Text("O JIT não está disponível nesta sessão. Abra o StikDebug, selecione o script Universal e inicie o Flowyr por ele. Você pode organizar sua biblioteca sem JIT, mas precisa ativá-lo para jogar.")
         }
         .alert("Não foi possível abrir o jogo", isPresented: Binding(
             get: { launchError != nil }, set: { if !$0 { launchError = nil } }

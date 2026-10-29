@@ -23,7 +23,7 @@ const char app_version[] = "${VITA3K_APP_VERSION}";
 const int app_number = ${GIT_COUNT};
 const char app_hash[] = "${GIT_HASH}";
 #ifdef __APPLE__
-const char window_title[] = "Veeb ${VITA3K_APP_VERSION} ${GIT_COUNT}-${VITA3K_GIT_REV}";
+const char window_title[] = "Flowyr ${VITA3K_APP_VERSION} ${GIT_COUNT}-${VITA3K_GIT_REV}";
 #else
 const char window_title[] = "${VITA3K_APP_NAME} ${VITA3K_APP_VERSION} ${GIT_COUNT}-${VITA3K_GIT_REV}";
 #endif

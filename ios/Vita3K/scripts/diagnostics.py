@@ -12,7 +12,7 @@ import sys
 import tempfile
 import time
 
-BUNDLE = "dev.vita3k.VeebSE"
+BUNDLE = "dev.vita3k.Flowyr"
 ROOT = Path(__file__).resolve().parents[3]
 BOUNDS = [1000, 2000, 4000, 8000, 12000, 16667, 20000, 25000, 33334,
           50000, 100000, 250000, 500000, 1000000, None]

@@ -315,7 +315,7 @@ final class SaveSyncControllerTests: XCTestCase {
             defaults.set(old, forKey: CloudSaveSync.preference)
         }
         cloudEnable(true)
-        let path = FileManager.default.temporaryDirectory.appendingPathComponent("Veeb-InUse-\(UUID().uuidString)")
+        let path = FileManager.default.temporaryDirectory.appendingPathComponent("Flowyr-InUse-\(UUID().uuidString)")
         path.path.withCString { cloudTick($0, false) }
         XCTAssertFalse(cloudBusy())
         let state = try XCTUnwrap(cloudState())

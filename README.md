@@ -1,15 +1,13 @@
-# Veeb
-
-> **Vita is for Weebs.**
+# Flowyr
 
 ![](logo-rounded.png)
 
-**Veeb** is an experimental PlayStation Vita emulator built specifically for **iOS 26 and newer**.
+**Flowyr** is an experimental PlayStation Vita emulator built specifically for **iOS 26 and newer**.
 
 The project is focused on bringing Vita emulation to modern Apple devices while providing an iOS-native experience, including controller support, iCloud save synchronization, and JIT execution through **StikDebug**.
 
 > [!WARNING]
-> Veeb is highly experimental. Compatibility, performance, and stability may vary significantly between games and iOS versions.
+> Flowyr is highly experimental. Compatibility, performance, and stability may vary significantly between games and iOS versions.
 
 ---
 
@@ -30,11 +28,11 @@ The project is focused on bringing Vita emulation to modern Apple devices while 
 
 PlayStation Vita emulation requires significantly more processing power than a traditional interpreter can reasonably provide on mobile devices.
 
-Veeb uses **StikDebug** to enable **JIT (Just-In-Time) compilation** on supported iOS devices.
+Flowyr uses **StikDebug** to enable **JIT (Just-In-Time) compilation** on supported iOS devices.
 
 JIT allows the emulator to dynamically compile guest code into native ARM64 code, providing substantially better performance than interpreter-only execution.
 
-Veeb does **not** attempt to bypass the iOS security model by itself. JIT availability depends on StikDebug and the environment used to launch Veeb.
+Flowyr does **not** attempt to bypass the iOS security model by itself. JIT availability depends on StikDebug and the environment used to launch Flowyr.
 
 Please refer to the StikDebug project documentation for installation, pairing, and JIT activation instructions.
 
@@ -53,22 +51,22 @@ Please refer to the StikDebug project documentation for installation, pairing, a
 
 ## Vita3K
 
-Veeb is a **fork of [Vita3K](https://vita3k.org/)**.
+Flowyr is a **fork of [Vita3K](https://vita3k.org/)**.
 
 The overwhelming majority of the difficult work required to understand and emulate the PlayStation Vita hardware and operating system was done by the original Vita3K developers and contributors.
 
-Veeb would not exist without their years of research, reverse engineering, development, testing, and maintenance.
+Flowyr would not exist without their years of research, reverse engineering, development, testing, and maintenance.
 
 A huge thank you to the entire **Vita3K team and community** for making an open-source PlayStation Vita emulator possible.
 
-The purpose of Veeb is not to replace Vita3K, but to adapt and experiment with its emulator core specifically for modern iOS devices.
+The purpose of Flowyr is not to replace Vita3K, but to adapt and experiment with its emulator core specifically for modern iOS devices.
 
 ---
 
 
 ## Compatibility
 
-Veeb currently targets:
+Flowyr currently targets:
 
 - **iOS 26 or newer**
 - ARM64 Apple devices
@@ -133,7 +131,7 @@ The objective is to improve compatibility without turning global emulator behavi
 
 ## Experimental Project
 
-Veeb is an experimental project.
+Flowyr is an experimental project.
 
 Expect:
 
@@ -151,13 +149,13 @@ Bug reports and reproducible test cases are especially valuable.
 
 ## Legal
 
-Veeb does **not** include PlayStation Vita firmware, system files, encryption keys, commercial games, or other copyrighted Sony software.
+Flowyr does **not** include PlayStation Vita firmware, system files, encryption keys, commercial games, or other copyrighted Sony software.
 
 Users are responsible for obtaining any required firmware, system files, games, and related content from hardware or software they legally own and in accordance with applicable laws.
 
 PlayStation and PlayStation Vita are trademarks of Sony Interactive Entertainment.
 
-Veeb is not affiliated with or endorsed by Sony Interactive Entertainment.
+Flowyr is not affiliated with or endorsed by Sony Interactive Entertainment.
 
 ---
 
@@ -165,15 +163,15 @@ Veeb is not affiliated with or endorsed by Sony Interactive Entertainment.
 
 Special thanks to:
 
-- **Vita3K developers and contributors** — for creating the emulator Veeb is based on and for the enormous amount of reverse-engineering work behind Vita emulation.
+- **Vita3K developers and contributors** — for creating the emulator Flowyr is based on and for the enormous amount of reverse-engineering work behind Vita emulation.
 - **Vita3K Plus developers and contributors** — for additional compatibility work and fixes for specific games.
-- **StikDebug developers and contributors** — for enabling the JIT workflow used by Veeb on iOS.
+- **StikDebug developers and contributors** — for enabling the JIT workflow used by Flowyr on iOS.
 - Everyone testing Vita games, submitting bug reports, investigating regressions, and contributing improvements to the Vita emulation community.
 
 ---
 
 ## License
 
-Veeb is derived from Vita3K and must comply with the licensing requirements of the upstream Vita3K project and any other incorporated open-source components.
+Flowyr is derived from Vita3K and must comply with the licensing requirements of the upstream Vita3K project and any other incorporated open-source components.
 
 See the repository's `LICENSE` file for the applicable license and copyright information.

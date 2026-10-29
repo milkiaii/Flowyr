@@ -64,11 +64,11 @@ AboutDialog::AboutDialog(EmuEnvState &emuenv, QWidget *parent)
 
 #ifdef __APPLE__
     m_ui->description_label->setText(QStringLiteral(
-        "<b>Veeb — Vita is for Weebs</b><br>"
+        "<b>Flowyr</b><br>"
         "Fork experimental do Vita3K para iOS e macOS.<br>"
         "Agradecemos ao time original do Vita3K e aos seus colaboradores. "
-        "Veeb é mantido separadamente; os links abaixo pertencem ao projeto original."));
-    m_ui->credit_label->setText(QStringLiteral("Logo do projeto Veeb. Código original e créditos: equipe Vita3K."));
+        "Flowyr é mantido separadamente; os links abaixo pertencem ao projeto original."));
+    m_ui->credit_label->setText(QStringLiteral("Logo do projeto Flowyr. Código original e créditos: equipe Vita3K."));
 #endif
 
     connect(m_ui->github_button, &QPushButton::clicked, [] {

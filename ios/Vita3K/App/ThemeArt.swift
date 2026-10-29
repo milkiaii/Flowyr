@@ -43,10 +43,10 @@ struct ThemedBackground: View {
     @Environment(\.palette) private var palette
     var body: some View {
         ZStack {
-            if palette.vita {
-                LinearGradient(stops: [.init(color: Color(hex: 0x063A8C), location: 0),
-                                       .init(color: Color(hex: 0x0B63C9), location: 0.55),
-                                       .init(color: Color(hex: 0x2FA3EA), location: 1)],
+            if let backdrop = palette.backdrop {
+                LinearGradient(stops: [.init(color: backdrop.top, location: 0),
+                                       .init(color: backdrop.mid, location: 0.55),
+                                       .init(color: backdrop.bottom, location: 1)],
                                startPoint: .top, endPoint: .bottom)
                 VitaBubbles()
             } else {

@@ -1,14 +1,14 @@
-# Veeb para macOS
+# Flowyr para macOS
 
-Veeb significa **“Vita is for Weebs”**. É um fork experimental do Vita3K para
+Flowyr é um fork experimental do Vita3K para
 iOS e macOS. Agradecemos ao time original do Vita3K e aos colaboradores.
 
 ```sh
-./build-macos.sh          # dist/macos/Veeb.app e Veeb.zip
+./build-macos.sh          # dist/macos/Flowyr.app e Flowyr.zip
 ./build-macos.sh --clean
 ```
 
-O nome no Finder, Dock, menus e janelas é Veeb. O ícone é gerado do `logo.png`
+O nome no Finder, Dock, menus e janelas é Flowyr. O ícone é gerado do `logo.png`
 da raiz. Os créditos e links do Vita3K original permanecem identificados como
 recursos do projeto original; a atualização automática pelo upstream está desativada.
 
@@ -29,13 +29,13 @@ aparelho. O identificador de usuário (por exemplo, `00`) é mantido entre apare
 O Mac usa `ux0/user/<usuário>/savedata` na pasta de armazenamento configurada;
 o iOS usa `Documents/vita/ux0/user/<usuário>/savedata`. Não é necessário mover saves.
 
-Os dois apps usam os mesmos documentos `.vitasave` em **iCloud Drive → Veeb → Saves**.
+Os dois apps usam os mesmos documentos `.vitasave` em **iCloud Drive → Flowyr → Saves**.
 Progresso divergente exige escolher a versão do Mac ou do iCloud. As revisões
 anteriores permanecem no iCloud, e saves locais substituídos são guardados em
 `Save Backups` na raiz de armazenamento. Desativar a opção não apaga saves nem cópias.
 É possível jogar offline; uma mensagem de envio pendente não significa perda do save.
 
-Atualize o Veeb nos dois aparelhos. Cópias da primeira implementação de iCloud
+Atualize o Flowyr nos dois aparelhos. Cópias da primeira implementação de iCloud
 podem conter caminhos incorretos; esta versão preserva essas cópias como histórico
 e impede sua restauração. Sincronize primeiro no aparelho que contém os saves
 originais: ele publica automaticamente revisões no formato corrigido, sem apagar

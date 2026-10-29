@@ -75,8 +75,8 @@ int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
     QCoreApplication::setOrganizationName(QStringLiteral("Vita3K"));
 #ifdef __APPLE__
-    QCoreApplication::setApplicationName(QStringLiteral("Veeb"));
-    QApplication::setApplicationDisplayName(QStringLiteral("Veeb"));
+    QCoreApplication::setApplicationName(QStringLiteral("Flowyr"));
+    QApplication::setApplicationDisplayName(QStringLiteral("Flowyr"));
 #else
     QCoreApplication::setApplicationName(QStringLiteral("Vita3K"));
 #endif

@@ -3,10 +3,10 @@
 <plist version="1.0"><dict>
   <key>CFBundleExecutable</key><string>${MACOSX_BUNDLE_EXECUTABLE_NAME}</string>
   <key>CFBundleIdentifier</key><string>dev.vita3k.Vita3KIos</string>
-  <key>CFBundleName</key><string>Veeb</string>
-  <key>CFBundleDisplayName</key><string>Veeb</string>
+  <key>CFBundleName</key><string>Flowyr</string>
+  <key>CFBundleDisplayName</key><string>Flowyr</string>
   <key>CFBundlePackageType</key><string>APPL</string>
-  <key>CFBundleIconFile</key><string>Veeb.icns</string>
+  <key>CFBundleIconFile</key><string>Flowyr.icns</string>
   <key>CFBundleShortVersionString</key><string>1.0</string>
   <key>CFBundleVersion</key><string>1</string>
   <key>NSHighResolutionCapable</key><true/>
@@ -15,7 +15,7 @@
   <key>NSUbiquitousContainers</key><dict>
     <key>iCloud.dev.vita3k.Vita3KIos</key><dict>
       <key>NSUbiquitousContainerIsDocumentScopePublic</key><true/>
-      <key>NSUbiquitousContainerName</key><string>Veeb</string>
+      <key>NSUbiquitousContainerName</key><string>Flowyr</string>
       <key>NSUbiquitousContainerSupportedFolderLevels</key><string>Any</string>
     </dict>
   </dict>

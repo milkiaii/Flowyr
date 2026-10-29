@@ -24,7 +24,7 @@ enum SaveSyncError: LocalizedError {
         case .unavailable: L10n.text("iCloud indisponível. Verifique sua conta, o iCloud Drive e se esta instalação tem acesso ao iCloud.")
         case .accountChanged: L10n.text("A conta do iCloud mudou. Sincronize novamente para continuar.")
         case .staleConflict: L10n.text("Os saves mudaram desde a escolha. Confira as versões e tente novamente.")
-        case .legacySnapshot: L10n.text("Há cópias antigas de saves. Atualize o Veeb e sincronize no aparelho onde você joga antes de restaurar neste aparelho. Os saves locais foram preservados.")
+        case .legacySnapshot: L10n.text("Há cópias antigas de saves. Atualize o Flowyr e sincronize no aparelho onde você joga antes de restaurar neste aparelho. Os saves locais foram preservados.")
         }
     }
 }

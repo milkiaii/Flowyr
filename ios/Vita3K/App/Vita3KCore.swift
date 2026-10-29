@@ -910,7 +910,7 @@ final class CoreController: ObservableObject {
                 } else {
                     self.memRunning = false
                     self.memPassed = false
-                    self.memReport = L10n.text("CS_DEBUGGED não ficou 1 em 60s (sessão não anexou a este processo). Anexe o StikDebug (universal.js) ao Veeb com o app em 1º plano e tente de novo.")
+                    self.memReport = L10n.text("CS_DEBUGGED não ficou 1 em 60s (sessão não anexou a este processo). Anexe o StikDebug (universal.js) ao Flowyr com o app em 1º plano e tente de novo.")
                 }
             }
         }

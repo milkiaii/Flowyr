@@ -41,7 +41,7 @@ final class DeviceStatus: ObservableObject {
             else { link = .other }
             Task { @MainActor in self?.link = link }
         }
-        monitor.start(queue: DispatchQueue(label: "veeb.network-monitor"))
+        monitor.start(queue: DispatchQueue(label: "flowyr.network-monitor"))
     }
 
     private func refreshBattery() {
@@ -108,7 +108,7 @@ struct LibraryTopBar: View {
                 .resizable().scaledToFit()
                 .frame(width: 22, height: 22)
                 .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-            Text(verbatim: "VEEB-SE")
+            Text(verbatim: "FLOWYR")
                 .font(.system(size: 12, weight: .semibold))
                 .tracking(1.2)
                 .lineLimit(1)
@@ -116,7 +116,7 @@ struct LibraryTopBar: View {
         .padding(.leading, 10).padding(.trailing, 14).frame(height: 34)
         .chromePill()
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(verbatim: "Veeb-SE"))
+        .accessibilityLabel(Text(verbatim: "Flowyr"))
     }
 
     private var info: some View {

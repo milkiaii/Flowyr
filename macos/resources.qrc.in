@@ -1,5 +1,5 @@
 <RCC>
   <qresource prefix="/">
-    <file alias="Veeb.png">@CMAKE_SOURCE_DIR@/logo.png</file>
+    <file alias="Flowyr.png">@CMAKE_SOURCE_DIR@/logo.png</file>
   </qresource>
 </RCC>

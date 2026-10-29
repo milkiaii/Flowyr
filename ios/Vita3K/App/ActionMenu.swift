@@ -31,7 +31,7 @@ struct ActionMenuCard<Header: View>: View {
         .padding(14)
         .frame(maxWidth: 320)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
-        .background(palette.vita ? Color(hex: 0x0B4FA8).opacity(0.55) : .clear,
+        .background(palette.backdrop?.menuTint.opacity(0.55) ?? .clear,
                     in: RoundedRectangle(cornerRadius: 26, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 26, style: .continuous)
             .strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))

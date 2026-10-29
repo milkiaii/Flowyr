@@ -68,13 +68,13 @@ WelcomeDialog::WelcomeDialog(EmuEnvState &emuenv, bool is_manual_show, QWidget *
 
 #ifdef __APPLE__
     m_ui->label_desc->setText(QStringLiteral(
-        "Veeb — Vita is for Weebs\nFork experimental do Vita3K para iOS e macOS. "
+        "Flowyr\nFork experimental do Vita3K para iOS e macOS. "
         "Agradecemos ao time original do Vita3K."));
     m_ui->label_info->setText(QStringLiteral(
         "Instale o firmware do PS Vita para começar.<br>"
         "O <a href=\"https://vita3k.org/quickstart.html\">guia do Vita3K original</a> "
         "pode ajudar na configuração. Compatibilidade e suporte do projeto original "
-        "não garantem os mesmos resultados no Veeb.<br><br>"
+        "não garantem os mesmos resultados no Flowyr.<br><br>"
         "Para compartilhar seu progresso com o iPhone ou iPad, use Configurações → Saves no iCloud."));
 #endif
 

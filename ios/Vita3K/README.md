@@ -1,6 +1,6 @@
-# Veeb para iOS
+# Flowyr para iOS
 
-**Veeb** significa **“Vita is for Weebs”**. Este projeto é um **fork experimental
+**Flowyr** é um **fork experimental
 do [Vita3K](https://github.com/Vita3K/Vita3K) para iOS**, mantido separadamente do
 projeto original. Agradecemos ao time original do **Vita3K** e a todos os seus
 colaboradores pelo emulador, pela pesquisa e pelo trabalho que tornam este fork
@@ -12,7 +12,7 @@ O código para **Windows e Linux** continua presente, mas essas versões **não 
 suportadas nem testadas**. Android também está fora do escopo deste fork.
 Compatibilidade e desempenho do Vita3K original não garantem os mesmos resultados.
 
-O nome apresentado no app, na tela de Início e no Arquivos é **Veeb**.
+O nome apresentado no app, na tela de Início e no Arquivos é **Flowyr**.
 Os nomes internos (`ios/Vita3K`, targets, módulos e scripts), o bundle
 `dev.vita3k.Vita3KIos` e o identificador do container iCloud são mantidos;
 a mudança de nome não exige migrar jogos, saves ou configurações.
@@ -59,7 +59,7 @@ Para gerar o app e o IPA assinados com o certificado e o Team ID disponíveis
 na máquina, execute na raiz do repositório:
 
 ```sh
-./build-ios.sh          # saída: dist/ios/Veeb.app e dist/ios/Veeb.ipa
+./build-ios.sh          # saída: dist/ios/Flowyr.app e dist/ios/Flowyr.ipa
 ./build-ios.sh --clean  # limpa os intermediários de iOS antes de recompilar
 ```
 
@@ -178,7 +178,7 @@ iOS) ainda exige iniciar o jogo novamente; não há save states nesta entrega.
 
 Regressão da sincronização GPU: `bash ios/Vita3K/scripts/test-render-gate.sh`
 (ASan/UBSan). `InterfaceTests.testBackgroundRetainsGameAndUserPause` alterna
-entre Veeb e Ajustes, compara a geração da sessão e o contador de frames,
+entre Flowyr e Ajustes, compara a geração da sessão e o contador de frames,
 verifica a pausa HOME e encerra a sessão.
 
 ### Regressão de texturas PVRTC
@@ -468,7 +468,7 @@ escolher um vencedor pelo relógio do aparelho. Se houver conflito, escolha a
 versão local ou uma das versões do iCloud nas opções antes de abrir um jogo.
 A escolha é revalidada antes de aplicar; uma versão que mudou exige nova escolha.
 
-As versões anteriores permanecem em **iCloud Drive → Veeb → Saves** e ocupam
+As versões anteriores permanecem em **iCloud Drive → Flowyr → Saves** e ocupam
 espaço na conta. Cópias locais anteriores a uma substituição ficam em
 `Documents/Save Backups/<usuário>/<jogo>/`. Ambas usam o formato `.vitasave`
 (property list binária; `entries` contém caminhos relativos e os dados de cada
@@ -499,8 +499,8 @@ container autorizado e a mesma conta; os testes locais não validam a rede Apple
 
 ## Acesso pelo app Arquivos
 
-No iPhone, abra **Arquivos → Explorar → No Meu iPhone → Veeb**.
-No iPad, use **No Meu iPad → Veeb**.
+No iPhone, abra **Arquivos → Explorar → No Meu iPhone → Flowyr**.
+No iPad, use **No Meu iPad → Flowyr**.
 A pasta expõe os documentos do emulador para copiar, mover, renomear e
 apagar arquivos. `UIFileSharingEnabled` e `LSSupportsOpeningDocumentsInPlace`
 estão habilitados no `Info.plist` compartilhado pelas builds de device e

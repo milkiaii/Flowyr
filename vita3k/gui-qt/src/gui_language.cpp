@@ -37,7 +37,7 @@ namespace {
 #ifdef __APPLE__
 // Keep upstream catalog keys and URLs, but present the fork's name in every
 // language, including untranslated fallback strings.
-class VeebTranslator final : public QTranslator {
+class FlowyrTranslator final : public QTranslator {
 public:
     bool isEmpty() const override { return false; }
     QString translate(const char *context, const char *source, const char *disambiguation = nullptr, int n = -1) const override {
@@ -49,7 +49,7 @@ public:
                 return {};
             value = fallback;
         }
-        return value.replace(brand, QStringLiteral("Veeb"));
+        return value.replace(brand, QStringLiteral("Flowyr"));
     }
 };
 #endif
@@ -149,7 +149,7 @@ bool apply_ui_language(QApplication &app, std::string_view configured_tag, const
         app.removeTranslator(s_translator.get());
 
 #ifdef __APPLE__
-    s_translator = std::make_unique<VeebTranslator>();
+    s_translator = std::make_unique<FlowyrTranslator>();
 #else
     s_translator = std::make_unique<QTranslator>();
 #endif
