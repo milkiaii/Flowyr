@@ -405,7 +405,7 @@ void MainWindow::restore_window_state() {
 void MainWindow::initialize() {
     Q_INIT_RESOURCE(resources);
 #ifdef __APPLE__
-    Q_INIT_RESOURCE(veeb_resources);
+    Q_INIT_RESOURCE(flowyr_resources);
 #endif
     m_ui->setupUi(this);
     setObjectName(QStringLiteral("main_window"));

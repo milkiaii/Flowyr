@@ -1,11 +1,11 @@
 # Xcode provisions the native macOS App ID and the shared iCloud container.
 # Only its profile and resolved entitlements are used by the CMake-built app.
-name: VeebSigning
+name: FlowyrSigning
 options:
   deploymentTarget:
     macOS: "13.3"
 targets:
-  VeebSigning:
+  FlowyrSigning:
     type: application
     platform: macOS
     sources: [main.m]
@@ -14,18 +14,18 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: dev.vita3k.Vita3KIos
         GENERATE_INFOPLIST_FILE: YES
         CODE_SIGN_STYLE: Automatic
-        CODE_SIGN_ENTITLEMENTS: Veeb.entitlements
+        CODE_SIGN_ENTITLEMENTS: Flowyr.entitlements
         ENABLE_APP_SANDBOX: NO
         ENABLE_HARDENED_RUNTIME: NO
         CODE_SIGN_IDENTITY: Apple Development
     entitlements:
-      path: Veeb.entitlements
+      path: Flowyr.entitlements
       properties:
         com.apple.developer.icloud-container-identifiers: [iCloud.dev.vita3k.Vita3KIos]
         com.apple.developer.ubiquity-container-identifiers: [iCloud.dev.vita3k.Vita3KIos]
         com.apple.developer.icloud-services: [CloudDocuments]
 schemes:
-  VeebSigning:
+  FlowyrSigning:
     build:
       targets:
-        VeebSigning: all
+        FlowyrSigning: all

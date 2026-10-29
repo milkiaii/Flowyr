@@ -813,7 +813,7 @@ final class EmulationViewController: UIViewController {
         suspendForBackground()
         guard !jitWarningShown else { return }
         jitWarningShown = true
-        let alert = UIAlertController(title: L10n.text("Abra pelo StikDebug"), message: L10n.text("O JIT não está mais disponível. Inicie o Veeb pelo StikDebug usando Universal."), preferredStyle: .alert)
+        let alert = UIAlertController(title: L10n.text("Abra pelo StikDebug"), message: L10n.text("O JIT não está mais disponível. Inicie o Flowyr pelo StikDebug usando Universal."), preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: L10n.text("Voltar à biblioteca"), style: .default) { [weak self] _ in self?.exit() })
         present(alert, animated: true)
     }
@@ -821,7 +821,7 @@ final class EmulationViewController: UIViewController {
     private func startDemo() {
         guard !userExited, !appSuspended, !startInFlight else { return }
         guard !isSessionMode || Vita3KCore.jitValidateAlive() == 0 else {
-            statusLabel.text = L10n.text("JIT indisponível. Abra o Veeb pelo StikDebug com Universal.")
+            statusLabel.text = L10n.text("JIT indisponível. Abra o Flowyr pelo StikDebug com Universal.")
             return
         }
         view.layoutIfNeeded()

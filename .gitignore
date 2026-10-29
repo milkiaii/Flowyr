@@ -30,7 +30,7 @@ dist/linux/*.metainfo.xml
 # Artifacts from the local Apple build scripts
 /dist/ios/
 /dist/macos/
-/macos/signing/VeebSigning.xcodeproj/
+/macos/signing/FlowyrSigning.xcodeproj/
 
 # Built application files
 *.apk

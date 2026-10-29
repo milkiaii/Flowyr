@@ -43,7 +43,7 @@ namespace {
 
 constexpr uint32_t perf_frames_size = 20;
 #ifdef __APPLE__
-constexpr const char *default_user_name = "Veeb";
+constexpr const char *default_user_name = "Flowyr";
 #else
 constexpr const char *default_user_name = "Vita3K";
 #endif

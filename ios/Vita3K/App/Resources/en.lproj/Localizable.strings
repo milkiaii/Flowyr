@@ -29,7 +29,7 @@
 "Biblioteca" = "Library";
 "Buscar jogo ou título ID" = "Search by game or title ID";
 "CPU e GPU (este jogo)" = "CPU and GPU (this game)";
-"CS_DEBUGGED não ficou 1 em 60s (sessão não anexou a este processo). Anexe o StikDebug (universal.js) ao Veeb com o app em 1º plano e tente de novo." = "CS_DEBUGGED did not become 1 within 60 seconds (the session did not attach to this process). Attach StikDebug (universal.js) to Veeb with the app in the foreground and try again.";
+"CS_DEBUGGED não ficou 1 em 60s (sessão não anexou a este processo). Anexe o StikDebug (universal.js) ao Flowyr com o app em 1º plano e tente de novo." = "CS_DEBUGGED did not become 1 within 60 seconds (the session did not attach to this process). Attach StikDebug (universal.js) to Flowyr with the app in the foreground and try again.";
 "Cache JIT por thread" = "JIT cache per thread";
 "Cancelar" = "Cancel";
 "Carregando…" = "Loading…";
@@ -86,7 +86,7 @@
 "GPU aloc." = "GPU alloc.";
 "Gráficos" = "Graphics";
 "Home" = "Home";
-"Há cópias antigas de saves. Atualize o Veeb e sincronize no aparelho onde você joga antes de restaurar neste aparelho. Os saves locais foram preservados." = "Older save copies were found. Update Veeb and sync on the device where you play before restoring on this device. Local saves have been preserved.";
+"Há cópias antigas de saves. Atualize o Flowyr e sincronize no aparelho onde você joga antes de restaurar neste aparelho. Os saves locais foram preservados." = "Older save copies were found. Update Flowyr and sync on the device where you play before restoring on this device. Local saves have been preserved.";
 "Há saves com versões diferentes. Abra Opções → Saves no iCloud e escolha o progresso que deseja usar." = "Some saves have conflicting versions. Open Settings → iCloud Saves and choose the progress you want to use.";
 "Idioma" = "Language";
 "Idioma da interface" = "Interface language";
@@ -95,7 +95,7 @@
 "Importar conteúdo" = "Import content";
 "Importar jogo" = "Import game";
 "Importação concluída" = "Import complete";
-"Importe firmware PUP ou conteúdo de jogos VPK, ZIP, PKG e pastas. Ou use o app Arquivos: abra “No Meu iPhone” → “Veeb” — copie jogos para imports/ (instalados automaticamente) ou remova arquivos, ex. um jogo em vita/ux0/app." = "Import PUP firmware or games as VPK, ZIP, PKG files and folders. Or use the Files app: open “On My iPhone” → “Veeb” to copy games to imports/ (installed automatically) or remove files, such as a game in vita/ux0/app.";
+"Importe firmware PUP ou conteúdo de jogos VPK, ZIP, PKG e pastas. Ou use o app Arquivos: abra “No Meu iPhone” → “Flowyr” — copie jogos para imports/ (instalados automaticamente) ou remova arquivos, ex. um jogo em vita/ux0/app." = "Import PUP firmware or games as VPK, ZIP, PKG files and folders. Or use the Files app: open “On My iPhone” → “Flowyr” to copy games to imports/ (installed automatically) or remove files, such as a game in vita/ux0/app.";
 "Importe seus jogos e homebrews para começar. Arquivos VPK, ZIP, PKG e pastas são aceitos." = "Import your games and homebrew to get started. VPK, ZIP, PKG files and folders are supported.";
 "Incompleto" = "Incomplete";
 "Info" = "Info";
@@ -104,7 +104,7 @@
 "JIT" = "JIT";
 "JIT indisponível" = "JIT unavailable";
 "JIT indisponível — reabra pelo StikDebug." = "JIT unavailable — reopen with StikDebug.";
-"JIT indisponível. Abra o Veeb pelo StikDebug com Universal." = "JIT unavailable. Open Veeb through StikDebug with Universal.";
+"JIT indisponível. Abra o Flowyr pelo StikDebug com Universal." = "JIT unavailable. Open Flowyr through StikDebug with Universal.";
 "JIT pronto" = "JIT ready";
 "JOGADO RECENTEMENTE" = "RECENTLY PLAYED";
 "Jogar novamente" = "Play again";
@@ -120,7 +120,7 @@
 "Modo Graphics Fix" = "Graphics Fix mode";
 "Modo Performance Fix" = "Performance Fix mode";
 "Nenhum jogo encontrado" = "No games found";
-"No iPhone, abra o Veeb pelo StikDebug usando o script Universal. A disponibilidade do JIT é verificada ao abrir o app e antes de iniciar um jogo." = "On iPhone, open Veeb through StikDebug using the Universal script. JIT availability is checked when you open the app and before starting a game.";
+"No iPhone, abra o Flowyr pelo StikDebug usando o script Universal. A disponibilidade do JIT é verificada ao abrir o app e antes de iniciar um jogo." = "On iPhone, open Flowyr through StikDebug using the Universal script. JIT availability is checked when you open the app and before starting a game.";
 "Não foi possível abrir o jogo" = "Unable to open the game";
 "Não foi possível acessar a pasta de importação." = "Unable to access the import folder.";
 "Não foi possível apagar %@ da pasta imports: %@" = "Unable to remove %1$@ from the imports folder: %2$@";
@@ -132,8 +132,8 @@
 "Não foi possível importar %@: %@" = "Unable to import %@: %@";
 "Não foram fornecidos detalhes pelo instalador." = "The installer provided no details.";
 "Núcleo" = "Core";
-"O JIT não está disponível nesta sessão. Abra o StikDebug, selecione o script Universal e inicie o Veeb por ele. Você pode organizar sua biblioteca sem JIT, mas precisa ativá-lo para jogar." = "JIT is not available in this session. Open StikDebug, select the Universal script and launch Veeb from there. You can organize your library without JIT, but you need to enable it to play.";
-"O JIT não está mais disponível. Inicie o Veeb pelo StikDebug usando Universal." = "JIT is no longer available. Launch Veeb through StikDebug using Universal.";
+"O JIT não está disponível nesta sessão. Abra o StikDebug, selecione o script Universal e inicie o Flowyr por ele. Você pode organizar sua biblioteca sem JIT, mas precisa ativá-lo para jogar." = "JIT is not available in this session. Open StikDebug, select the Universal script and launch Flowyr from there. You can organize your library without JIT, but you need to enable it to play.";
+"O JIT não está mais disponível. Inicie o Flowyr pelo StikDebug usando Universal." = "JIT is no longer available. Launch Flowyr through StikDebug using Universal.";
 "O arquivo foi apagado, mas não foi possível atualizar o histórico: %@" = "The file was removed, but the import history could not be updated: %@";
 "O jogo já está instalado." = "The game is already installed.";
 "OK" = "OK";
@@ -167,7 +167,7 @@
 "Sincronização desativada." = "Sync is disabled.";
 "Sincronização desativada. Os saves e as cópias existentes foram mantidos." = "Sync is disabled. Saves and existing copies have been kept.";
 "Sistema e conteúdo" = "System and content";
-"Sobre o Veeb" = "About Veeb";
+"Sobre o Flowyr" = "About Flowyr";
 "Sua biblioteca" = "Your library";
 "Sua próxima aventura" = "Your next adventure";
 "Tela do jogo" = "Game display";
@@ -186,7 +186,6 @@
 "Verificando saves no iCloud…" = "Checking iCloud saves…";
 "Verificar JIT agora" = "Check JIT now";
 "Verificar novamente" = "Check again";
-"Vita is for Weebs" = "Vita is for Weebs";
 "Voltar à biblioteca" = "Back to library";
 "Warning" = "Warning";
 "buffer de relatório pequeno demais" = "The report buffer is too small";
@@ -321,3 +320,4 @@
 "Warm" = "Warm";
 "Hot" = "Hot";
 "Bateria" = "Battery";
+"Flowyr" = "Flowyr";

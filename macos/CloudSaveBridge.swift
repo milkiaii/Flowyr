@@ -20,7 +20,7 @@ private final class DesktopSaves {
     }
 }
 
-@_cdecl("veeb_cloud_tick") @MainActor
+@_cdecl("flowyr_cloud_tick") @MainActor
 public func cloudTick(_ path: UnsafePointer<CChar>, _ safe: Bool) {
     let service = DesktopSaves.shared
     service.idle = safe
@@ -33,19 +33,19 @@ public func cloudTick(_ path: UnsafePointer<CChar>, _ safe: Bool) {
     if safe && service.sync.needsSync { service.run() }
 }
 
-@_cdecl("veeb_cloud_busy") @MainActor
+@_cdecl("flowyr_cloud_busy") @MainActor
 public func cloudBusy() -> Bool { DesktopSaves.shared.busy }
 
-@_cdecl("veeb_cloud_enable") @MainActor
+@_cdecl("flowyr_cloud_enable") @MainActor
 public func cloudEnable(_ enabled: Bool) {
     guard !DesktopSaves.shared.busy else { return }
     DesktopSaves.shared.sync.setEnabled(enabled)
 }
 
-@_cdecl("veeb_cloud_request") @MainActor
+@_cdecl("flowyr_cloud_request") @MainActor
 public func cloudRequest() { DesktopSaves.shared.sync.requestSync() }
 
-@_cdecl("veeb_cloud_resolve") @MainActor
+@_cdecl("flowyr_cloud_resolve") @MainActor
 public func cloudResolve(_ key: UnsafePointer<CChar>, _ revision: UnsafePointer<CChar>) {
     let service = DesktopSaves.shared
     guard !service.busy,
@@ -56,7 +56,7 @@ public func cloudResolve(_ key: UnsafePointer<CChar>, _ revision: UnsafePointer<
     service.run(SaveResolution(conflict: conflict, revision: id))
 }
 
-@_cdecl("veeb_cloud_state") @MainActor
+@_cdecl("flowyr_cloud_state") @MainActor
 public func cloudState() -> UnsafeMutablePointer<CChar>? {
     let service = DesktopSaves.shared
     let sync = service.sync
@@ -77,5 +77,5 @@ public func cloudState() -> UnsafeMutablePointer<CChar>? {
     return strdup(json)
 }
 
-@_cdecl("veeb_cloud_free")
+@_cdecl("flowyr_cloud_free")
 public func cloudFree(_ string: UnsafeMutablePointer<CChar>?) { free(string) }

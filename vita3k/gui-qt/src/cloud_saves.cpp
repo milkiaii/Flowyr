@@ -16,13 +16,13 @@
 #include <QVBoxLayout>
 
 extern "C" {
-void veeb_cloud_tick(const char *root, bool safe);
-bool veeb_cloud_busy();
-void veeb_cloud_enable(bool enabled);
-void veeb_cloud_request();
-void veeb_cloud_resolve(const char *key, const char *revision);
-char *veeb_cloud_state();
-void veeb_cloud_free(char *state);
+void flowyr_cloud_tick(const char *root, bool safe);
+bool flowyr_cloud_busy();
+void flowyr_cloud_enable(bool enabled);
+void flowyr_cloud_request();
+void flowyr_cloud_resolve(const char *key, const char *revision);
+char *flowyr_cloud_state();
+void flowyr_cloud_free(char *state);
 }
 
 CloudSaves::CloudSaves(QWidget *parent, std::function<QString()> root, std::function<bool()> idle)
@@ -36,25 +36,25 @@ CloudSaves::CloudSaves(QWidget *parent, std::function<QString()> root, std::func
     });
 }
 
-bool CloudSaves::busy() const { return veeb_cloud_busy(); }
+bool CloudSaves::busy() const { return flowyr_cloud_busy(); }
 
 bool CloudSaves::safe() const {
     return m_idle() && !QApplication::activePopupWidget()
         && (!QApplication::activeModalWidget() || QApplication::activeModalWidget() == m_dialog);
 }
 
-void CloudSaves::request() { veeb_cloud_request(); }
+void CloudSaves::request() { flowyr_cloud_request(); }
 
 void CloudSaves::tick() {
     const auto path = m_root().toUtf8();
-    veeb_cloud_tick(path.constData(), safe());
+    flowyr_cloud_tick(path.constData(), safe());
     refresh();
 }
 
 void CloudSaves::resolve(const QString &key, const QString &revision) {
     if (!safe() || busy())
         return;
-    veeb_cloud_resolve(key.toUtf8().constData(), revision.toUtf8().constData());
+    flowyr_cloud_resolve(key.toUtf8().constData(), revision.toUtf8().constData());
     refresh();
 }
 
@@ -66,9 +66,9 @@ void CloudSaves::refresh() {
     }
     if (!m_dialog)
         return;
-    char *json = veeb_cloud_state();
+    char *json = flowyr_cloud_state();
     const auto state = QJsonDocument::fromJson(json ? QByteArray(json) : QByteArray()).object();
-    veeb_cloud_free(json);
+    flowyr_cloud_free(json);
     const QSignalBlocker block(m_enabled);
     m_enabled->setChecked(state["enabled"].toBool());
     m_enabled->setEnabled(!now_busy);
@@ -110,7 +110,7 @@ void CloudSaves::refresh() {
 void CloudSaves::show_settings() {
     if (!m_dialog) {
         m_dialog = new QDialog(qobject_cast<QWidget *>(parent()));
-        m_dialog->setWindowTitle(QStringLiteral("Veeb — Saves no iCloud"));
+        m_dialog->setWindowTitle(QStringLiteral("Flowyr — Saves no iCloud"));
         m_dialog->setWindowIcon(QIcon(gui::app_icon_resource));
         m_dialog->setObjectName(QStringLiteral("icloud-saves-settings"));
         m_dialog->resize(570, 480);
@@ -146,7 +146,7 @@ void CloudSaves::show_settings() {
         auto *buttons = new QDialogButtonBox(QDialogButtonBox::Close, m_dialog);
         connect(buttons, &QDialogButtonBox::rejected, m_dialog, &QDialog::hide);
         layout->addWidget(buttons);
-        connect(m_enabled, &QCheckBox::toggled, this, [this](bool enabled) { veeb_cloud_enable(enabled); tick(); });
+        connect(m_enabled, &QCheckBox::toggled, this, [this](bool enabled) { flowyr_cloud_enable(enabled); tick(); });
         connect(m_sync, &QPushButton::clicked, this, [this] { request(); tick(); });
     }
     tick();

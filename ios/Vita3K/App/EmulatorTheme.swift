@@ -1,6 +1,13 @@
 import SwiftUI
 import UIKit
 
+/// Gradient + floating bubbles behind the app (the Vita-style themes).
+struct Backdrop: Sendable {
+    let top: Color, mid: Color, bottom: Color
+    /// Tint laid over the pause-menu card so it stays readable over the game.
+    let menuTint: Color
+}
+
 struct Palette: Sendable {
     let background: Color
     let panel: Color
@@ -10,11 +17,11 @@ struct Palette: Sendable {
     let debug: Color
     let performance: Color
     let scheme: ColorScheme
-    var vita = false
+    var backdrop: Backdrop? = nil
 }
 
 enum AppTheme: String, CaseIterable, Sendable {
-    case dark, light, vita
+    case dark, light, vita, flowyr
 
     var index: Int { Self.allCases.firstIndex(of: self) ?? 0 }
 
@@ -23,6 +30,7 @@ enum AppTheme: String, CaseIterable, Sendable {
         case .dark: "Escuro"
         case .light: "Claro"
         case .vita: "Vita"
+        case .flowyr: "Flowyr"
         }
     }
 
@@ -40,7 +48,16 @@ enum AppTheme: String, CaseIterable, Sendable {
             // PS Vita LiveArea: deep blue, frosted white panels, white text.
             Palette(background: Color(hex: 0x0B4FA8), panel: Color(hex: 0xFFFFFF, alpha: 0.16), artworkBackground: Color(hex: 0x1E6FD0),
                     accent: Color(hex: 0xBFE6FF), warning: Color(hex: 0xFF8A80), debug: Color(hex: 0xFFE082),
-                    performance: Color(hex: 0x80F0FF), scheme: .dark, vita: true)
+                    performance: Color(hex: 0x80F0FF), scheme: .dark,
+                    backdrop: Backdrop(top: Color(hex: 0x063A8C), mid: Color(hex: 0x0B63C9), bottom: Color(hex: 0x2FA3EA),
+                                       menuTint: Color(hex: 0x0B4FA8)))
+        case .flowyr:
+            // Matches the app icon: indigo to lavender, frosted white panels.
+            Palette(background: Color(hex: 0x3B3399), panel: Color(hex: 0xFFFFFF, alpha: 0.16), artworkBackground: Color(hex: 0x5A4CC6),
+                    accent: Color(hex: 0xDAD3FF), warning: Color(hex: 0xFF8A80), debug: Color(hex: 0xFFE082),
+                    performance: Color(hex: 0x9FE8FF), scheme: .dark,
+                    backdrop: Backdrop(top: Color(hex: 0x2A2284), mid: Color(hex: 0x5648C2), bottom: Color(hex: 0x9C8EE8),
+                                       menuTint: Color(hex: 0x3F36A6)))
         }
     }
 }
@@ -53,7 +70,7 @@ extension Color {
 }
 
 private struct PaletteKey: EnvironmentKey {
-    static let defaultValue = AppTheme.vita.palette
+    static let defaultValue = AppTheme.flowyr.palette
 }
 
 extension EnvironmentValues {
@@ -71,7 +88,7 @@ enum EmulatorTheme {
 struct AppThemeModifier: ViewModifier {
     @AppStorage(EmulatorTheme.themePreference) private var raw = ""
     @AppStorage(EmulatorTheme.lightModePreference) private var legacyLight = false
-    private var theme: AppTheme { AppTheme(rawValue: raw) ?? (legacyLight ? .light : .vita) }
+    private var theme: AppTheme { AppTheme(rawValue: raw) ?? (legacyLight ? .light : .flowyr) }
     func body(content: Content) -> some View {
         let p = theme.palette
         content

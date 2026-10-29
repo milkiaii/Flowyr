@@ -1,14 +1,14 @@
-# Build Veeb
+# Build Flowyr
 
 ## Local signed Apple builds
 
-The root scripts build Veeb in **Release**, sign the result using an identity
+The root scripts build Flowyr in **Release**, sign the result using an identity
 available in the macOS Keychain, and place the final artifacts in `dist`:
 
 | Command | Target | Artifacts |
 | --- | --- | --- |
-| `./build-ios.sh` | iOS device, arm64 | `dist/ios/Veeb.app`, `dist/ios/Veeb.ipa` |
-| `./build-macos.sh` | macOS, current Mac architecture | `dist/macos/Veeb.app`, `dist/macos/Veeb.zip` |
+| `./build-ios.sh` | iOS device, arm64 | `dist/ios/Flowyr.app`, `dist/ios/Flowyr.ipa` |
+| `./build-macos.sh` | macOS, current Mac architecture | `dist/macos/Flowyr.app`, `dist/macos/Flowyr.zip` |
 
 Both accept `--clean` and `--help` and can be called from any working directory.
 The scripts do not install the app, upload it, or submit it for notarization.
@@ -39,11 +39,11 @@ from the certificate's **OU**, not the identifier
 in its display name. To select among multiple identities or limit parallelism:
 
 ```sh
-VEEB_TEAM_ID=ABCDEFGHIJ VEEB_JOBS=8 ./build-ios.sh
-VEEB_SIGNING_IDENTITY='Apple Development: Your Name (PERSONALID)' ./build-macos.sh
+FLOWYR_TEAM_ID=ABCDEFGHIJ FLOWYR_JOBS=8 ./build-ios.sh
+FLOWYR_SIGNING_IDENTITY='Apple Development: Your Name (PERSONALID)' ./build-macos.sh
 ```
 
-`VEEB_SIGNING_IDENTITY` also accepts the certificate's SHA-1 fingerprint.
+`FLOWYR_SIGNING_IDENTITY` also accepts the certificate's SHA-1 fingerprint.
 Both scripts use Xcode automatic provisioning (`-allowProvisioningUpdates`);
 configure the matching developer account in Xcode first. The profiles must
 authorize `dev.vita3k.Vita3KIos` and `iCloud.dev.vita3k.Vita3KIos`. Both platforms
@@ -57,12 +57,12 @@ to the CMake app. All embedded code is signed with the selected certificate.
 and `build/ios-app` for iOS, or `build/macos-ninja` for macOS. It bypasses compiler
 caches for that run without deleting shared caches. It preserves the other
 platform's build, source files and existing `dist` output until packaging.
-Each successful run replaces only that platform's `Veeb.app` and archive.
+Each successful run replaces only that platform's `Flowyr.app` and archive.
 
 The iOS script regenerates the icon from the root `logo.png`, builds the core,
 stages it and regenerates the Xcode project before building the signed app.
-The macOS build generates `Veeb.icns` and the in-app icon from `logo.png`, deploys
+The macOS build generates `Flowyr.icns` and the in-app icon from `logo.png`, deploys
 Qt frameworks/plugins and the shared Swift save engine, and signs nested code
-before the outer app. Its app/executable is `Veeb`; existing desktop game/config
+before the outer app. Its app/executable is `Flowyr`; existing desktop game/config
 paths remain unchanged. See [macOS usage and iCloud](macos/README.md).
 

@@ -155,17 +155,17 @@ jobs:
 
           stage="$(mktemp -d)"
           mkdir -p "$stage/Payload" artifacts
-          ditto "$app" "$stage/Payload/Veeb-SE.app"
-          ditto -c -k --keepParent "$stage/Payload" "$PWD/artifacts/Veeb-SE-unsigned.ipa"
-          unzip -tq artifacts/Veeb-SE-unsigned.ipa
-          unzip -l artifacts/Veeb-SE-unsigned.ipa | grep -q 'Payload/Veeb-SE.app/Frameworks/libVita3KCore.dylib'
-          ls -lh artifacts/Veeb-SE-unsigned.ipa
+          ditto "$app" "$stage/Payload/Flowyr.app"
+          ditto -c -k --keepParent "$stage/Payload" "$PWD/artifacts/Flowyr-unsigned.ipa"
+          unzip -tq artifacts/Flowyr-unsigned.ipa
+          unzip -l artifacts/Flowyr-unsigned.ipa | grep -q 'Payload/Flowyr.app/Frameworks/libVita3KCore.dylib'
+          ls -lh artifacts/Flowyr-unsigned.ipa
 
       - name: Upload unsigned IPA
         uses: actions/upload-artifact@v4
         with:
-          name: Veeb-SE-iOS-${{ github.sha }}-unsigned
-          path: artifacts/Veeb-SE-unsigned.ipa
+          name: Flowyr-iOS-${{ github.sha }}-unsigned
+          path: artifacts/Flowyr-unsigned.ipa
           if-no-files-found: error
           retention-days: 14
 
@@ -188,7 +188,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: Veeb-SE-iOS-${{ github.sha }}-logs
+          name: Flowyr-iOS-${{ github.sha }}-logs
           path: |
             build/cmake-configure.log
             build/cmake-build.log
