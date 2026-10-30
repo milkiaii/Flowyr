@@ -46,7 +46,7 @@ FLOWYR_SIGNING_IDENTITY='Apple Development: Your Name (PERSONALID)' ./build-maco
 `FLOWYR_SIGNING_IDENTITY` also accepts the certificate's SHA-1 fingerprint.
 Both scripts use Xcode automatic provisioning (`-allowProvisioningUpdates`);
 configure the matching developer account in Xcode first. The profiles must
-authorize `dev.vita3k.Vita3KIos` and `iCloud.dev.vita3k.Vita3KIos`. Both platforms
+authorize `dev.vita3k.Flowyr` and `iCloud.dev.vita3k.Flowyr`. Both platforms
 share this registered App ID to access the same saves. The development-signed
 packages run on devices/Macs authorized by their profiles; they are not App Store
 or Developer ID exports. The macOS script uses a small Xcode signing target to
