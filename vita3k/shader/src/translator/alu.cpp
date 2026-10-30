@@ -1879,7 +1879,7 @@ bool USSETranslatorVisitor::vdual(
             break;
         }
         case Opcode::FEXP: {
-            // hack: set exp(nan) = 1.0 (see VEXP)
+            // Preserve exp2(NaN) = 1.0 (see VEXP).
             const spv::Id source = load(ops[0], write_mask_source);
             result = m_b.createBuiltinCall(m_b.getTypeId(source), std_builtins, GLSLstd450Exp2, { source });
             const int num_comp = m_b.getNumComponents(source);

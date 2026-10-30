@@ -32,7 +32,8 @@ static constexpr int COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE = 0;
 static constexpr int MASK_TEXTURE_SLOT_IMAGE = 1;
 static constexpr int COLOR_ATTACHMENT_RAW_TEXTURE_SLOT_IMAGE = 3;
 // v17 restores uniform register windows even when the GXP lacks member symbols.
-static constexpr uint32_t CURRENT_VERSION = 20;
+// v21: upstream USSE exponential and COLOR clamp fixes.
+static constexpr uint32_t CURRENT_VERSION = 21;
 // fragment shader using the rendering surface as a storage image (because of shader interlock) have a line
 // layout (constant_id = GAMMA_CORRECTION_SPECIALIZATIO_ID) const bool is_srgb = false;
 // Setting this constant to true performs gamma correction in the shader
