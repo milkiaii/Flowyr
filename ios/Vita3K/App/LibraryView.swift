@@ -450,35 +450,63 @@ struct LibraryView: View {
 /// Shown when no game is installed yet: a short welcome and the first steps.
 struct EmptyLibraryView: View {
     @Environment(\.palette) private var palette
+    @Environment(\.verticalSizeClass) private var vSize
     let canImport: Bool
     let onImport: () -> Void
 
+    private var compact: Bool { vSize == .compact }
+
     var body: some View {
-        VStack(spacing: 22) {
-            VStack(spacing: 10) {
-                Image("LogoMark").resizable().scaledToFit()
-                    .frame(width: 84, height: 84)
-                    .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-                    .shadow(color: palette.accent.opacity(0.55), radius: 22)
-                Text("Bem-vindo ao Flowyr").font(.system(size: 26, weight: .bold, design: .rounded))
-                Text("Comece em três passos").font(.subheadline).foregroundStyle(.secondary)
+        Group {
+            if compact {
+                HStack(alignment: .center, spacing: 28) {
+                    VStack(spacing: 14) { hero(size: 64); importButton }
+                        .frame(maxWidth: 260)
+                    steps
+                }
+                .padding(.vertical, 8).padding(.bottom, 72)
+                .frame(maxWidth: 760).frame(maxWidth: .infinity)
+            } else {
+                VStack(spacing: 22) {
+                    hero(size: 84)
+                    steps
+                    importButton
+                }
+                .padding(.top, 24).padding(.bottom, 100)
+                .frame(maxWidth: 520).frame(maxWidth: .infinity)
             }
-            VStack(spacing: 2) {
-                step(1, "Instale o firmware", "Configurações → Sistema e conteúdo → Importar conteúdo.")
-                step(2, "Importe seus jogos", "Arquivos VPK, ZIP, PKG e pastas são aceitos.")
-                step(3, "Ative o JIT", "Abra o Flowyr pelo StikDebug com o script Universal.")
-            }
-            .padding(8)
-            .background(palette.panel, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-            Button(action: onImport) {
-                Label("Importar jogo", systemImage: "square.and.arrow.down.fill")
-                    .font(.headline).padding(.horizontal, 22).padding(.vertical, 12)
-                    .background(palette.accent, in: Capsule()).foregroundStyle(.white)
-            }
-            .buttonStyle(.plain).disabled(!canImport).opacity(canImport ? 1 : 0.5)
         }
-        .padding(.top, 24).padding(.bottom, 100)
-        .frame(maxWidth: 520).frame(maxWidth: .infinity)
+    }
+
+    private func hero(size: CGFloat) -> some View {
+        VStack(spacing: 8) {
+            Image("LogoMark").resizable().scaledToFit()
+                .frame(width: size, height: size)
+                .clipShape(RoundedRectangle(cornerRadius: size * 0.24, style: .continuous))
+                .shadow(color: palette.accent.opacity(0.55), radius: 22)
+            Text("Bem-vindo ao Flowyr").font(.system(size: compact ? 20 : 26, weight: .bold, design: .rounded))
+                .multilineTextAlignment(.center)
+            Text("Comece em três passos").font(.subheadline).foregroundStyle(.secondary)
+        }
+    }
+
+    private var steps: some View {
+        VStack(spacing: 2) {
+            step(1, "Instale o firmware", "Configurações → Sistema e conteúdo → Importar conteúdo.")
+            step(2, "Importe seus jogos", "Arquivos VPK, ZIP, PKG e pastas são aceitos.")
+            step(3, "Ative o JIT", "Abra o Flowyr pelo StikDebug com o script Universal.")
+        }
+        .padding(8)
+        .background(palette.panel, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+    }
+
+    private var importButton: some View {
+        Button(action: onImport) {
+            Label("Importar jogo", systemImage: "square.and.arrow.down.fill")
+                .font(.headline).padding(.horizontal, 22).padding(.vertical, 12)
+                .background(palette.accent, in: Capsule()).foregroundStyle(palette.background)
+        }
+        .buttonStyle(.plain).disabled(!canImport).opacity(canImport ? 1 : 0.5)
     }
 
     private func step(_ n: Int, _ title: LocalizedStringKey, _ detail: LocalizedStringKey) -> some View {

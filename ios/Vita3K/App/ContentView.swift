@@ -15,7 +15,6 @@ struct ContentView: View {
     @ObservedObject private var pad = GamepadInput.shared
     @State private var launchInFlight = false
     @State private var startupComplete = false
-    @State private var showIntro = true
     @State private var wasAway = false
     @State private var launchError: String?
     @State private var toast: String?
@@ -26,28 +25,24 @@ struct ContentView: View {
                     openSettings: { UISounds.shared.play(.open); showSettings = true },
                     inputEnabled: surfaceRequest == nil && !showSettings && !showImporter && !showZRIF && !launchInFlight)
         .disabled(controller.isImporting || controller.isDeleting || controller.isSyncingSaves || launchInFlight)
-        .overlay {
-            if showIntro {
-                StartupIntro(jitStatus: controller.jitStatus)
-                    .transition(.opacity)
-                    .zIndex(10)
-            }
-        }
         .task {
             guard !startupComplete else { return }
             startupComplete = true
             let introStart = Date()
+            // UIKit splash: its Core Animation layers keep animating on the render
+            // server even while the main thread is blocked by core init / JIT.
+            SplashWindow.shared.show()
             // Start the JIT check first: it runs off the main thread, so it
             // overlaps with the (main-thread, SDL-bound) session init.
             let jit = Task { await controller.checkJIT() }
             // Let the first frame draw before the main thread blocks in init.
             try? await Task.sleep(for: .milliseconds(80))
             controller.runSessionInit()
-            _ = await jit.value
+            let jitReady = await jit.value
             // Keep the intro up for a beat so it never flashes, then reveal the library.
             let remaining = 1.3 - Date().timeIntervalSince(introStart)
             if remaining > 0 { try? await Task.sleep(for: .seconds(remaining)) }
-            withAnimation(.easeInOut(duration: 0.45)) { showIntro = false }
+            SplashWindow.shared.finish(jitReady: jitReady)
             // The launch sync is armed by CloudSaveSync (needsSync) and run
             // once by the control poller; an explicit call here would sync
             // again right after the JIT check.
@@ -257,53 +252,124 @@ struct SurfaceRequest: Identifiable {
 }
 
 
-/// Launch screen shown while the JIT check and core initialisation run. It only uses
-/// Core Animation driven effects (opacity, scale, offset), which keep running even
-/// while the main thread is busy initialising the core.
-struct StartupIntro: View {
-    @Environment(\.palette) private var palette
-    let jitStatus: CoreController.JITStatus
-    @State private var appeared = false
-    @State private var glow = false
-    @State private var sweep = false
+/// Launch splash shown in its own window above everything. Built from CALayers so the
+/// animations are driven by the render server and never stall with the main thread.
+@MainActor
+final class SplashWindow {
+    static let shared = SplashWindow()
+    private var window: UIWindow?
+    private let sweep = CALayer()
+    private let track = CALayer()
 
-    var body: some View {
-        ZStack {
-            ThemedBackground()
-            VStack(spacing: 26) {
-                Image("LogoMark")
-                    .resizable().scaledToFit()
-                    .frame(width: 96, height: 96)
-                    .clipShape(RoundedRectangle(cornerRadius: 23, style: .continuous))
-                    .shadow(color: palette.accent.opacity(glow ? 0.75 : 0.3), radius: glow ? 34 : 16)
-                    .scaleEffect(appeared ? 1 : 0.82)
-                Text(verbatim: "FLOWYR")
-                    .font(.system(size: 20, weight: .semibold, design: .rounded))
-                    .tracking(8).padding(.leading, 8)
-                    .foregroundStyle(.white.opacity(0.92))
-                    .opacity(appeared ? 1 : 0)
-                ZStack(alignment: .leading) {
-                    Capsule().fill(.white.opacity(0.16))
-                    Capsule().fill(jitStatus == .unavailable ? palette.warning : .white.opacity(0.9))
-                        .frame(width: 36)
-                        .offset(x: sweep ? 84 : 0)
-                        .opacity(jitStatus == .checking ? 1 : 0)
-                }
-                .frame(width: 120, height: 3).clipShape(Capsule())
-                .overlay {
-                    Capsule().fill(jitStatus == .ready ? Color.green : palette.warning)
-                        .opacity(jitStatus == .checking ? 0 : 1)
-                }
-                .opacity(appeared ? 1 : 0)
-                .animation(.easeOut(duration: 0.3), value: jitStatus)
-            }
+    func show() {
+        guard window == nil,
+              let scene = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first else { return }
+        let controller = SplashController(track: track, sweep: sweep)
+        let w = UIWindow(windowScene: scene)
+        w.windowLevel = .alert + 1
+        w.rootViewController = controller
+        w.isHidden = false
+        window = w
+    }
+
+    func finish(jitReady: Bool) {
+        guard let w = window else { return }
+        sweep.removeAllAnimations()
+        track.backgroundColor = (jitReady ? UIColor.systemGreen : UIColor(red: 1, green: 0.54, blue: 0.5, alpha: 1)).cgColor
+        sweep.opacity = 0
+        UIView.animate(withDuration: 0.45, delay: 0.15, options: .curveEaseInOut) {
+            w.alpha = 0
+        } completion: { _ in
+            w.isHidden = true
+            self.window = nil
         }
-        .ignoresSafeArea()
-        .onAppear {
-            withAnimation(.easeOut(duration: 0.6)) { appeared = true }
-            withAnimation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true)) { glow = true }
-            withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) { sweep = true }
-        }
-        .accessibilityHidden(true)
+    }
+}
+
+private final class SplashController: UIViewController {
+    private let track: CALayer
+    private let sweep: CALayer
+    private let gradient = CAGradientLayer()
+
+    init(track: CALayer, sweep: CALayer) {
+        self.track = track
+        self.sweep = sweep
+        super.init(nibName: nil, bundle: nil)
+    }
+    required init?(coder: NSCoder) { fatalError() }
+
+    override var prefersStatusBarHidden: Bool { true }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        // Fixed Flowyr colors, independent of the selected theme.
+        gradient.colors = [UIColor(red: 0x2A / 255, green: 0x22 / 255, blue: 0x84 / 255, alpha: 1).cgColor,
+                           UIColor(red: 0x56 / 255, green: 0x48 / 255, blue: 0xC2 / 255, alpha: 1).cgColor,
+                           UIColor(red: 0x9C / 255, green: 0x8E / 255, blue: 0xE8 / 255, alpha: 1).cgColor]
+        view.layer.addSublayer(gradient)
+
+        let logo = UIImageView(image: UIImage(named: "LogoMark"))
+        logo.contentMode = .scaleAspectFit
+        logo.layer.cornerRadius = 23
+        logo.layer.cornerCurve = .continuous
+        logo.clipsToBounds = true
+        let glowHost = UIView()
+        glowHost.layer.shadowColor = UIColor(red: 0xDA / 255, green: 0xD3 / 255, blue: 0xFF / 255, alpha: 1).cgColor
+        glowHost.layer.shadowOpacity = 0.5
+        glowHost.layer.shadowRadius = 18
+        glowHost.layer.shadowOffset = .zero
+        glowHost.addSubview(logo)
+        logo.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            logo.leadingAnchor.constraint(equalTo: glowHost.leadingAnchor), logo.trailingAnchor.constraint(equalTo: glowHost.trailingAnchor),
+            logo.topAnchor.constraint(equalTo: glowHost.topAnchor), logo.bottomAnchor.constraint(equalTo: glowHost.bottomAnchor),
+            glowHost.widthAnchor.constraint(equalToConstant: 96), glowHost.heightAnchor.constraint(equalToConstant: 96),
+        ])
+        glowHost.layer.shadowPath = UIBezierPath(roundedRect: CGRect(x: 0, y: 0, width: 96, height: 96), cornerRadius: 23).cgPath
+
+        let glow = CABasicAnimation(keyPath: "shadowRadius")
+        glow.fromValue = 14; glow.toValue = 34
+        glow.duration = 1.6; glow.autoreverses = true; glow.repeatCount = .infinity
+        glow.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+        glowHost.layer.add(glow, forKey: "glow")
+        let pop = CABasicAnimation(keyPath: "transform.scale")
+        pop.fromValue = 0.82; pop.toValue = 1; pop.duration = 0.6
+        pop.timingFunction = CAMediaTimingFunction(name: .easeOut)
+        glowHost.layer.add(pop, forKey: "pop")
+
+        let label = UILabel()
+        label.attributedText = NSAttributedString(string: "FLOWYR", attributes: [
+            .font: UIFont.systemFont(ofSize: 20, weight: .semibold),
+            .kern: 8, .foregroundColor: UIColor.white.withAlphaComponent(0.92)])
+
+        let bar = UIView()
+        bar.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([bar.widthAnchor.constraint(equalToConstant: 120), bar.heightAnchor.constraint(equalToConstant: 3)])
+        bar.layer.cornerRadius = 1.5
+        bar.clipsToBounds = true
+        track.frame = CGRect(x: 0, y: 0, width: 120, height: 3)
+        track.backgroundColor = UIColor.white.withAlphaComponent(0.16).cgColor
+        sweep.frame = CGRect(x: 0, y: 0, width: 36, height: 3)
+        sweep.backgroundColor = UIColor.white.withAlphaComponent(0.9).cgColor
+        sweep.cornerRadius = 1.5
+        bar.layer.addSublayer(track)
+        track.addSublayer(sweep)
+        let move = CABasicAnimation(keyPath: "position.x")
+        move.fromValue = 18; move.toValue = 102
+        move.duration = 0.9; move.autoreverses = true; move.repeatCount = .infinity
+        move.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+        sweep.add(move, forKey: "sweep")
+
+        let stack = UIStackView(arrangedSubviews: [glowHost, label, bar])
+        stack.axis = .vertical; stack.alignment = .center; stack.spacing = 26
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(stack)
+        NSLayoutConstraint.activate([stack.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+                                     stack.centerYAnchor.constraint(equalTo: view.centerYAnchor)])
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        gradient.frame = view.bounds
     }
 }
