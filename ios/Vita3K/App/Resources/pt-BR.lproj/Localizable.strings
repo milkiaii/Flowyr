@@ -321,3 +321,10 @@
 "Hot" = "Quente";
 "Bateria" = "Bateria";
 "Flowyr" = "Flowyr";
+"Interface" = "Interface";
+"CPU" = "CPU";
+"Padrões para todos os jogos. Jogos com config própria (Editar Config) mantêm os valores deles. Aplicados quando o jogo for (re)iniciado." = "Padrões para todos os jogos. Jogos com config própria (Editar Config) mantêm os valores deles. Aplicados quando o jogo for (re)iniciado.";
+"CPU e Gráficos definem os padrões de todos os jogos. Para ajustar um único jogo, mantenha-o pressionado na biblioteca e escolha Editar Config." = "CPU e Gráficos definem os padrões de todos os jogos. Para ajustar um único jogo, mantenha-o pressionado na biblioteca e escolha Editar Config.";
+"Auto escolhe o tamanho conforme o perfil de cada jogo. Valores menores permitem mais threads, mas podem aumentar a recompilação." = "Auto escolhe o tamanho conforme o perfil de cada jogo. Valores menores permitem mais threads, mas podem aumentar a recompilação.";
+"Cache" = "Cache";
+"Shader cache limpo." = "Shader cache limpo.";

@@ -1155,8 +1155,10 @@ static bool parse_bool(const char *value) {
 int vita3k_ios_game_config_get(const char *app_path, char *out, size_t out_size) {
     auto &s = state();
     std::lock_guard<std::mutex> lock(s.lock);
-    if (!s.initialized || !s.emuenv || !app_path || app_path[0] == '\0')
+    if (!s.initialized || !s.emuenv || !app_path)
         return -1;
+    // Empty app_path = the global defaults (used by games without their own config).
+    const bool global = app_path[0] == '\0';
 
     Config tmp{};
     tmp = s.emuenv->cfg;
@@ -1165,10 +1167,10 @@ int vita3k_ios_game_config_get(const char *app_path, char *out, size_t out_size)
 
     std::string report;
     report += "title=" + std::string(app_path) + "\n";
-    report += fmt::format("has_custom={}\n", config::has_custom_config(s.root.get_config_path(), app_path) ? 1 : 0);
+    report += fmt::format("has_custom={}\n", !global && config::has_custom_config(s.root.get_config_path(), app_path) ? 1 : 0);
     report += fmt::format("cpu_opt={}\n", cc.cpu_opt ? 1 : 0);
-    report += fmt::format("cpu_jit_cache_mib={}\n", cc.cpu_jit_cache_mib);
-    report += fmt::format("cpu_jit_cache_auto_mib={}\n", config::get_default_cpu_jit_cache_mib(tmp, app_path));
+    report += fmt::format("cpu_jit_cache_mib={}\n", global ? tmp.cpu_jit_cache_mib : cc.cpu_jit_cache_mib);
+    report += fmt::format("cpu_jit_cache_auto_mib={}\n", global ? 16 : config::get_default_cpu_jit_cache_mib(tmp, app_path));
     report += fmt::format("force_software_page_table={}\n", cc.force_software_page_table ? 1 : 0);
     report += fmt::format("high_accuracy={}\n", cc.high_accuracy ? 1 : 0);
     report += fmt::format("disable_surface_sync={}\n", cc.disable_surface_sync ? 1 : 0);
@@ -1203,8 +1205,9 @@ int vita3k_ios_game_config_set(const char *app_path, const char *key, const char
     if (k == "cpu_opt" || k == "cpu_jit_cache_mib" || k == "force_software_page_table" || k == "high_accuracy" || k == "disable_surface_sync" || k == "async_pipeline_compilation" ||
         k == "resolution_multiplier" || k == "anisotropic_filtering" || k == "shader_cache" ||
         k == "fps_hack" || k == "frame_cap_30" || k == "texture_cache" || k == "half_res_textures" || k == "log_level" || k == "log_compat_warn") {
-        if (!app_path || app_path[0] == '\0')
+        if (!app_path)
             return -1;
+        const bool global = app_path[0] == '\0';
         Config tmp{};
         tmp = s.emuenv->cfg;
         config::set_current_config(tmp, s.root.get_config_path(), app_path);
@@ -1250,6 +1253,31 @@ int vita3k_ios_game_config_set(const char *app_path, const char *key, const char
                 cc.texture_cache = b;
         } catch (const std::exception &) {
             return -2;
+        }
+        if (global) {
+            // Global defaults: log keys are per-game only.
+            if (k == "log_level" || k == "log_compat_warn")
+                return -2;
+            auto &g = s.emuenv->cfg;
+            if (k == "cpu_opt") g.cpu_opt = cc.cpu_opt;
+            else if (k == "force_software_page_table") g.force_software_page_table = cc.force_software_page_table;
+            else if (k == "cpu_jit_cache_mib") g.cpu_jit_cache_mib = cc.cpu_jit_cache_mib;
+            else if (k == "high_accuracy") g.high_accuracy = cc.high_accuracy;
+            else if (k == "disable_surface_sync") g.disable_surface_sync = cc.disable_surface_sync;
+            else if (k == "async_pipeline_compilation") g.async_pipeline_compilation = cc.async_pipeline_compilation;
+            else if (k == "resolution_multiplier") g.resolution_multiplier = cc.resolution_multiplier;
+            else if (k == "anisotropic_filtering") g.anisotropic_filtering = cc.anisotropic_filtering;
+            else if (k == "shader_cache") g.shader_cache = cc.shader_cache;
+            else if (k == "fps_hack") g.fps_hack = cc.fps_hack;
+            else if (k == "frame_cap_30") g.frame_cap_30 = cc.frame_cap_30;
+            else if (k == "half_res_textures") g.half_res_textures = cc.half_res_textures;
+            else g.texture_cache = cc.texture_cache;
+            if (config::serialize_config(g, s.root.get_config_path()) != Success) {
+                LOG_ERROR("iOS game config: could not save the global config");
+                return -3;
+            }
+            LOG_INFO("iOS game config (global defaults): {} = {}", k, value);
+            return 0;
         }
         if (!config::save_custom_config(cc, s.root.get_config_path(), app_path)) {
             LOG_ERROR("iOS game config: could not save custom config for '{}'", app_path);

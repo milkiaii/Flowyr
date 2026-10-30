@@ -20,6 +20,8 @@ struct SettingItem: Identifiable {
     var kind: Kind
     var enabled = true
     var destructive = false
+    /// Shows a disclosure chevron (the row opens another page).
+    var chevron = false
 
     var isFocusable: Bool {
         if case .info = kind { return false }
@@ -145,7 +147,9 @@ struct PadSettingsPage: View {
                 }
             case .action(let run):
                 Button { UISounds.shared.play(.tap); run() } label: {
-                    line(item) { EmptyView() }
+                    line(item) {
+                        if item.chevron { Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(.secondary) }
+                    }
                 }
                 .buttonStyle(.plain)
             case .info(let value):
