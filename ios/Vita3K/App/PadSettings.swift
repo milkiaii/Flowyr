@@ -29,6 +29,13 @@ struct SettingItem: Identifiable {
     }
 }
 
+private struct RowBoundsKey: PreferenceKey {
+    static var defaultValue: [String: Anchor<CGRect>] = [:]
+    static func reduce(value: inout [String: Anchor<CGRect>], nextValue: () -> [String: Anchor<CGRect>]) {
+        value.merge(nextValue()) { $1 }
+    }
+}
+
 struct SettingSection: Identifiable {
     let id: String
     var title: LocalizedStringKey
@@ -49,6 +56,7 @@ struct PadSettingsPage: View {
     @ObservedObject private var pad = GamepadInput.shared
     @State private var focus: String?
     @State private var picking: String?
+    @State private var pickIndex = 0
     @State private var owner = UUID()
 
     private var focusable: [SettingItem] { sections.flatMap(\.items).filter(\.isFocusable) }
@@ -68,27 +76,98 @@ struct PadSettingsPage: View {
                 .padding(20).frame(maxWidth: 680).frame(maxWidth: .infinity)
             }
             .background { ThemedBackground() }
+            .overlayPreferenceValue(RowBoundsKey.self) { anchors in
+                GeometryReader { geo in pickerOverlay(anchors, geo) }
+            }
             .onChange(of: pad.lastEvent) { _, event in
-                guard isActive, picking == nil, let event else { return }
-                handle(event.button, proxy: proxy)
+                guard isActive, let event else { return }
+                if picking != nil { handlePicker(event.button) } else { handle(event.button, proxy: proxy) }
             }
         }
         .onAppear {
             pad.start(owner: owner)
             if pad.connected, focus == nil { focus = focusable.first?.id }
         }
-        .onDisappear { pad.stop(owner: owner); BackdropMotion.shared.paused = false }
-        // The picker is a plain sheet, and the animated backdrop is paused while it is open:
-        // a live, moving backdrop under a system menu made its text flicker.
-        .onChange(of: picking) { _, value in BackdropMotion.shared.paused = value != nil }
-        .confirmationDialog("", isPresented: Binding(get: { picking != nil }, set: { if !$0 { picking = nil } }),
-                            titleVisibility: .hidden) {
-            if let item = sections.flatMap(\.items).first(where: { $0.id == picking }),
-               case .choice(let binding, let options) = item.kind {
-                ForEach(options.indices, id: \.self) { i in
-                    Button(options[i]) { UISounds.shared.play(.tap); binding.wrappedValue = i }
+        .onDisappear { pad.stop(owner: owner) }
+    }
+
+    // MARK: - Dropdown
+
+    /// A compact floating list under the value, drawn in SwiftUI (no system menu).
+    @ViewBuilder private func pickerOverlay(_ anchors: [String: Anchor<CGRect>], _ geo: GeometryProxy) -> some View {
+        if let id = picking, let anchor = anchors[id], let choice = pickingChoice {
+            let rect = geo[anchor]
+            let rowHeight: CGFloat = 44
+            let width = min(210, geo.size.width - 32)
+            let height = min(CGFloat(choice.options.count) * rowHeight + 12, min(geo.size.height - 24, 330))
+            let below = rect.maxY + 6 + height <= geo.size.height - 8
+            let y = below ? rect.maxY + 6 : max(8, rect.minY - 6 - height)
+            let x = min(rect.maxX, geo.size.width - 16) - width
+            ZStack(alignment: .topLeading) {
+                Color.black.opacity(0.001).contentShape(Rectangle()).onTapGesture { closePicker() }
+                ScrollViewReader { list in
+                    ScrollView {
+                        VStack(spacing: 0) {
+                            ForEach(choice.options.indices, id: \.self) { i in
+                                Button {
+                                    UISounds.shared.play(.tap)
+                                    choice.binding.wrappedValue = i
+                                    closePicker()
+                                } label: {
+                                    HStack {
+                                        Text(verbatim: choice.options[i])
+                                        Spacer(minLength: 8)
+                                        if i == choice.binding.wrappedValue { Image(systemName: "checkmark").font(.footnote.weight(.bold)) }
+                                    }
+                                    .padding(.horizontal, 14).frame(height: rowHeight)
+                                    .background(pickIndex == i ? Color.primary.opacity(0.14) : .clear,
+                                                in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                    .contentShape(Rectangle())
+                                }
+                                .buttonStyle(.plain).id(i)
+                            }
+                        }
+                        .padding(6)
+                    }
+                    .onAppear { list.scrollTo(pickIndex, anchor: .center) }
+                    .onChange(of: pickIndex) { _, i in withAnimation(.snappy) { list.scrollTo(i, anchor: .center) } }
                 }
+                .frame(width: width, height: height)
+                .background(palette.background.opacity(0.92), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(Color.white.opacity(0.18), lineWidth: 1))
+                .shadow(color: .black.opacity(0.35), radius: 18, y: 6)
+                .environment(\.colorScheme, palette.scheme)
+                .offset(x: x, y: y)
+                .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .top)))
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+
+    private var pickingChoice: (binding: Binding<Int>, options: [String])? {
+        guard let id = picking, let item = sections.flatMap(\.items).first(where: { $0.id == id }),
+              case .choice(let binding, let options) = item.kind else { return nil }
+        return (binding, options)
+    }
+
+    private func openPicker(_ item: SettingItem) {
+        guard case .choice(let binding, _) = item.kind else { return }
+        UISounds.shared.play(.tap)
+        pickIndex = binding.wrappedValue
+        withAnimation(.easeOut(duration: 0.15)) { picking = item.id }
+    }
+
+    private func closePicker() { withAnimation(.easeOut(duration: 0.12)) { picking = nil } }
+
+    private func handlePicker(_ button: PadButton) {
+        guard let choice = pickingChoice else { picking = nil; return }
+        switch button {
+        case .down: if pickIndex < choice.options.count - 1 { pickIndex += 1; UISounds.shared.play(.move) }
+        case .up: if pickIndex > 0 { pickIndex -= 1; UISounds.shared.play(.move) }
+        case .confirm: UISounds.shared.play(.tap); choice.binding.wrappedValue = pickIndex; closePicker()
+        case .back: UISounds.shared.play(.back); closePicker()
+        default: break
         }
     }
 
@@ -138,7 +217,7 @@ struct PadSettingsPage: View {
                 }
                 .buttonStyle(.plain)
             case .choice(let binding, let options):
-                Button { UISounds.shared.play(.tap); picking = item.id } label: {
+                Button { openPicker(item) } label: {
                     line(item) {
                         HStack(spacing: 5) {
                             Text(verbatim: options.indices.contains(binding.wrappedValue) ? options[binding.wrappedValue] : "")
@@ -148,6 +227,7 @@ struct PadSettingsPage: View {
                     }
                 }
                 .buttonStyle(.plain)
+                .anchorPreference(key: RowBoundsKey.self, value: .bounds) { [item.id: $0] }
             case .slider(let binding, let range, let step, let unit):
                 VStack(spacing: 6) {
                     line(item) { Text(verbatim: formatted(binding.wrappedValue, unit)).foregroundStyle(.secondary).font(.subheadline.monospacedDigit()) }
@@ -221,7 +301,7 @@ struct PadSettingsPage: View {
             guard let item = index.map({ items[$0] }) else { focus = items.first?.id; return }
             switch item.kind {
             case .toggle(let b): toggle(b)
-            case .choice(let b, let options): UISounds.shared.play(.tap); b.wrappedValue = (b.wrappedValue + 1) % options.count
+            case .choice: openPicker(item)
             case .action(let run): UISounds.shared.play(.confirm); run()
             default: break
             }

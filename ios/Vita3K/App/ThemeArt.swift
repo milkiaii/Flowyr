@@ -1,14 +1,7 @@
 import SwiftUI
 
 /// PS Vita-style backdrop: deep blue gradient with slowly rising translucent bubbles.
-/// Pauses the animated backdrop while a system picker is open.
-final class BackdropMotion: ObservableObject {
-    static let shared = BackdropMotion()
-    @Published var paused = false
-}
-
 struct VitaBubbles: View {
-    @ObservedObject private var motion = BackdropMotion.shared
     private struct Bubble { let x, size, speed, phase, drift, alpha: Double }
     private static let bubbles: [Bubble] = {
         var s: UInt32 = 20111217
@@ -20,7 +13,7 @@ struct VitaBubbles: View {
     }()
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: motion.paused)) { tl in
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { tl in
             let t = tl.date.timeIntervalSinceReferenceDate
             Canvas { ctx, size in
                 let W = size.width, H = size.height
