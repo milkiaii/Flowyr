@@ -15,6 +15,7 @@ struct ContentView: View {
     @ObservedObject private var pad = GamepadInput.shared
     @State private var launchInFlight = false
     @State private var startupComplete = false
+    @State private var showIntro = true
     @State private var wasAway = false
     @State private var launchError: String?
     @State private var toast: String?
@@ -25,9 +26,17 @@ struct ContentView: View {
                     openSettings: { UISounds.shared.play(.open); showSettings = true },
                     inputEnabled: surfaceRequest == nil && !showSettings && !showImporter && !showZRIF && !launchInFlight)
         .disabled(controller.isImporting || controller.isDeleting || controller.isSyncingSaves || launchInFlight)
+        .overlay {
+            if showIntro {
+                StartupIntro(jitStatus: controller.jitStatus)
+                    .transition(.opacity)
+                    .zIndex(10)
+            }
+        }
         .task {
             guard !startupComplete else { return }
             startupComplete = true
+            let introStart = Date()
             // Start the JIT check first: it runs off the main thread, so it
             // overlaps with the (main-thread, SDL-bound) session init.
             let jit = Task { await controller.checkJIT() }
@@ -35,6 +44,10 @@ struct ContentView: View {
             try? await Task.sleep(for: .milliseconds(80))
             controller.runSessionInit()
             _ = await jit.value
+            // Keep the intro up for a beat so it never flashes, then reveal the library.
+            let remaining = 1.3 - Date().timeIntervalSince(introStart)
+            if remaining > 0 { try? await Task.sleep(for: .seconds(remaining)) }
+            withAnimation(.easeInOut(duration: 0.45)) { showIntro = false }
             // The launch sync is armed by CloudSaveSync (needsSync) and run
             // once by the control poller; an explicit call here would sync
             // again right after the JIT check.
@@ -241,4 +254,56 @@ struct ContentView: View {
 struct SurfaceRequest: Identifiable {
     let id = UUID()
     let appPath: String?
+}
+
+
+/// Launch screen shown while the JIT check and core initialisation run. It only uses
+/// Core Animation driven effects (opacity, scale, offset), which keep running even
+/// while the main thread is busy initialising the core.
+struct StartupIntro: View {
+    @Environment(\.palette) private var palette
+    let jitStatus: CoreController.JITStatus
+    @State private var appeared = false
+    @State private var glow = false
+    @State private var sweep = false
+
+    var body: some View {
+        ZStack {
+            ThemedBackground()
+            VStack(spacing: 26) {
+                Image("LogoMark")
+                    .resizable().scaledToFit()
+                    .frame(width: 96, height: 96)
+                    .clipShape(RoundedRectangle(cornerRadius: 23, style: .continuous))
+                    .shadow(color: palette.accent.opacity(glow ? 0.75 : 0.3), radius: glow ? 34 : 16)
+                    .scaleEffect(appeared ? 1 : 0.82)
+                Text(verbatim: "FLOWYR")
+                    .font(.system(size: 20, weight: .semibold, design: .rounded))
+                    .tracking(8).padding(.leading, 8)
+                    .foregroundStyle(.white.opacity(0.92))
+                    .opacity(appeared ? 1 : 0)
+                ZStack(alignment: .leading) {
+                    Capsule().fill(.white.opacity(0.16))
+                    Capsule().fill(jitStatus == .unavailable ? palette.warning : .white.opacity(0.9))
+                        .frame(width: 36)
+                        .offset(x: sweep ? 84 : 0)
+                        .opacity(jitStatus == .checking ? 1 : 0)
+                }
+                .frame(width: 120, height: 3).clipShape(Capsule())
+                .overlay {
+                    Capsule().fill(jitStatus == .ready ? Color.green : palette.warning)
+                        .opacity(jitStatus == .checking ? 0 : 1)
+                }
+                .opacity(appeared ? 1 : 0)
+                .animation(.easeOut(duration: 0.3), value: jitStatus)
+            }
+        }
+        .ignoresSafeArea()
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.6)) { appeared = true }
+            withAnimation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true)) { glow = true }
+            withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) { sweep = true }
+        }
+        .accessibilityHidden(true)
+    }
 }
