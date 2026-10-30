@@ -22,6 +22,7 @@ struct SettingsView: View {
 
     @State private var showDiagnostics = false
     @State private var page: SettingsCategory?
+    @State private var poppedAt = Date.distantPast
     var onClose: () -> Void = {}
 
     private var languageIndex: Binding<Int> {
@@ -30,7 +31,8 @@ struct SettingsView: View {
     }
 
     var body: some View {
-        PadSettingsPage(sections: hubSections, isActive: page == nil && !showDiagnostics, onClose: onClose)
+        PadSettingsPage(sections: hubSections, isActive: page == nil && !showDiagnostics,
+                        onClose: { if Date().timeIntervalSince(poppedAt) > 0.4 { onClose() } })
             .navigationTitle("Opções").navigationBarTitleDisplayMode(.inline)
             .navigationDestination(item: $page) { category in categoryPage(category) }
             .navigationDestination(isPresented: $showDiagnostics) { DiagnosticsView() }
@@ -55,12 +57,15 @@ struct SettingsView: View {
         ]
     }
 
+    /// B on a category page returns to the list; the same press must not also close the list.
+    private func closeCategory() { poppedAt = Date(); page = nil }
+
     @ViewBuilder private func categoryPage(_ category: SettingsCategory) -> some View {
         switch category {
         case .cpu:
-            GlobalConfigPage(scope: .cpu, onClose: { page = nil })
+            GlobalConfigPage(scope: .cpu, onClose: closeCategory)
         case .graphics:
-            GlobalConfigPage(scope: .graphics, onClose: { page = nil })
+            GlobalConfigPage(scope: .graphics, onClose: closeCategory)
         default:
             let ids: [String] = switch category {
             case .interface: ["language", "appearance", "library"]
@@ -69,7 +74,7 @@ struct SettingsView: View {
             default: ["system", "cloud"]
             }
             let all = sections
-            PadSettingsPage(sections: ids.compactMap { id in all.first { $0.id == id } }, onClose: { page = nil })
+            PadSettingsPage(sections: ids.compactMap { id in all.first { $0.id == id } }, onClose: closeCategory)
                 .navigationTitle(category.title).navigationBarTitleDisplayMode(.inline)
         }
     }

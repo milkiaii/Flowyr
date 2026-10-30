@@ -328,3 +328,11 @@
 "Auto escolhe o tamanho conforme o perfil de cada jogo. Valores menores permitem mais threads, mas podem aumentar a recompilação." = "Auto escolhe o tamanho conforme o perfil de cada jogo. Valores menores permitem mais threads, mas podem aumentar a recompilação.";
 "Cache" = "Cache";
 "Shader cache limpo." = "Shader cache limpo.";
+"Bem-vindo ao Flowyr" = "Bem-vindo ao Flowyr";
+"Comece em três passos" = "Comece em três passos";
+"Instale o firmware" = "Instale o firmware";
+"Configurações → Sistema e conteúdo → Importar conteúdo." = "Configurações → Sistema e conteúdo → Importar conteúdo.";
+"Importe seus jogos" = "Importe seus jogos";
+"Arquivos VPK, ZIP, PKG e pastas são aceitos." = "Arquivos VPK, ZIP, PKG e pastas são aceitos.";
+"Ative o JIT" = "Ative o JIT";
+"Abra o Flowyr pelo StikDebug com o script Universal." = "Abra o Flowyr pelo StikDebug com o script Universal.";

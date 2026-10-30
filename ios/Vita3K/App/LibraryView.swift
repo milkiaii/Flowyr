@@ -145,19 +145,16 @@ struct LibraryView: View {
             ScrollView {
                 VStack(spacing: 16) {
                     if !controller.apps.isEmpty { searchHeader }
-                    ContentUnavailableView {
-                        Label(LocalizedStringKey(controller.apps.isEmpty ? "Sua próxima aventura" : "Nenhum jogo encontrado"),
-                              systemImage: controller.apps.isEmpty ? "gamecontroller" : "magnifyingglass")
-                    } description: {
-                        Text(LocalizedStringKey(controller.apps.isEmpty ? "Importe seus jogos e homebrews para começar. Arquivos VPK, ZIP, PKG e pastas são aceitos." : "Tente outra busca ou veja todos os jogos."))
-                    } actions: {
-                        if controller.apps.isEmpty {
-                            Button("Importar jogo") { importContent(.game) }
-                                .buttonStyle(.bordered)
-                                .disabled(!controller.sessionInitialized || controller.isImporting)
+                    if controller.apps.isEmpty {
+                        EmptyLibraryView(canImport: controller.sessionInitialized && !controller.isImporting) { importContent(.game) }
+                    } else {
+                        ContentUnavailableView {
+                            Label("Nenhum jogo encontrado", systemImage: "magnifyingglass")
+                        } description: {
+                            Text("Tente outra busca ou veja todos os jogos.")
                         }
+                        .frame(maxWidth: .infinity, minHeight: 320)
                     }
-                    .frame(maxWidth: .infinity, minHeight: 320)
                 }
                 .padding(.horizontal, 16)
             }
@@ -446,5 +443,54 @@ struct LibraryView: View {
             openActions(game)
         })
         .id(game.titleId)
+    }
+}
+
+
+/// Shown when no game is installed yet: a short welcome and the first steps.
+struct EmptyLibraryView: View {
+    @Environment(\.palette) private var palette
+    let canImport: Bool
+    let onImport: () -> Void
+
+    var body: some View {
+        VStack(spacing: 22) {
+            VStack(spacing: 10) {
+                Image("LogoMark").resizable().scaledToFit()
+                    .frame(width: 84, height: 84)
+                    .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                    .shadow(color: palette.accent.opacity(0.55), radius: 22)
+                Text("Bem-vindo ao Flowyr").font(.system(size: 26, weight: .bold, design: .rounded))
+                Text("Comece em três passos").font(.subheadline).foregroundStyle(.secondary)
+            }
+            VStack(spacing: 2) {
+                step(1, "Instale o firmware", "Configurações → Sistema e conteúdo → Importar conteúdo.")
+                step(2, "Importe seus jogos", "Arquivos VPK, ZIP, PKG e pastas são aceitos.")
+                step(3, "Ative o JIT", "Abra o Flowyr pelo StikDebug com o script Universal.")
+            }
+            .padding(8)
+            .background(palette.panel, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+            Button(action: onImport) {
+                Label("Importar jogo", systemImage: "square.and.arrow.down.fill")
+                    .font(.headline).padding(.horizontal, 22).padding(.vertical, 12)
+                    .background(palette.accent, in: Capsule()).foregroundStyle(.white)
+            }
+            .buttonStyle(.plain).disabled(!canImport).opacity(canImport ? 1 : 0.5)
+        }
+        .padding(.top, 24).padding(.bottom, 100)
+        .frame(maxWidth: 520).frame(maxWidth: .infinity)
+    }
+
+    private func step(_ n: Int, _ title: LocalizedStringKey, _ detail: LocalizedStringKey) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Text("\(n)").font(.system(size: 14, weight: .heavy, design: .rounded))
+                .frame(width: 28, height: 28).background(palette.accent.opacity(0.9), in: Circle()).foregroundStyle(.white)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title).font(.body.weight(.semibold))
+                Text(detail).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 12).padding(.vertical, 10)
     }
 }
