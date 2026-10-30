@@ -47,6 +47,105 @@ struct SettingsView: View {
             SettingSection(id: "hub", title: "Configurações",
                            items: SettingsCategory.allCases.map(link),
                            footer: "CPU e Gráficos definem os padrões de todos os jogos. Para ajustar um único jogo, mantenha-o pressionado na biblioteca e escolha Editar Config."),
+            SettingSection(id: "about", title: "Sobre o Flowyr", items: [
+                SettingItem(id: "core", title: "Núcleo", kind: .info(controller.version.isEmpty ? L10n.text("Carregando…") : controller.version)),
+                SettingItem(id: "diagnostics", title: "Diagnóstico avançado", symbol: "waveform.path.ecg",
+                            kind: .action { showDiagnostics = true }, chevron: true),
+            ], footer: "Emulador experimental de PlayStation Vita para iOS. Compatibilidade e desempenho variam por jogo."),
+        ]
+    }
+
+    @ViewBuilder private func categoryPage(_ category: SettingsCategory) -> some View {
+        switch category {
+        case .cpu:
+            GlobalConfigPage(scope: .cpu, onClose: { page = nil })
+        case .graphics:
+            GlobalConfigPage(scope: .graphics, onClose: { page = nil })
+        default:
+            let ids: [String] = switch category {
+            case .interface: ["language", "appearance", "library"]
+            case .controls: ["controls"]
+            case .jit: ["jit"]
+            default: ["system", "cloud"]
+            }
+            let all = sections
+            PadSettingsPage(sections: ids.compactMap { id in all.first { $0.id == id } }, onClose: { page = nil })
+                .navigationTitle(category.title).navigationBarTitleDisplayMode(.inline)
+        }
+    }
+
+    private var sections: [SettingSection] {
+        let sync = controller.saveSync
+        var cloud: [SettingItem] = [
+            SettingItem(id: "cloud-enabled", title: "Sincronizar todos os saves", symbol: "icloud.fill",
+                        kind: .toggle(Binding(get: { sync.enabled },
+                                              set: { sync.setEnabled($0); Task { await controller.syncSaves() } })),
+                        enabled: !controller.isSyncingSaves)
+        ]
+        if sync.enabled {
+            cloud.append(SettingItem(id: "cloud-now", title: "Sincronizar agora", symbol: "arrow.triangle.2.circlepath",
+                                     kind: .action { sync.requestSync(); Task { await controller.syncSaves() } },
+                                     enabled: !controller.isSyncingSaves))
+            for conflict in sync.conflicts {
+                if conflict.localDigest != nil {
+                    cloud.append(SettingItem(id: "conflict-\(conflict.id)-local", title: "Usar save deste aparelho",
+                                             detail: LocalizedStringKey("\(conflict.key.game) · Usuário \(conflict.key.user)"),
+                                             kind: .action { resolve(conflict, revision: nil) }))
+                }
+                for version in conflict.versions {
+                    cloud.append(SettingItem(id: "conflict-\(conflict.id)-\(version.id)",
+                                             title: LocalizedStringKey("Usar iCloud · \(version.device)"),
+                                             detail: LocalizedStringKey("\(conflict.key.game) · \(version.date.formatted(.dateTime.day().month(.abbreviated).hour().minute()))"),
+                                             kind: .action { resolve(conflict, revision: version.id) }))
+                }
+            }
+        }
+        cloud.append(SettingItem(id: "cloud-status", title: LocalizedStringKey(sync.status), kind: .info("")))
+
+        return [
+            SettingSection(id: "language", title: "Idioma", items: [
+                SettingItem(id: "language", title: "Idioma da interface", symbol: "globe",
+                            kind: .choice(languageIndex, AppLanguage.allCases.map(\.name)))
+            ], footer: "A alteração é aplicada imediatamente e fica salva para a próxima abertura. O idioma dos jogos não é alterado."),
+            SettingSection(id: "appearance", title: "Aparência", items: [
+                SettingItem(id: "light", title: "Tema", symbol: "paintpalette.fill",
+                            kind: .choice(themeIndex, AppTheme.allCases.map { L10n.text($0.label) })),
+                SettingItem(id: "sounds", title: "Sons da interface", symbol: "speaker.wave.2.fill", kind: .toggle($uiSounds)),
+                SettingItem(id: "icons", title: "Ícones dos jogos", detail: "Arte larga usa a imagem de fundo do jogo. Ícone clássico usa o ícone quadrado do jogo.",
+                            symbol: "square.grid.2x2.fill",
+                            kind: .choice(Binding(get: { classicIcons ? 1 : 0 }, set: { classicIcons = $0 == 1 }),
+                                          [L10n.text("Arte larga"), L10n.text("Ícone clássico")])),
+            ]),
+            SettingSection(id: "jit", title: "Pronto para jogar", items: [
+                SettingItem(id: "jit-check", title: "Verificar JIT agora", symbol: "bolt.fill",
+                            kind: .action { Task { _ = await controller.checkJIT() } },
+                            enabled: controller.jitStatus != .checking)
+            ], footer: "No iPhone, abra o Flowyr pelo StikDebug usando o script Universal. A disponibilidade do JIT é verificada ao abrir o app e antes de iniciar um jogo.",
+                           accessory: AnyView(JITBadge(status: controller.jitStatus))),
+            SettingSection(id: "controls", title: "Controles e tela", items: [
+                SettingItem(id: "landscape", title: "Forçar rotacionamento na horizontal", detail: "Mantém a interface e os jogos na horizontal, mesmo com o aparelho em pé.", symbol: "rotate.right.fill", kind: .toggle($forceLandscape)),
+                SettingItem(id: "controls", title: "Controles na tela", detail: "Ocultados automaticamente ao conectar um controle físico.", symbol: "gamecontroller.fill", kind: .toggle($showControls)),
+                SettingItem(id: "dynamic", title: "Analógicos dinâmicos",
+                            detail: "O analógico aparece onde você toca nas áreas livres da esquerda e da direita.", symbol: "hand.point.up.left.fill", kind: .toggle($dynamicSticks)),
+                SettingItem(id: "opacity", title: "Opacidade", kind: .slider($controlOpacity, 0.25...1, 0.05, "%"), enabled: showControls),
+                SettingItem(id: "overlay", title: "Performance Overlay", detail: "FPS, tempo por quadro e memória.", symbol: "speedometer", kind: .toggle($showStatus)),
+            ]),
+            SettingSection(id: "library", title: "Biblioteca", items: [
+                SettingItem(id: "list", title: "Exibir como lista", symbol: "list.bullet", kind: .toggle($listLayout)),
+                SettingItem(id: "sort", title: "Ordenar por título ID", symbol: "textformat.abc", kind: .toggle($sortByID)),
+                SettingItem(id: "refresh", title: "Atualizar jogos instalados", symbol: "arrow.clockwise",
+                            kind: .action { controller.refreshApps() }),
+            ], footer: "Mantenha um jogo pressionado para adicioná-lo aos favoritos."),
+            SettingSection(id: "cloud", title: "Saves no iCloud", items: cloud,
+                           footer: "Sincroniza o progresso de todos os jogos entre aparelhos com a mesma conta do iCloud. Encerre o jogo e aguarde o envio antes de trocar de aparelho."),
+            SettingSection(id: "system", title: "Sistema e conteúdo", items: [
+                SettingItem(id: "audio", title: "Áudio", kind: .info("SDL · CoreAudio")),
+                SettingItem(id: "gfx", title: "Gráficos", kind: .info("Vulkan · MoltenVK")),
+                SettingItem(id: "firmware", title: "Firmware",
+                            kind: .info(L10n.text(controller.firmwareMask == 7 ? "Instalado" : "Incompleto"))),
+                SettingItem(id: "import", title: "Importar conteúdo", symbol: "square.and.arrow.down",
+                            kind: .action(importContent), enabled: !controller.isImporting && controller.sessionInitialized),
+            ], footer: "Importe firmware PUP ou conteúdo de jogos VPK, ZIP, PKG e pastas. Ou use o app Arquivos: abra “No Meu iPhone” → “Flowyr” — copie jogos para imports/ (instalados automaticamente) ou remova arquivos, ex. um jogo em vita/ux0/app."),
         ]
     }
 
