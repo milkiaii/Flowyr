@@ -11,7 +11,7 @@ targets:
     sources: [main.m]
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: dev.vita3k.Vita3KIos
+        PRODUCT_BUNDLE_IDENTIFIER: dev.vita3k.Flowyr
         GENERATE_INFOPLIST_FILE: YES
         CODE_SIGN_STYLE: Automatic
         CODE_SIGN_ENTITLEMENTS: Flowyr.entitlements
@@ -21,8 +21,8 @@ targets:
     entitlements:
       path: Flowyr.entitlements
       properties:
-        com.apple.developer.icloud-container-identifiers: [iCloud.dev.vita3k.Vita3KIos]
-        com.apple.developer.ubiquity-container-identifiers: [iCloud.dev.vita3k.Vita3KIos]
+        com.apple.developer.icloud-container-identifiers: [iCloud.dev.vita3k.Flowyr]
+        com.apple.developer.ubiquity-container-identifiers: [iCloud.dev.vita3k.Flowyr]
         com.apple.developer.icloud-services: [CloudDocuments]
 schemes:
   FlowyrSigning:

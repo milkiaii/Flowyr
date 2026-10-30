@@ -44,8 +44,8 @@ o histórico. Se houver conflito, escolha o save local desse aparelho.
 ## Assinatura e dados existentes
 
 O build usa Apple Development e provisioning automático do Xcode. O app para Mac
-agora compartilha o App ID registrado `dev.vita3k.Vita3KIos` e o container
-`iCloud.dev.vita3k.Vita3KIos` com o iOS. O perfil **nativo de macOS** autoriza
+agora compartilha o App ID registrado `dev.vita3k.Flowyr` e o container
+`iCloud.dev.vita3k.Flowyr` com o iOS. O perfil **nativo de macOS** autoriza
 o acesso; copiar apenas entitlements sem o perfil não habilita o iCloud.
 O pacote de desenvolvimento requer um Mac autorizado no perfil.
 

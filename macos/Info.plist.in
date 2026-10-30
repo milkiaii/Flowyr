@@ -2,7 +2,7 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
   <key>CFBundleExecutable</key><string>${MACOSX_BUNDLE_EXECUTABLE_NAME}</string>
-  <key>CFBundleIdentifier</key><string>dev.vita3k.Vita3KIos</string>
+  <key>CFBundleIdentifier</key><string>dev.vita3k.Flowyr</string>
   <key>CFBundleName</key><string>Flowyr</string>
   <key>CFBundleDisplayName</key><string>Flowyr</string>
   <key>CFBundlePackageType</key><string>APPL</string>
@@ -11,9 +11,9 @@
   <key>CFBundleVersion</key><string>1</string>
   <key>NSHighResolutionCapable</key><true/>
   <key>LSMinimumSystemVersion</key><string>${CMAKE_OSX_DEPLOYMENT_TARGET}</string>
-  <key>Vita3KSaveContainer</key><string>iCloud.dev.vita3k.Vita3KIos</string>
+  <key>Vita3KSaveContainer</key><string>iCloud.dev.vita3k.Flowyr</string>
   <key>NSUbiquitousContainers</key><dict>
-    <key>iCloud.dev.vita3k.Vita3KIos</key><dict>
+    <key>iCloud.dev.vita3k.Flowyr</key><dict>
       <key>NSUbiquitousContainerIsDocumentScopePublic</key><true/>
       <key>NSUbiquitousContainerName</key><string>Flowyr</string>
       <key>NSUbiquitousContainerSupportedFolderLevels</key><string>Any</string>
