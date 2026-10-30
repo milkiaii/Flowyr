@@ -6,6 +6,17 @@ Flowyr is a PlayStation Vita emulator for iPhone and iPad, running on iOS 26 and
 
 This is a hobby project and it is experimental. Some games run well, some have graphical problems, and some do not run at all.
 
+## Screenshots
+
+| | |
+|:---:|:---:|
+| **Persona 4 Golden** | **Persona 4 Golden** |
+| ![Persona 4 Golden, classroom](_readme/screenshots/persona4_golden_classroom.png) | ![Persona 4 Golden, street](_readme/screenshots/persona4_golden_street.png) |
+| **Hatsune Miku: Project DIVA f** | **Hatsune Miku: Project DIVA f** |
+| ![Project DIVA f, song menu](_readme/screenshots/project_diva_f_menu.png) | ![Project DIVA f, gameplay](_readme/screenshots/project_diva_f_gameplay.png) |
+
+Captured on an iPhone SE (2nd generation) with the on-screen controls visible.
+
 ## Where it comes from
 
 Flowyr is a fork of [Veeb](https://github.com/veebteam/Veeb), which is itself a fork of [Vita3K](https://vita3k.org/). Nearly all of the hard work, understanding and emulating the Vita's hardware and operating system, was done by the Vita3K developers and contributors. Veeb brought that core to iOS. Flowyr keeps that foundation and changes the app around it and a few things underneath. The credits at the bottom list the people and projects it depends on.
