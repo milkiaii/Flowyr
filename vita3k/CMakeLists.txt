@@ -355,7 +355,7 @@ if(APPLE AND NOT IOS)
 	set_target_properties(vita3k PROPERTIES LINK_FLAGS "${vita3k_link_flags}")
 	target_sources(vita3k PRIVATE Flowyr.icns)
 	set(MACOSX_BUNDLE_ICON_FILE Flowyr.icns)
-	set(MACOSX_BUNDLE_GUI_IDENTIFIER "dev.vita3k.Vita3KIos")
+	set(MACOSX_BUNDLE_GUI_IDENTIFIER "dev.vita3k.Flowyr")
 	set(MACOSX_BUNDLE_BUNDLE_NAME "Flowyr")
 	set_target_properties(vita3k PROPERTIES OUTPUT_NAME Flowyr
 		MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/macos/Info.plist.in")

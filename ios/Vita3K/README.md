@@ -13,9 +13,10 @@ suportadas nem testadas**. Android também está fora do escopo deste fork.
 Compatibilidade e desempenho do Vita3K original não garantem os mesmos resultados.
 
 O nome apresentado no app, na tela de Início e no Arquivos é **Flowyr**.
-Os nomes internos (`ios/Vita3K`, targets, módulos e scripts), o bundle
-`dev.vita3k.Vita3KIos` e o identificador do container iCloud são mantidos;
-a mudança de nome não exige migrar jogos, saves ou configurações.
+O bundle é `dev.vita3k.Flowyr` (container iCloud `iCloud.dev.vita3k.Flowyr`).
+Como o identificador mudou, o app é instalado separado de versões anteriores e
+não herda jogos, saves ou configurações delas. Os nomes internos
+(`ios/Vita3K`, targets, módulos e scripts) são mantidos.
 
 Para investigar jogos com crashes, stucks, slowdown ou glitches, veja
 [modos de diagnóstico e skills](DIAGNOSTICS.md).
@@ -98,7 +99,7 @@ open ios/Vita3K/Vita3K.xcodeproj
 xcodebuild -project ios/Vita3K/Vita3K.xcodeproj -scheme Vita3K \
     -configuration Release -destination "platform=iOS Simulator,name=iPhone 17" build
 xcrun simctl install <udid> <Vita3K.app em DerivedData>
-xcrun simctl launch <udid> dev.vita3k.Vita3KIos
+xcrun simctl launch <udid> dev.vita3k.Flowyr
 ```
 
 Sempre que o core mudar, repita 1–2 (o `stage-core.sh` copiar o novo
@@ -481,7 +482,7 @@ será restaurada na próxima sincronização.
 ### Configuração da assinatura
 
 Os dois projetos XcodeGen declaram iCloud Documents (`CloudDocuments`) e usam
-`ICLOUD_CONTAINER_IDENTIFIER = iCloud.dev.vita3k.Vita3KIos`. No Apple Developer,
+`ICLOUD_CONTAINER_IDENTIFIER = iCloud.dev.vita3k.Flowyr`. No Apple Developer,
 o App ID e o provisioning profile precisam autorizar esse container. Para outra
 equipe/App ID, configure um container próprio nessa variável nos dois YAMLs e
 na chave de `NSUbiquitousContainers` do `App/Info.plist` (o Xcode só expande
@@ -656,14 +657,14 @@ DEV=<identifier do devicectl>   # UUID do CoreDevice, não o UDID físico
 APP=$(ls -dt ~/Library/Developer/Xcode/DerivedData/Vita3K-*/Build/Products/Debug-iphoneos/Vita3K.app | head -1)
 
 xcrun devicectl device install app --device $DEV "$APP"
-xcrun devicectl device process launch --device $DEV --activate dev.vita3k.Vita3KIos
+xcrun devicectl device process launch --device $DEV --activate dev.vita3k.Flowyr
 # console ao vivo (dyld errors, stdout do app):
-xcrun devicectl device process launch --console --device $DEV dev.vita3k.Vita3KIos
+xcrun devicectl device process launch --console --device $DEV dev.vita3k.Flowyr
 
 # arquivos do sandbox (listar / baixar):
-xcrun devicectl device info files --device $DEV --domain-type appDataContainer --domain-identifier dev.vita3k.Vita3KIos
+xcrun devicectl device info files --device $DEV --domain-type appDataContainer --domain-identifier dev.vita3k.Flowyr
 xcrun devicectl device copy from --device $DEV --domain-type appDataContainer \
-    --domain-identifier dev.vita3k.Vita3KIos --source Documents/app-probe.txt --destination /tmp/app-probe.txt
+    --domain-identifier dev.vita3k.Flowyr --source Documents/app-probe.txt --destination /tmp/app-probe.txt
 
 xcrun devicectl device capture screenshot --device $DEV --destination /tmp/screen.png
 ```
