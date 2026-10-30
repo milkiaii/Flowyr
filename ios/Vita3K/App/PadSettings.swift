@@ -48,6 +48,7 @@ struct PadSettingsPage: View {
 
     @ObservedObject private var pad = GamepadInput.shared
     @State private var focus: String?
+    @State private var picking: String?
     @State private var owner = UUID()
 
     private var focusable: [SettingItem] { sections.flatMap(\.items).filter(\.isFocusable) }
@@ -68,7 +69,7 @@ struct PadSettingsPage: View {
             }
             .background { ThemedBackground() }
             .onChange(of: pad.lastEvent) { _, event in
-                guard isActive, let event else { return }
+                guard isActive, picking == nil, let event else { return }
                 handle(event.button, proxy: proxy)
             }
         }
@@ -76,7 +77,19 @@ struct PadSettingsPage: View {
             pad.start(owner: owner)
             if pad.connected, focus == nil { focus = focusable.first?.id }
         }
-        .onDisappear { pad.stop(owner: owner) }
+        .onDisappear { pad.stop(owner: owner); BackdropMotion.shared.paused = false }
+        // The picker is a plain sheet, and the animated backdrop is paused while it is open:
+        // a live, moving backdrop under a system menu made its text flicker.
+        .onChange(of: picking) { _, value in BackdropMotion.shared.paused = value != nil }
+        .confirmationDialog("", isPresented: Binding(get: { picking != nil }, set: { if !$0 { picking = nil } }),
+                            titleVisibility: .hidden) {
+            if let item = sections.flatMap(\.items).first(where: { $0.id == picking }),
+               case .choice(let binding, let options) = item.kind {
+                ForEach(options.indices, id: \.self) { i in
+                    Button(options[i]) { UISounds.shared.play(.tap); binding.wrappedValue = i }
+                }
+            }
+        }
     }
 
     // MARK: - Layout
@@ -125,20 +138,16 @@ struct PadSettingsPage: View {
                 }
                 .buttonStyle(.plain)
             case .choice(let binding, let options):
-                line(item) {
-                    Menu {
-                        ForEach(options.indices, id: \.self) { i in
-                            Button(options[i]) { UISounds.shared.play(.tap); binding.wrappedValue = i }
-                        }
-                    } label: {
+                Button { UISounds.shared.play(.tap); picking = item.id } label: {
+                    line(item) {
                         HStack(spacing: 5) {
                             Text(verbatim: options.indices.contains(binding.wrappedValue) ? options[binding.wrappedValue] : "")
                             Image(systemName: "chevron.up.chevron.down").font(.caption2)
                         }
                         .font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
                     }
-                    .disabled(!item.enabled)
                 }
+                .buttonStyle(.plain)
             case .slider(let binding, let range, let step, let unit):
                 VStack(spacing: 6) {
                     line(item) { Text(verbatim: formatted(binding.wrappedValue, unit)).foregroundStyle(.secondary).font(.subheadline.monospacedDigit()) }
