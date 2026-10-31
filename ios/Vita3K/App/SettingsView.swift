@@ -146,11 +146,13 @@ struct SettingsView: View {
             SettingSection(id: "cloud", title: "Saves no iCloud", items: cloud,
                            footer: "Sincroniza o progresso de todos os jogos entre aparelhos com a mesma conta do iCloud. Encerre o jogo e aguarde o envio antes de trocar de aparelho."),
             SettingSection(id: "memory", title: "Memória e perfis", items: [
-                SettingItem(id: "low-memory", title: "Modo de pouca memória", symbol: "memorychip",
+                SettingItem(id: "low-memory", title: "Modo de pouca memória",
                             detail: "Reduz o cache de texturas e o libera quando o iOS avisa que falta memória. Evita travamentos em aparelhos com 3 GB, com possíveis engasgos.",
+                            symbol: "memorychip",
                             kind: .toggle(Binding(get: { lowMemory }, set: { lowMemory = $0; Vita3KCore.applyRuntimeOptions() }))),
-                SettingItem(id: "profiles", title: "Perfis recomendados por jogo", symbol: "wand.and.stars",
+                SettingItem(id: "profiles", title: "Perfis recomendados por jogo",
                             detail: "Aplica ajustes prontos a jogos com problemas conhecidos (hoje: Gravity Rush limitado a 30 FPS com texturas reduzidas). Aplicado ao iniciar o jogo.",
+                            symbol: "wand.and.stars",
                             kind: .toggle(Binding(get: { titleProfiles }, set: { titleProfiles = $0; Vita3KCore.applyRuntimeOptions() }))),
             ]),
             SettingSection(id: "system", title: "Sistema e conteúdo", items: [
