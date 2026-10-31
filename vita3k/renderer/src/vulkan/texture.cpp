@@ -21,8 +21,6 @@
 
 #include <vulkan/vulkan_format_traits.hpp>
 
-#include <config/settings.h>
-
 #include <gxm/functions.h>
 #include <gxm/types.h>
 #include <renderer/functions.h>
@@ -32,7 +30,6 @@
 #if defined(__APPLE__)
 #include <TargetConditionals.h>
 #if TARGET_OS_IPHONE
-#include <os/proc.h>
 #include <mem/functions.h>
 #include <util/diagnostics.h>
 #include <chrono>
@@ -80,22 +77,13 @@ void VKTextureCache::release_image(TextureCacheEntry &entry) {
 void VKTextureCache::create_image(const vk::ImageCreateInfo &image_info) {
     // Make room by evicting the least recently used images. The current texture
     // is the least recently used one while it is being configured: skip it.
-    vk::DeviceSize budget = memory_budget;
-#if defined(__APPLE__) && TARGET_OS_IPHONE
-    if (config::ios_options().low_memory.load(std::memory_order_relaxed)) {
-        budget = std::min<vk::DeviceSize>(budget, MiB(384));
-        // iOS ends the app when its memory runs out: shrink the cache while little is left.
-        if (os_proc_available_memory() < MiB(300))
-            budget = std::min<vk::DeviceSize>(budget, std::max<vk::DeviceSize>(MiB(128), cached_bytes > MiB(96) ? cached_bytes - MiB(96) : 0));
-    }
-#endif
-    for (auto *item = texture_queue.head->prev; cached_bytes + current_texture->memory_needed > budget && item != texture_queue.head; item = item->prev) {
+    for (auto *item = texture_queue.head->prev; cached_bytes + current_texture->memory_needed > memory_budget && item != texture_queue.head; item = item->prev) {
         TextureCacheInfo &info = item->content;
         TextureCacheEntry &entry = textures[info.index];
         if (&entry == current_texture || !entry.texture.image)
             continue;
 
-        LOG_INFO_ONCE("Texture cache reached its {} MiB budget, evicting the least recently used textures", budget / MiB(1));
+        LOG_INFO_ONCE("Texture cache reached its {} MiB budget, evicting the least recently used textures", memory_budget / MiB(1));
         texture_lookup.erase(std::bit_cast<TextureGxmDataRepr>(info.texture));
         info.texture_size = 0;
         info.dirty = false;

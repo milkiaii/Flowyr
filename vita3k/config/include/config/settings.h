@@ -19,22 +19,12 @@
 
 #include <config/state.h>
 
-#include <atomic>
 #include <cstdint>
 #include <string>
 #include <utility>
 #include <vector>
 
 namespace config {
-
-/// Opt-in iOS options chosen in the app settings and applied at runtime.
-struct IosOptions {
-    /// Smaller texture cache that also shrinks when iOS reports little free memory.
-    std::atomic<bool> low_memory{ false };
-    /// Recommended per-title settings for games with known problems.
-    std::atomic<bool> title_profiles{ false };
-};
-IosOptions &ios_options();
 
 enum class RestartRequiredSetting : uint8_t {
     CpuOpt = 0,
