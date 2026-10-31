@@ -757,9 +757,9 @@ int vita3k_ios_session_init(const char *base_path, const char *static_assets_pat
             for (const auto &thread : threads) {
                 const auto registers = thread->diagnostic_pc_lr.load(std::memory_order_relaxed);
                 const auto state = thread->diagnostic_stage_nid.load(std::memory_order_relaxed);
-                std::unique_lock thread_lock(thread->mutex, std::try_to_lock);
+                const auto thread_status = thread->try_get_status();
                 report += fmt::format(" [tid={} status={} stage={} pc={:08x} lr={:08x} nid={:08x} progress={}]",
-                    thread->id, thread_lock.owns_lock() ? static_cast<int>(thread->status) : -1,
+                    thread->id, thread_status ? static_cast<int>(*thread_status) : -1,
                     state >> 32, registers >> 32, uint32_t(registers), uint32_t(state), thread->diagnostic_progress.load(std::memory_order_relaxed));
             }
             return report;

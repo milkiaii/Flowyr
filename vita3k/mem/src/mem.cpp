@@ -160,6 +160,8 @@ bool init(MemState &state, const bool use_page_table, const bool force_software_
 
     assert(state.host_page_size >= 4096); // Limit imposed by Unicorn.
 
+    state.invalid_access_logged.clear();
+
     void *preferred_address = reinterpret_cast<void *>(1ULL << 34);
     // Set when the user forces it, or when the 4 GiB reservation below fails.
     bool use_software_page_table = force_software_page_table;
@@ -934,13 +936,13 @@ static void register_access_violation_handler(const AccessViolationHandler &hand
     sa.sa_flags = SA_SIGINFO;
     sigemptyset(&sa.sa_mask);
     sa.sa_sigaction = signal_handler;
-    if (sigaction(SIGSEGV, &sa, NULL) == -1) {
+    if (sigaction(SIGSEGV, &sa, nullptr) == -1) {
         LOG_CRITICAL("Failed to register an exception handler");
     }
 #ifdef __APPLE__
     // When accessing memory region which is PROT_NONE on macOS, it is raising SIGBUS not SIGSEGV.
     // So apply same signal handler to SIGBUS
-    if (sigaction(SIGBUS, &sa, NULL) == -1) {
+    if (sigaction(SIGBUS, &sa, nullptr) == -1) {
         LOG_CRITICAL("Failed to register an exception handler to SIGBUS");
     }
 #endif

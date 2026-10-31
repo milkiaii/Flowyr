@@ -2535,13 +2535,13 @@ static int gxmDrawElementGeneral(EmuEnvState &emuenv, const char *export_name, c
 
     // increase the ringbuffer position if a default vertex or fragment buffer was reserved, we know the new position will fit in the ringbuffer
     if (context->was_vert_default_uniform_reserved) {
-        const size_t size = (size_t)vertex_program_gxp.default_uniform_buffer_count * 4;
+        const size_t size = static_cast<size_t>(vertex_program_gxp.default_uniform_buffer_count) * 4;
         context->state.vertex_ring_buffer_used += size;
         context->was_vert_default_uniform_reserved = false;
     }
 
     if (context->was_frag_default_uniform_reserved) {
-        const size_t size = (size_t)fragment_program_gxp.default_uniform_buffer_count * 4;
+        const size_t size = static_cast<size_t>(fragment_program_gxp.default_uniform_buffer_count) * 4;
         context->state.fragment_ring_buffer_used += size;
         context->was_frag_default_uniform_reserved = false;
     }
@@ -2676,13 +2676,13 @@ EXPORT(int, sceGxmDrawPrecomputed, SceGxmContext *context, SceGxmPrecomputedDraw
     // increase the ringbuffer position if a default vertex or fragment buffer was reserved, we know the new position will fit in the ringbuffer
     // also even in a precomputed draw, this is needed as some parts of the pipeline can be not precomputed
     if (context->was_vert_default_uniform_reserved) {
-        const size_t size = (size_t)vertex_program_gxp.default_uniform_buffer_count * 4;
+        const size_t size = static_cast<size_t>(vertex_program_gxp.default_uniform_buffer_count) * 4;
         context->state.vertex_ring_buffer_used += size;
         context->was_vert_default_uniform_reserved = false;
     }
 
     if (context->was_frag_default_uniform_reserved) {
-        const size_t size = (size_t)fragment_program_gxp.default_uniform_buffer_count * 4;
+        const size_t size = static_cast<size_t>(fragment_program_gxp.default_uniform_buffer_count) * 4;
         context->state.fragment_ring_buffer_used += size;
         context->was_frag_default_uniform_reserved = false;
     }
@@ -2992,7 +2992,7 @@ EXPORT(int, sceGxmInitialize, const SceGxmInitializeParams *params) {
     emuenv.gxm.display_queue.maxPendingCount_ = max_queue_size;
 
     const ThreadStatePtr main_thread = emuenv.kernel.get_thread(thread_id);
-    const ThreadStatePtr display_queue_thread = emuenv.kernel.create_thread(emuenv.mem, "SceGxmDisplayQueue", Ptr<void>(0), SCE_KERNEL_HIGHEST_PRIORITY_USER, SCE_KERNEL_THREAD_CPU_AFFINITY_MASK_DEFAULT, SCE_KERNEL_STACK_SIZE_USER_DEFAULT, nullptr);
+    const ThreadStatePtr display_queue_thread = emuenv.kernel.create_thread(emuenv.mem, "SceGxmDisplayQueue", Ptr<void>(0), SCE_KERNEL_HIGHEST_PRIORITY_USER, SCE_KERNEL_THREAD_CPU_AFFINITY_MASK_DEFAULT, SCE_KERNEL_STACK_SIZE_USER_DEFAULT, 0, nullptr);
     if (!display_queue_thread) {
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }
@@ -3754,7 +3754,7 @@ EXPORT(int, sceGxmReserveFragmentDefaultUniformBuffer, SceGxmContext *context, P
     const auto fragment_program = context->state.fragment_program.get(emuenv.mem);
     const auto program = fragment_program->program.get(emuenv.mem);
 
-    const size_t size = (size_t)program->default_uniform_buffer_count * 4;
+    const size_t size = static_cast<size_t>(program->default_uniform_buffer_count) * 4;
     // data for the ring buffer must be 4 bytes aligned
     context->state.fragment_ring_buffer_used = align(context->state.fragment_ring_buffer_used, 4);
     const size_t next_used = context->state.fragment_ring_buffer_used + size;
@@ -3799,7 +3799,7 @@ EXPORT(int, sceGxmReserveVertexDefaultUniformBuffer, SceGxmContext *context, Ptr
     const auto vertex_program = context->state.vertex_program.get(emuenv.mem);
     const auto program = vertex_program->program.get(emuenv.mem);
 
-    const size_t size = (size_t)program->default_uniform_buffer_count * 4;
+    const size_t size = static_cast<size_t>(program->default_uniform_buffer_count) * 4;
     // data for the ring buffer must be 4 bytes aligned
     context->state.vertex_ring_buffer_used = align(context->state.vertex_ring_buffer_used, 4);
     const size_t next_used = context->state.vertex_ring_buffer_used + size;
@@ -5033,7 +5033,8 @@ EXPORT(int, sceGxmTerminate) {
     // a later sceGxmInitialize reassigns this std::thread, which terminates if still joinable
     if (emuenv.gxm.display_host_thread.joinable())
         emuenv.gxm.display_host_thread.join();
-    emuenv.kernel.get_thread(emuenv.gxm.display_queue_thread)->exit_delete();
+    // The display queue thread is dormant once the host thread that ran it was joined
+    emuenv.kernel.get_thread(emuenv.gxm.display_queue_thread)->remove();
     return 0;
 }
 
@@ -5410,7 +5411,7 @@ EXPORT(int, sceGxmTextureSetMagFilter, SceGxmTexture *texture, SceGxmTextureFilt
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-    texture->mag_filter = (uint32_t)magFilter;
+    texture->mag_filter = static_cast<uint32_t>(magFilter);
     return 0;
 }
 
@@ -5424,7 +5425,7 @@ EXPORT(int, sceGxmTextureSetMinFilter, SceGxmTexture *texture, SceGxmTextureFilt
         return RET_ERROR(SCE_GXM_ERROR_UNSUPPORTED);
     }
 
-    texture->min_filter = (uint32_t)minFilter;
+    texture->min_filter = static_cast<uint32_t>(minFilter);
     return 0;
 }
 

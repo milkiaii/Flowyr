@@ -42,6 +42,12 @@ bool deinit(NpState &state) {
         state.matching2.pending.clear();
     }
 
+    {
+        std::lock_guard lock(state.tus_state.access_mutex);
+        state.tus_state.title_contexts.clear();
+        state.tus_state.requests.clear();
+        state.tus_state.inited = false;
+    }
     state.cbs.clear();
     state.state_cb_id = 0;
     state.comm_id = {};

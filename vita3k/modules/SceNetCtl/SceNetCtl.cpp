@@ -157,10 +157,13 @@ static void adhoc_thread(EmuEnvState &emuenv, int thread_id) {
             emuenv.netctl.adhocCondVar.notify_all();
         }
 
-        // Set the common dialog status to finished with user canceled result
-        if (emuenv.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING) {
-            emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
-            emuenv.common_dialog.result = SCE_COMMON_DIALOG_RESULT_USER_CANCELED;
+        {
+            // Set the common dialog status to finished with user canceled result
+            std::lock_guard<std::recursive_mutex> lock(emuenv.common_dialog.mutex);
+            if (emuenv.common_dialog.type == NETCHECK_DIALOG && emuenv.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING) {
+                emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
+                emuenv.common_dialog.result = SCE_COMMON_DIALOG_RESULT_USER_CANCELED;
+            }
         }
 
         LOG_ERROR("Adhoc thread: error occurred, closing sockets");
@@ -287,9 +290,14 @@ static void adhoc_thread(EmuEnvState &emuenv, int thread_id) {
         std::strncpy(selfInfo.username, reinterpret_cast<const char *>(username.data()), sizeof(selfInfo.username) - 1);
         selfInfo.username[sizeof(selfInfo.username) - 1] = '\0';
 
-        // Notify the common dialog that the adhoc connection is established
-        emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
-        emuenv.common_dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
+        {
+            // Notify the common dialog that the adhoc connection is established
+            std::lock_guard<std::recursive_mutex> lock(emuenv.common_dialog.mutex);
+            if (emuenv.common_dialog.type == NETCHECK_DIALOG && emuenv.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING) {
+                emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
+                emuenv.common_dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
+            }
+        }
 
         {
             // Set the adhoc event and state to indicate that the connection is established
@@ -307,14 +315,9 @@ static void adhoc_thread(EmuEnvState &emuenv, int thread_id) {
         uint64_t lastSendTicks = rtc_get_ticks(emuenv.kernel.base_tick.tick) - emuenv.kernel.start_tick - SEND_INTERVAL_USEC;
         while (emuenv.netctl.adhocCondVarReady.load()) {
             const uint64_t currentTicks = rtc_get_ticks(emuenv.kernel.base_tick.tick) - emuenv.kernel.start_tick;
-            emuenv.netctl.adhocPeers.erase(
-                std::remove_if(
-                    emuenv.netctl.adhocPeers.begin(),
-                    emuenv.netctl.adhocPeers.end(),
-                    [&](const SceNetCtlAdhocPeerInfo &peer) {
-                        return currentTicks - peer.lastRecv > TIMEOUT_USEC;
-                    }),
-                emuenv.netctl.adhocPeers.end());
+            std::erase_if(emuenv.netctl.adhocPeers, [&](const SceNetCtlAdhocPeerInfo &peer) {
+                return currentTicks - peer.lastRecv > TIMEOUT_USEC;
+            });
 
             // Send the self info to other peers every 1 second
             if ((currentTicks - lastSendTicks) >= SEND_INTERVAL_USEC) {

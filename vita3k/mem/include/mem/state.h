@@ -21,6 +21,7 @@
 #include <mem/functions.h>
 #include <mem/util.h>
 
+#include <atomic>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -32,11 +33,11 @@ struct AllocMemPage {
 
 static_assert(sizeof(AllocMemPage) == 4);
 
-typedef uint8_t *PagePtr;
-typedef std::unique_ptr<uint8_t[], std::function<void(uint8_t *)>> Memory;
-typedef std::unique_ptr<AllocMemPage[]> AllocPageTable;
-typedef std::unique_ptr<PagePtr[]> PageTable;
-typedef std::map<int, std::string> PageNameMap;
+using PagePtr = uint8_t *;
+using Memory = std::unique_ptr<uint8_t[], std::function<void(uint8_t *)>>;
+using AllocPageTable = std::unique_ptr<AllocMemPage[]>;
+using PageTable = std::unique_ptr<PagePtr[]>;
+using PageNameMap = std::map<int, std::string>;
 
 // Host backing of one guest allocation in SoftwarePageTable mode.
 struct BackingRegion {
@@ -62,7 +63,7 @@ struct ProtectSegmentInfo {
     }
 };
 
-typedef std::map<Address, ProtectSegmentInfo, std::greater<>> ProtectSegmentTrees;
+using ProtectSegmentTrees = std::map<Address, ProtectSegmentInfo, std::greater<>>;
 
 struct MemExternalMapping {
     Address address;
@@ -87,4 +88,6 @@ struct MemState {
     // key = first guest page number of the allocation (SoftwarePageTable only)
     std::map<uint32_t, BackingRegion> backing_regions;
     std::map<uint64_t, MemExternalMapping, std::greater<>> external_mapping;
+
+    std::atomic_flag invalid_access_logged;
 };
