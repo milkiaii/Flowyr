@@ -28,6 +28,11 @@
 
 namespace config {
 
+IosOptions &ios_options() {
+    static IosOptions options;
+    return options;
+}
+
 namespace {
 
 void copy_global_to_current(Config::CurrentConfig &current, const Config &cfg) {
@@ -433,6 +438,11 @@ void set_current_config(Config &cfg, const fs::path &config_path, const std::str
     // before the XML so an explicit per-game Standard choice still wins.
     if (app_path == "PCSA00107" || app_path == "PCSF00403")
         cfg.current_config.high_accuracy = true;
+    // Optional profile (Settings > System): Gravity Rush needs less memory and a steadier frame rate.
+    if (ios_options().title_profiles.load() && app_path == "PCSA00011") {
+        cfg.current_config.frame_cap_30 = true;
+        cfg.current_config.half_res_textures = true;
+    }
 #endif
     if (!app_path.empty())
         load_custom_config(cfg.current_config, config_path, app_path);

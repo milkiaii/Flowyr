@@ -336,3 +336,8 @@
 "Arquivos VPK, ZIP, PKG e pastas são aceitos." = "VPK, ZIP, PKG files and folders are supported.";
 "Ative o JIT" = "Enable JIT";
 "Abra o Flowyr pelo StikDebug com o script Universal." = "Open Flowyr through StikDebug using the Universal script.";
+"Memória e perfis" = "Memory and profiles";
+"Modo de pouca memória" = "Low memory mode";
+"Reduz o cache de texturas e o libera quando o iOS avisa que falta memória. Evita travamentos em aparelhos com 3 GB, com possíveis engasgos." = "Shrinks the texture cache and frees it when iOS reports low memory. Avoids crashes on 3 GB devices, with possible stutter.";
+"Perfis recomendados por jogo" = "Recommended game profiles";
+"Aplica ajustes prontos a jogos com problemas conhecidos (hoje: Gravity Rush limitado a 30 FPS com texturas reduzidas). Aplicado ao iniciar o jogo." = "Applies ready-made settings to games with known problems (currently Gravity Rush: 30 FPS cap and reduced textures). Applied when the game starts.";

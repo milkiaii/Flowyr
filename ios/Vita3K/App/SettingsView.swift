@@ -18,6 +18,8 @@ struct SettingsView: View {
     }
     @AppStorage(GameIconStyle.preference) private var classicIcons = false
     @AppStorage(UISounds.preference) private var uiSounds = true
+    @AppStorage(Vita3KCore.lowMemoryPreference) private var lowMemory = false
+    @AppStorage(Vita3KCore.titleProfilesPreference) private var titleProfiles = false
     @AppStorage(AppLanguage.preference) private var language = AppLanguage.english.rawValue
 
     @State private var showDiagnostics = false
@@ -71,7 +73,7 @@ struct SettingsView: View {
             case .interface: ["language", "appearance", "library"]
             case .controls: ["controls"]
             case .jit: ["jit"]
-            default: ["system", "cloud"]
+            default: ["memory", "system", "cloud"]
             }
             let all = sections
             PadSettingsPage(sections: ids.compactMap { id in all.first { $0.id == id } }, onClose: closeCategory)
@@ -143,6 +145,14 @@ struct SettingsView: View {
             ], footer: "Mantenha um jogo pressionado para adicioná-lo aos favoritos."),
             SettingSection(id: "cloud", title: "Saves no iCloud", items: cloud,
                            footer: "Sincroniza o progresso de todos os jogos entre aparelhos com a mesma conta do iCloud. Encerre o jogo e aguarde o envio antes de trocar de aparelho."),
+            SettingSection(id: "memory", title: "Memória e perfis", items: [
+                SettingItem(id: "low-memory", title: "Modo de pouca memória", symbol: "memorychip",
+                            detail: "Reduz o cache de texturas e o libera quando o iOS avisa que falta memória. Evita travamentos em aparelhos com 3 GB, com possíveis engasgos.",
+                            kind: .toggle(Binding(get: { lowMemory }, set: { lowMemory = $0; Vita3KCore.applyRuntimeOptions() }))),
+                SettingItem(id: "profiles", title: "Perfis recomendados por jogo", symbol: "wand.and.stars",
+                            detail: "Aplica ajustes prontos a jogos com problemas conhecidos (hoje: Gravity Rush limitado a 30 FPS com texturas reduzidas). Aplicado ao iniciar o jogo.",
+                            kind: .toggle(Binding(get: { titleProfiles }, set: { titleProfiles = $0; Vita3KCore.applyRuntimeOptions() }))),
+            ]),
             SettingSection(id: "system", title: "Sistema e conteúdo", items: [
                 SettingItem(id: "audio", title: "Áudio", kind: .info("SDL · CoreAudio")),
                 SettingItem(id: "gfx", title: "Gráficos", kind: .info("Vulkan · MoltenVK")),

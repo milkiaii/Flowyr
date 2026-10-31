@@ -1336,6 +1336,12 @@ int vita3k_ios_game_config_reset(const char *app_path) {
     return 0;
 }
 
+void vita3k_ios_set_options(int low_memory, int title_profiles) {
+    auto &options = config::ios_options();
+    options.low_memory.store(low_memory != 0);
+    options.title_profiles.store(title_profiles != 0);
+}
+
 int vita3k_ios_clear_shaders(const char *app_path) {
     auto &s = state();
     std::lock_guard<std::mutex> lock(s.lock);

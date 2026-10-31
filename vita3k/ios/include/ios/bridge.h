@@ -330,6 +330,9 @@ int vita3k_ios_game_config_reset(const char *app_path);
 /// -3 when removal failed.
 int vita3k_ios_clear_shaders(const char *app_path);
 
+/// Opt-in runtime options (Settings > System): low memory mode and recommended per-game profiles.
+void vita3k_ios_set_options(int low_memory, int title_profiles);
+
 /// Start a session for an installed app (its title id, as listed by
 /// vita3k_ios_session_get_apps) on the app's CAMetalLayer (delivered before
 /// the call through vita3k_ios_frame_host_set_layer). The launch sequence

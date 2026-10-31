@@ -170,6 +170,15 @@ enum Vita3KCore {
         vita3k_ios_game_config_reset(appPath)
     }
 
+    static let lowMemoryPreference = "emulation.lowMemoryMode"
+    static let titleProfilesPreference = "emulation.titleProfiles"
+
+    /// Pushes the opt-in options (Settings > System) to the core.
+    static func applyRuntimeOptions() {
+        let d = UserDefaults.standard
+        vita3k_ios_set_options(d.bool(forKey: lowMemoryPreference) ? 1 : 0, d.bool(forKey: titleProfilesPreference) ? 1 : 0)
+    }
+
     /// Clears shader caches/logs for a title (empty string = every title).
     static func clearShaders(appPath: String) -> Int32 {
         vita3k_ios_clear_shaders(appPath)
@@ -512,6 +521,7 @@ final class CoreController: ObservableObject {
     func runSessionInit() {
         guard !sessionInitialized else { return }
         let initStart = Date()
+        Vita3KCore.applyRuntimeOptions()
         let rc = Vita3KCore.sessionInit(basePath: basePath, staticAssets: Bundle.main.bundlePath)
         Probe.mark("session-init took \(Int(Date().timeIntervalSince(initStart) * 1000)) ms")
         // Host-readable probe (like app-probe.txt for the self-test).
