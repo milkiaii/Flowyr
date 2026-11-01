@@ -51,6 +51,7 @@
 #include "ios/jit_memory.h"
 #include <ios/ime.h>
 #include <ios/import_archive.h>
+#include <ios/save_transfer.h>
 
 #include <app/functions.h>
 #include <app/session_controller.h>
@@ -1333,6 +1334,79 @@ int vita3k_ios_game_config_set(const char *app_path, const char *key, const char
     }
     LOG_INFO("iOS game config (global): {} = {}", k, value);
     return 0;
+}
+
+extern "C++" {
+namespace {
+void copy_out(const std::string &text, char *out, size_t out_size) {
+    if (!out || out_size == 0)
+        return;
+    const size_t n = std::min(text.size(), out_size - 1);
+    std::memcpy(out, text.data(), n);
+    out[n] = '\0';
+}
+
+struct SavePaths {
+    std::filesystem::path savedata, backups, work;
+};
+
+// Under the state lock: where the saves, their backups and a scratch folder for imports live.
+int save_paths(SavePaths &paths, bool &running) {
+    auto &s = state();
+    std::lock_guard<std::mutex> lock(s.lock);
+    if (!s.initialized || !s.emuenv)
+        return -1;
+    running = s.controller && s.controller->has_active_session();
+    std::string vita = fs_utils::path_to_utf8(s.emuenv->vita_fs_path);
+    while (vita.size() > 1 && (vita.back() == '/' || vita.back() == '\\'))
+        vita.pop_back();
+    const std::string user = s.emuenv->io.user_id.empty() ? "00" : s.emuenv->io.user_id;
+    const std::filesystem::path vita_root(vita);
+    paths.savedata = vita_root / "ux0/user" / user / "savedata";
+    paths.work = vita_root / "ux0/user" / user;
+    paths.backups = vita_root.parent_path() / "Save Backups" / user;
+    return 0;
+}
+
+std::string join_titles(const std::vector<std::string> &titles) {
+    std::string joined;
+    for (const auto &title : titles)
+        joined += (joined.empty() ? "" : ",") + title;
+    return joined;
+}
+}
+} // extern "C++"
+
+int vita3k_ios_saves_export(const char *title_id, const char *zip_path, char *out, size_t out_size) {
+    if (!title_id || !zip_path || zip_path[0] == '\0')
+        return -1;
+    SavePaths paths;
+    bool running = false;
+    if (const int rc = save_paths(paths, running))
+        return rc;
+    if (running)
+        return -5;
+    const auto result = ios::save_transfer::export_saves(paths.savedata, title_id, zip_path);
+    if (result.code > 0)
+        LOG_INFO("Exported saves of {} game(s)", result.code);
+    copy_out(result.code > 0 ? join_titles(result.titles) : result.error, out, out_size);
+    return result.code;
+}
+
+int vita3k_ios_saves_import(const char *title_id, const char *zip_path, char *out, size_t out_size) {
+    if (!title_id || !zip_path || zip_path[0] == '\0')
+        return -1;
+    SavePaths paths;
+    bool running = false;
+    if (const int rc = save_paths(paths, running))
+        return rc;
+    if (running)
+        return -5;
+    const auto result = ios::save_transfer::import_saves(paths.savedata, paths.backups, paths.work, title_id, zip_path);
+    if (result.code > 0)
+        LOG_INFO("Imported saves of {} game(s): {}", result.code, join_titles(result.titles));
+    copy_out(result.code > 0 ? join_titles(result.titles) : result.error, out, out_size);
+    return result.code;
 }
 
 int vita3k_ios_game_config_reset(const char *app_path) {

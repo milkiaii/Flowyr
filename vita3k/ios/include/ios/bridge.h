@@ -323,6 +323,20 @@ int vita3k_ios_game_config_set(const char *app_path, const char *key, const char
 /// Returns 0 on success, -1 invalid arguments/environment.
 int vita3k_ios_game_config_reset(const char *app_path);
 
+/// Write the saves of one game (`title_id`) or of every game (empty `title_id`) to a ZIP at `zip_path`, one top
+/// level folder per game. Returns the number of games written, and puts their ids in `out` separated by commas.
+/// Negative: -1 the environment is not initialized or an argument is missing, -2 there are no saves to export,
+/// -3 the ZIP could not be written (the reason is in `out`), -5 a game is running.
+int vita3k_ios_saves_export(const char *title_id, const char *zip_path, char *out, size_t out_size);
+
+/// Replace saves from a ZIP made by vita3k_ios_saves_export, or a zipped savedata folder. With an empty
+/// `title_id` every game folder in the ZIP is imported; otherwise the ZIP must hold that one game's saves.
+/// The saves being replaced are moved to "Save Backups" next to the Vita filesystem. Returns the number of
+/// games imported and puts their ids in `out`. Negative: -1 not initialized or a missing argument, -3 the ZIP
+/// is invalid or nothing could be installed, -4 the ZIP holds another game's saves (the reason is in `out` for
+/// both), -5 a game is running.
+int vita3k_ios_saves_import(const char *title_id, const char *zip_path, char *out, size_t out_size);
+
 /// Clear compiled shader caches and shader logs: for a single title
 /// (`app_path` = title id) or for every title when `app_path` is empty or
 /// NUL (like the desktop's "Clean shader cache" button).

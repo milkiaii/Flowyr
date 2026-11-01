@@ -24,6 +24,7 @@ struct LibraryView: View {
     @AppStorage(GameIconStyle.preference) private var classicIcons = false
     @State private var search = ""
     @State private var favoritesOnly = false
+    @State private var saveRequest: SaveTransferRequest?
     @State private var configGame: CoreController.AppInfo?
     @State private var deleteGame: CoreController.AppInfo?
     @State private var deleteError: String?
@@ -86,6 +87,7 @@ struct LibraryView: View {
                 }
             }
         }
+        .saveTransfer($saveRequest)
         .overlay {
             if let game = actionsGame {
                 ActionMenuOverlay(actions: actions(for: game), focus: pad.connected ? actionFocus : nil, header: {
@@ -361,6 +363,8 @@ struct LibraryView: View {
             MenuAction(id: "favorite", title: LocalizedStringKey(isFavorite ? "Remover dos favoritos" : "Adicionar aos favoritos"),
                        symbol: isFavorite ? "star.slash.fill" : "star.fill"),
             MenuAction(id: "config", title: "Editar Config", symbol: "slider.horizontal.3"),
+            MenuAction(id: "export-saves", title: "Exportar saves", symbol: "square.and.arrow.up"),
+            MenuAction(id: "import-saves", title: "Importar saves", symbol: "square.and.arrow.down"),
             MenuAction(id: "delete", title: "Apagar jogo", symbol: "trash.fill", destructive: true,
                        enabled: controller.canDeleteGame),
         ]
@@ -374,6 +378,8 @@ struct LibraryView: View {
             if ids.contains(game.titleId) { ids.remove(game.titleId) } else { ids.insert(game.titleId) }
             favorites = ids.sorted().joined(separator: ",")
         case "config": configGame = game
+        case "export-saves": saveRequest = .export(titleId: game.titleId, name: game.title)
+        case "import-saves": saveRequest = .importSaves(titleId: game.titleId, name: game.title)
         default: deleteGame = game
         }
     }

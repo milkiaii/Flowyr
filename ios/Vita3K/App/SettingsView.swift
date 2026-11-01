@@ -21,6 +21,7 @@ struct SettingsView: View {
     @AppStorage(AppLanguage.preference) private var language = AppLanguage.english.rawValue
 
     @State private var showDiagnostics = false
+    @State private var saveRequest: SaveTransferRequest?
     @State private var page: SettingsCategory?
     @State private var poppedAt = Date.distantPast
     var onClose: () -> Void = {}
@@ -71,11 +72,12 @@ struct SettingsView: View {
             case .interface: ["language", "appearance", "library"]
             case .controls: ["controls"]
             case .jit: ["jit"]
-            default: ["system", "cloud"]
+            default: ["system", "backup", "cloud"]
             }
             let all = sections
             PadSettingsPage(sections: ids.compactMap { id in all.first { $0.id == id } }, onClose: closeCategory)
                 .navigationTitle(category.title).navigationBarTitleDisplayMode(.inline)
+                .saveTransfer($saveRequest)
         }
     }
 
@@ -143,6 +145,12 @@ struct SettingsView: View {
             ], footer: "Mantenha um jogo pressionado para adicioná-lo aos favoritos."),
             SettingSection(id: "cloud", title: "Saves no iCloud", items: cloud,
                            footer: "Sincroniza o progresso de todos os jogos entre aparelhos com a mesma conta do iCloud. Encerre o jogo e aguarde o envio antes de trocar de aparelho."),
+            SettingSection(id: "backup", title: "Backup de saves", items: [
+                SettingItem(id: "export-saves", title: "Exportar todos os saves", symbol: "square.and.arrow.up",
+                            kind: .action { saveRequest = .export(titleId: nil, name: nil) }),
+                SettingItem(id: "import-saves", title: "Importar saves", symbol: "square.and.arrow.down",
+                            kind: .action { saveRequest = .importSaves(titleId: nil, name: nil) }),
+            ], footer: "Exporta os saves para um arquivo ZIP que você pode guardar ou levar para outro aparelho. Para um único jogo, mantenha-o pressionado na biblioteca."),
             SettingSection(id: "system", title: "Sistema e conteúdo", items: [
                 SettingItem(id: "audio", title: "Áudio", kind: .info("SDL · CoreAudio")),
                 SettingItem(id: "gfx", title: "Gráficos", kind: .info("Vulkan · MoltenVK")),

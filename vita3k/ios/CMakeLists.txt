@@ -28,6 +28,8 @@ set(SOURCE_LIST
  src/session_ios.cpp
  include/ios/import_archive.h
  src/import_archive.cpp
+ include/ios/save_transfer.h
+ src/save_transfer.cpp
  include/ios/ime.h
  src/ime.cpp
  include/ios/diagnostics.h
