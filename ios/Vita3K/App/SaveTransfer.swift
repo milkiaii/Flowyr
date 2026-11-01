@@ -86,7 +86,7 @@ private struct SaveTransferHost: ViewModifier {
                 ActivitySheet(url: item.url) { share = nil }
                     .presentationDetents([.medium, .large])
             }
-            .alert(L10n.text("Importar saves?"), isPresented: Binding(get: { pendingFile != nil }, set: { if !$0 { discardPending() } })) {
+            .alert(L10n.text("Importar saves?"), isPresented: Binding(get: { pendingFile != nil }, set: { if !$0 && pendingFile != nil { discardPending() } })) {
                 Button(L10n.text("Cancelar"), role: .cancel) { discardPending() }
                 Button(L10n.text("Importar")) { runImport() }
             } message: {
@@ -208,8 +208,16 @@ private struct SaveTransferHost: ViewModifier {
         case -1: L10n.text("O núcleo ainda não está pronto. Tente de novo em instantes.")
         default: text.isEmpty
             ? L10n.text(exporting ? "Não foi possível exportar os saves." : "Não foi possível importar os saves.")
-            : L10n.text(text)
+            : localizedCoreError(text)
         }
+    }
+
+    /// Core errors are Portuguese keys, sometimes followed by ": detail". Translate the key part.
+    private func localizedCoreError(_ text: String) -> String {
+        if let range = text.range(of: ": ") {
+            return L10n.text(String(text[..<range.lowerBound])) + String(text[range.lowerBound...])
+        }
+        return L10n.text(text)
     }
 }
 

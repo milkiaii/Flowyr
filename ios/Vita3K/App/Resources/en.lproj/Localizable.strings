@@ -358,3 +358,10 @@
 "O ZIP/VPK contém um caminho inválido." = "The ZIP/VPK contains an invalid path.";
 "Não foi possível criar o arquivo ZIP." = "Could not create the ZIP file.";
 "Falha ao gravar o ZIP." = "Failed to write the ZIP.";
+"Não foi possível abrir o ZIP/VPK" = "Could not open the ZIP/VPK";
+"Entrada inválida no arquivo" = "Invalid entry in the file";
+"Compressão não suportada ou arquivo protegido por senha" = "Unsupported compression or password-protected file";
+"Espaço insuficiente para descompactar o ZIP/VPK." = "Not enough space to extract the ZIP/VPK.";
+"Não foi possível ler os saves" = "Could not read the saves";
+"Não foi possível guardar o save atual" = "Could not back up the current save";
+"Não foi possível instalar o save" = "Could not install the save";

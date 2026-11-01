@@ -87,7 +87,7 @@ struct LibraryView: View {
                 }
             }
         }
-        .saveTransfer($saveRequest)
+        .background { Color.clear.saveTransfer($saveRequest) }
         .overlay {
             if let game = actionsGame {
                 ActionMenuOverlay(actions: actions(for: game), focus: pad.connected ? actionFocus : nil, header: {

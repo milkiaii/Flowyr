@@ -200,7 +200,7 @@ Result import_saves(const fs::path &savedata_root, const fs::path &backup_root, 
             fs::rename(target, backup, ec);
             if (ec) {
                 result.code = -3;
-                result.error = "Não foi possível guardar o save atual de " + title + ": " + ec.message();
+                result.error = "Não foi possível guardar o save atual: " + title + " (" + ec.message() + ")";
                 return result;
             }
         }
@@ -210,7 +210,7 @@ Result import_saves(const fs::path &savedata_root, const fs::path &backup_root, 
             if (!backup.empty())
                 fs::rename(backup, target, ec);
             result.code = -3;
-            result.error = "Não foi possível instalar o save de " + title + ": " + message;
+            result.error = "Não foi possível instalar o save: " + title + " (" + message + ")";
             return result;
         }
         result.titles.push_back(title);
