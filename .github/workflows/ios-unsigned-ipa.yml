@@ -42,7 +42,7 @@ jobs:
 
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 1
           # Dependencies are vendored in-tree; there are no submodules to fetch.
@@ -81,7 +81,7 @@ jobs:
           ccache --version | head -1
 
       - name: Restore compiler cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: .ccache
           # The unique key means the save step below always stores the updated
@@ -106,7 +106,7 @@ jobs:
       - name: Save compiler cache
         # Save even if a later step fails so retries stay fast.
         if: always()
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: .ccache
           key: ccache-ios-${{ runner.os }}-${{ github.sha }}
@@ -162,7 +162,7 @@ jobs:
           ls -lh artifacts/Flowyr-unsigned.ipa
 
       - name: Upload unsigned IPA
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Flowyr-iOS-${{ github.sha }}-unsigned
           path: artifacts/Flowyr-unsigned.ipa
@@ -186,7 +186,7 @@ jobs:
 
       - name: Upload build logs on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Flowyr-iOS-${{ github.sha }}-logs
           path: |
