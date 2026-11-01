@@ -2,9 +2,9 @@
 
 ![](logo-rounded.png)
 
-Flowyr is a PlayStation Vita emulator for iPhone and iPad, running on iOS 26 and newer. It is built around a native SwiftUI interface on top of the Vita3K emulator core, and it is set up to work on 3 GB devices such as the iPhone SE (2nd generation).
+Flowyr is a PlayStation Vita emulator for iOS and iPadOS.
 
-This is a hobby project and it is experimental. Some games run well, some have graphical problems, and some do not run at all.
+Flowyr is an experimental project. Some games run well, some run with graphical glitches, and some don’t run at all.
 
 ## Screenshots
 
@@ -15,7 +15,7 @@ This is a hobby project and it is experimental. Some games run well, some have g
 | **Hatsune Miku: Project DIVA f** | **Hatsune Miku: Project DIVA f** |
 | ![Project DIVA f, song menu](_readme/screenshots/project_diva_f_menu.png) | ![Project DIVA f, gameplay](_readme/screenshots/project_diva_f_gameplay.png) |
 
-Captured on an iPhone SE (2nd generation) with the on-screen controls visible.
+Captured on an iPhone SE (2nd generation).
 
 ## Where it comes from
 
@@ -40,18 +40,13 @@ On the emulator side:
 
 - A software page-table memory mode that lets the emulator start when iOS will not give it the usual 4 GiB address space reservation. This is what makes 3 GB phones usable. It is selected automatically, and can also be forced per game.
 - GPU memory settings tuned for iOS limits, a half-resolution texture option, and a per-game 30 FPS cap to save memory and heat
-- Logging that is capped in size, with memory use recorded while a game runs
-
+- 
 ## 3 GB devices
 
 Flowyr is developed and tested on an iPhone SE (2nd generation), which has 3 GB of RAM and no room to spare. iOS ends an app that uses too much memory, so a heavy game can still be closed by the system after a while. Lowering the internal resolution, turning on half-resolution textures or capping the game at 30 FPS helps. Some games cannot be made to fit.
 
 Newer phones with more memory have more headroom, but they have not had the same amount of testing.
 
-## Known problems
-
-- J-Stars Victory VS+: characters do not render on the iPhone SE (2nd generation). Some of its shaders write to memory, which needs a GPU feature that is switched off on iOS. People report the same problem on some Mali GPUs on Android.
-- Compatibility depends heavily on the game. Check that a title works before assuming it will.
 
 ## Installing
 
@@ -74,7 +69,7 @@ Vita emulation needs JIT compilation to be fast enough. iOS does not allow JIT f
 
 - iOS 26 or newer
 - An arm64 iPhone or iPad
-- JIT through StikDebug or an equivalent method
+- JIT through StikDebug
 
 ## Contributing
 
