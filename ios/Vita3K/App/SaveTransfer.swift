@@ -2,6 +2,7 @@
 // Settings > System and content. The ZIP work happens in the core; this file picks the file,
 // asks before replacing saves and reports the result.
 import SwiftUI
+import Vita3KCore
 import UniformTypeIdentifiers
 
 enum SaveTransferRequest: Identifiable, Equatable {
