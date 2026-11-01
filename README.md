@@ -88,6 +88,10 @@ Flowyr does not include PlayStation Vita firmware, system files, encryption keys
 
 PlayStation and PlayStation Vita are trademarks of Sony Interactive Entertainment. Flowyr is not affiliated with or endorsed by Sony.
 
+## How this was made
+
+Flowyr is developed by one person with the help of an AI coding assistant. The AI writes much of the code; the maintainer decides what gets built and tests every change on a real iPhone SE (2nd generation).
+
 ## Credits
 
 - The [Vita3K](https://vita3k.org/) developers and contributors, for the emulator everything here is built on
