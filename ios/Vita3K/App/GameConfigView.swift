@@ -21,8 +21,9 @@ struct GameConfigView: View {
     @State private var highAccuracy = false
     @State private var disableSurfaceSync = false
     @State private var asyncPipeline = true
-    @State private var resolutionIdx: Int = 1
+    @State private var resolutionIdx: Int = 2
     @State private var anisotropicIdx: Int = 0
+    @State private var screenFilterIdx: Int = 1
     @State private var shaderCache = true
     @State private var fpsHack = false
     @State private var frameCap30 = false
@@ -43,8 +44,9 @@ struct GameConfigView: View {
     @State private var clearing = false
     @State private var confirmReset = false
 
-    private let resolutions: [Double] = [0.5, 1, 1.5, 2, 2.5, 3, 4]
+    private let resolutions: [Double] = [0.5, 0.75, 1, 1.5, 2, 2.5, 3, 4]
     private let anisotropics: [Int] = [1, 2, 4, 8, 16]
+    private let screenFilters = ["Nearest", "Bilinear", "Bicubic", "FXAA"]
     private let jitCacheSizes = Array(stride(from: 8, through: 32, by: 4))
     private let logLevels = ["Trace", "Debug", "Info", "Warning", "Error", "Critical", "Desativado"]
 
@@ -114,7 +116,7 @@ struct GameConfigView: View {
                          set: { jitCacheMiB = values[$0] }),
                  labels: values.map { $0 == 0 ? L10n.text("Auto") : "\($0) MiB" },
                  values: values.map(String.init),
-                 detail: LocalizedStringKey("Auto usa \(jitCacheAutoMiB) MiB para este jogo, conforme o padrão do core. Valores menores permitem mais threads, mas podem aumentar a recompilação. Aplicado ao reiniciar este jogo.")),
+                 detail: LocalizedStringKey("Auto usa \(jitCacheAutoMiB) MiB para este jogo, conforme o padrão do core. Valores menores permitem mais threads na memória JIT disponível, mas podem aumentar a recompilação de código. Aplicado ao reiniciar este jogo.")),
             pick("accuracy", "Precisão de Renderização", "high_accuracy",
                  Binding(get: { highAccuracy ? 1 : 0 }, set: { highAccuracy = $0 == 1 }),
                  labels: [L10n.text("Padrão (Standard)"), L10n.text("Alta (High)")], values: ["0", "1"],
@@ -125,6 +127,8 @@ struct GameConfigView: View {
                  labels: resolutions.map { $0.formatted() + "x" }, values: resolutions.map { String($0) }),
             pick("aniso", "Anisotropic Filtering", "anisotropic_filtering", $anisotropicIdx,
                  labels: anisotropics.map { "\($0)x" }, values: anisotropics.map(String.init)),
+            pick("screen-filter", "Screen Filter", "screen_filter", $screenFilterIdx,
+                 labels: screenFilters, values: screenFilters),
             flag("shader-cache", "Enable Shader Cache", "shader_cache", $shaderCache),
             SettingItem(id: "clear-shaders", title: "Clear Shaders", symbol: "trash",
                         kind: .action { clearShaders() }, enabled: !clearing),
@@ -200,9 +204,10 @@ struct GameConfigView: View {
         disableSurfaceSync = (d["disable_surface_sync"] == "1")
         asyncPipeline = (d["async_pipeline_compilation"] == "1")
         let res = Double(d["resolution_multiplier"] ?? "1") ?? 1
-        resolutionIdx = resolutions.firstIndex { abs($0 - res) < 0.01 } ?? 1
+        resolutionIdx = resolutions.firstIndex { abs($0 - res) < 0.01 } ?? 2
         let aniso = Int(d["anisotropic_filtering"] ?? "1") ?? 1
         anisotropicIdx = anisotropics.firstIndex(of: aniso) ?? 0
+        screenFilterIdx = screenFilters.firstIndex(of: d["screen_filter"] ?? "Bilinear") ?? 1
         shaderCache = (d["shader_cache"] == "1")
         fpsHack = (d["fps_hack"] == "1")
         frameCap30 = (d["frame_cap_30"] == "1")

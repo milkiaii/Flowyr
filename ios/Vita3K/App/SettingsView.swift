@@ -247,8 +247,9 @@ struct GlobalConfigPage: View {
     @State private var message = ""
     @State private var clearing = false
 
-    private let resolutions: [Double] = [0.5, 1, 1.5, 2, 2.5, 3, 4]
+    private let resolutions: [Double] = [0.5, 0.75, 1, 1.5, 2, 2.5, 3, 4]
     private let anisotropics: [Int] = [1, 2, 4, 8, 16]
+    private let screenFilters = ["Nearest", "Bilinear", "Bicubic", "FXAA"]
     private let jitCacheSizes = Array(stride(from: 8, through: 32, by: 4))
 
     var body: some View {
@@ -299,10 +300,13 @@ struct GlobalConfigPage: View {
                          labels: [L10n.text("Padrão (Standard)"), L10n.text("Alta (High)")], raw: ["0", "1"],
                          detail: "Rendering Accuracy: Alta pode melhorar a precisão dos gráficos, com possível redução de desempenho."),
                     pick("resolution", "Internal Resolution Upscaling", "resolution_multiplier",
-                         current: resolutions.firstIndex { abs($0 - res) < 0.01 } ?? 1,
+                         current: resolutions.firstIndex { abs($0 - res) < 0.01 } ?? 2,
                          labels: resolutions.map { $0.formatted() + "x" }, raw: resolutions.map { String($0) }),
                     pick("aniso", "Anisotropic Filtering", "anisotropic_filtering", current: anisotropics.firstIndex(of: aniso) ?? 0,
                          labels: anisotropics.map { "\($0)x" }, raw: anisotropics.map(String.init)),
+                    pick("screen-filter", "Screen Filter", "screen_filter",
+                         current: screenFilters.firstIndex(of: values["screen_filter"] ?? "Bilinear") ?? 1,
+                         labels: screenFilters, raw: screenFilters),
                     flag("fps-hack", "FPS Hack", "fps_hack"),
                     flag("cap30", "Limit to 30 FPS", "frame_cap_30"),
                     flag("half-res", "Half-Resolution Textures", "half_res_textures"),

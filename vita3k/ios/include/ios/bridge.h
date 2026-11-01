@@ -308,9 +308,9 @@ int vita3k_ios_game_config_get(const char *app_path, char *out, size_t out_size)
 /// Set one setting and persist it. `value` is "0"/"1" for booleans, a
 /// decimal string for numbers (resolution_multiplier is a float such as
 /// "1.5"; cpu_jit_cache_mib is 0 for Auto or 8..32 MiB per thread, in steps of 4;
-/// anisotropic_filtering a power of two; log_level 0..6 =
+/// anisotropic_filtering a power of two; screen_filter Nearest, Bilinear, Bicubic or FXAA; log_level 0..6 =
 /// trace..critical/off). Per-game keys (cpu_opt, cpu_jit_cache_mib, force_software_page_table, high_accuracy, disable_surface_sync,
-/// async_pipeline_compilation, resolution_multiplier, anisotropic_filtering,
+/// async_pipeline_compilation, resolution_multiplier, anisotropic_filtering, screen_filter,
 /// shader_cache, fps_hack, frame_cap_30, texture_cache, half_res_textures, log_level, log_compat_warn) are saved
 /// to the game's custom config (requires a non-empty app_path), applied next
 /// launch. show_compile_shaders updates the shared config.

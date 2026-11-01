@@ -175,9 +175,16 @@ final class PadKeyButton: UIButton {
 
     override var isHighlighted: Bool { didSet { refresh() } }
 
-    /// Small keys keep a finger-sized touch target (44 pt) however far they are scaled down.
+    /// Keys keep a finger-sized touch target however far they are scaled down. The flat pill keys
+    /// (L, R, START, SELECT) get a taller one, since a thumb rarely lands on their exact middle.
+    var touchSlop: CGSize {
+        if case .pill = look { return CGSize(width: 56, height: 56) }
+        return CGSize(width: 44, height: 44)
+    }
+
     override func point(inside point: CGPoint, with event: UIEvent?) -> Bool {
-        let dx = max(0, (44 - bounds.width) / 2), dy = max(0, (44 - bounds.height) / 2)
+        let slop = touchSlop
+        let dx = max(0, (slop.width - bounds.width) / 2), dy = max(0, (slop.height - bounds.height) / 2)
         return bounds.insetBy(dx: -dx, dy: -dy).contains(point)
     }
 
@@ -462,10 +469,10 @@ final class VirtualGamepadView: UIView {
         f[.square] = box(rightX, padY + cell, cell, cell)
         f[.circle] = box(rightX + 2 * cell, padY + cell, cell, cell)
         f[.cross] = box(rightX + cell, padY + 2 * cell, cell, cell)
-        f[.select] = box(W / 2 - 74, H - 36, 66, 30)
-        f[.start] = box(W / 2 + 8, H - 36, 66, 30)
-        f[.l] = box(leftCX - 32, 0, 64, 34)
-        f[.r] = box(rightCX - 32, 0, 64, 34)
+        f[.select] = box(W / 2 - 74, H - 42, 66, 30)
+        f[.start] = box(W / 2 + 8, H - 42, 66, 30)
+        f[.l] = box(leftCX - 32, 6, 64, 34)
+        f[.r] = box(rightCX - 32, 6, 64, 34)
         return f
     }
 
@@ -492,8 +499,9 @@ final class VirtualGamepadView: UIView {
     private var landscape: Bool { bounds.width > bounds.height }
 
     private func hitFrame(_ v: UIView) -> CGRect {
-        guard v is PadKeyButton else { return v.frame }
-        return v.frame.insetBy(dx: -max(0, (44 - v.frame.width) / 2), dy: -max(0, (44 - v.frame.height) / 2))
+        guard let key = v as? PadKeyButton else { return v.frame }
+        let slop = key.touchSlop
+        return v.frame.insetBy(dx: -max(0, (slop.width - v.frame.width) / 2), dy: -max(0, (slop.height - v.frame.height) / 2))
     }
 
     private func reloadLayoutIfNeeded() {

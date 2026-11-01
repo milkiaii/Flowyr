@@ -203,6 +203,12 @@ final class EmulationViewController: UIViewController {
         isSessionMode
     }
 
+    /// START, SELECT, L and R sit on the screen edges. Without this iOS holds back or steals touches
+    /// that start on an edge while it waits to see if they are a system swipe.
+    override var preferredScreenEdgesDeferringSystemGestures: UIRectEdge {
+        isSessionMode ? .all : []
+    }
+
     // Both sceImeOpen and sceImeDialogInit use the native iPhone keyboard.
     private let imeBar = GameKeyboardView()
     private var imeVisible = false
@@ -716,6 +722,7 @@ final class EmulationViewController: UIViewController {
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         setNeedsStatusBarAppearanceUpdate()
+        setNeedsUpdateOfScreenEdgesDeferringSystemGestures()
         // App lifecycle is delivered as notifications to the VC (the
         // willResignActive/didBecomeActive responder methods are not reliably
         // invoked on a presented view controller).

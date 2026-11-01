@@ -19,8 +19,8 @@ struct InGameSettingsView: View {
     @State private var disableSurfaceSync = false
     @State private var asyncPipeline = true
     @State private var anisotropicIdx = 0
-    @State private var resolutionIdx = 1
-    @State private var initialResolutionIdx = 1
+    @State private var resolutionIdx = 2
+    @State private var initialResolutionIdx = 2
     @State private var confirmRestart = false
     @AppStorage("emulation.showStatus") private var showStatus = false
     @AppStorage("emulation.hideHome") private var hideHome = false
@@ -30,7 +30,7 @@ struct InGameSettingsView: View {
     @State private var loading = false
     @State private var message = ""
 
-    private let resolutions: [Double] = [0.5, 1, 1.5, 2, 2.5, 3, 4]
+    private let resolutions: [Double] = [0.5, 0.75, 1, 1.5, 2, 2.5, 3, 4]
     private let anisotropics: [Int] = [1, 2, 4, 8, 16]
 
     var body: some View {
@@ -125,7 +125,7 @@ struct InGameSettingsView: View {
         let aniso = Int(d["anisotropic_filtering"] ?? "1") ?? 1
         anisotropicIdx = anisotropics.firstIndex(of: aniso) ?? 0
         let res = Double(d["resolution_multiplier"] ?? "1") ?? 1
-        resolutionIdx = resolutions.firstIndex { abs($0 - res) < 0.01 } ?? 1
+        resolutionIdx = resolutions.firstIndex { abs($0 - res) < 0.01 } ?? 2
         initialResolutionIdx = resolutionIdx
     }
 

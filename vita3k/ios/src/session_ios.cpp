@@ -1177,6 +1177,7 @@ int vita3k_ios_game_config_get(const char *app_path, char *out, size_t out_size)
     report += fmt::format("async_pipeline_compilation={}\n", cc.async_pipeline_compilation ? 1 : 0);
     report += fmt::format("resolution_multiplier={:.2f}\n", cc.resolution_multiplier);
     report += fmt::format("anisotropic_filtering={}\n", cc.anisotropic_filtering);
+    report += fmt::format("screen_filter={}\n", cc.screen_filter);
     report += fmt::format("shader_cache={}\n", cc.shader_cache ? 1 : 0);
     report += fmt::format("fps_hack={}\n", cc.fps_hack ? 1 : 0);
     report += fmt::format("frame_cap_30={}\n", cc.frame_cap_30 ? 1 : 0);
@@ -1203,7 +1204,7 @@ int vita3k_ios_game_config_set(const char *app_path, const char *key, const char
     // Per-game keys: persist to this game's custom config (applied on its
     // next launch by the core's set_current_config).
     if (k == "cpu_opt" || k == "cpu_jit_cache_mib" || k == "force_software_page_table" || k == "high_accuracy" || k == "disable_surface_sync" || k == "async_pipeline_compilation" ||
-        k == "resolution_multiplier" || k == "anisotropic_filtering" || k == "shader_cache" ||
+        k == "resolution_multiplier" || k == "anisotropic_filtering" || k == "screen_filter" || k == "shader_cache" ||
         k == "fps_hack" || k == "frame_cap_30" || k == "texture_cache" || k == "half_res_textures" || k == "log_level" || k == "log_compat_warn") {
         if (!app_path)
             return -1;
@@ -1233,6 +1234,13 @@ int vita3k_ios_game_config_set(const char *app_path, const char *key, const char
                 cc.resolution_multiplier = std::stof(value);
             else if (k == "anisotropic_filtering")
                 cc.anisotropic_filtering = std::atoi(value);
+            else if (k == "screen_filter") {
+                // Only filters this port supports; FSR needs hardware support checks, so it is left out.
+                const std::string filter = value;
+                if (filter != "Nearest" && filter != "Bilinear" && filter != "Bicubic" && filter != "FXAA")
+                    return -2;
+                cc.screen_filter = filter;
+            }
             else if (k == "shader_cache")
                 cc.shader_cache = b;
             else if (k == "fps_hack")
@@ -1267,6 +1275,7 @@ int vita3k_ios_game_config_set(const char *app_path, const char *key, const char
             else if (k == "async_pipeline_compilation") g.async_pipeline_compilation = cc.async_pipeline_compilation;
             else if (k == "resolution_multiplier") g.resolution_multiplier = cc.resolution_multiplier;
             else if (k == "anisotropic_filtering") g.anisotropic_filtering = cc.anisotropic_filtering;
+            else if (k == "screen_filter") g.screen_filter = cc.screen_filter;
             else if (k == "shader_cache") g.shader_cache = cc.shader_cache;
             else if (k == "fps_hack") g.fps_hack = cc.fps_hack;
             else if (k == "frame_cap_30") g.frame_cap_30 = cc.frame_cap_30;
