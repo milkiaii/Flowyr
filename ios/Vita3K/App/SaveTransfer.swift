@@ -57,11 +57,44 @@ private struct ActivitySheet: UIViewControllerRepresentable {
     func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}
 }
 
+/// Presents the system file picker straight from UIKit. SwiftUI's fileImporter stops working when
+/// another fileImporter sits higher in the view tree (the library screen has one for game imports).
+private final class ZipPicker: NSObject, UIDocumentPickerDelegate {
+    private var completion: ((URL?) -> Void)?
+
+    func present(_ completion: @escaping (URL?) -> Void) {
+        self.completion = completion
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.zip], asCopy: true)
+        picker.delegate = self
+        picker.allowsMultipleSelection = false
+        guard var top = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene }).flatMap(\.windows)
+            .first(where: \.isKeyWindow)?.rootViewController else {
+            completion(nil)
+            return
+        }
+        while let next = top.presentedViewController { top = next }
+        top.present(picker, animated: true)
+    }
+
+    func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+        let done = completion
+        completion = nil
+        done?(urls.first)
+    }
+
+    func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
+        let done = completion
+        completion = nil
+        done?(nil)
+    }
+}
+
 private struct SaveTransferHost: ViewModifier {
     @Binding var request: SaveTransferRequest?
 
     @State private var working = false
-    @State private var showImporter = false
+    @State private var picker = ZipPicker()
     @State private var importTarget: (titleId: String?, name: String?)?
     @State private var pendingFile: URL?
     @State private var share: ShareItem?
@@ -73,14 +106,6 @@ private struct SaveTransferHost: ViewModifier {
                 guard let new else { return }
                 request = nil
                 begin(new)
-            }
-            .fileImporter(isPresented: $showImporter, allowedContentTypes: [.zip], allowsMultipleSelection: false) { result in
-                switch result {
-                case .success(let urls):
-                    if let url = urls.first { stage(url) }
-                case .failure(let error):
-                    message = error.localizedDescription
-                }
             }
             .sheet(item: $share, onDismiss: cleanTemporary) { item in
                 ActivitySheet(url: item.url) { share = nil }
@@ -119,7 +144,9 @@ private struct SaveTransferHost: ViewModifier {
             runExport(titleId: titleId, name: name)
         case .importSaves(let titleId, let name):
             importTarget = (titleId, name)
-            showImporter = true
+            picker.present { url in
+                if let url { stage(url) }
+            }
         }
     }
 
