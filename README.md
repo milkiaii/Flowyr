@@ -6,8 +6,9 @@ Flowyr is an experimental PlayStation Vita emulator for iOS and iPadOS, based on
 
 | | |
 |:---:|:---:|
-| ![Persona 4 Golden, classroom](_readme/screenshots/persona4_golden_classroom.png) | ![Persona 4 Golden, street](_readme/screenshots/persona4_golden_street.png) |
-| ![Project DIVA f, song menu](_readme/screenshots/project_diva_f_menu.png) | ![Project DIVA f, gameplay](_readme/screenshots/project_diva_f_gameplay.png) |
+| **Persona 4 Golden** | **Hatsune Miku: Project DIVA f** |
+| ![Persona 4 Golden](_readme/screenshots/persona4_golden_classroom.png) | ![Hatsune Miku: Project DIVA f](_readme/screenshots/project_diva_f_gameplay.png) |
+| **Touch My Katamari** | **VA-11 Hall-A** |
 | ![Touch My Katamari](_readme/screenshots/touch_my_katamari.png) | ![VA-11 Hall-A](_readme/screenshots/va11_hall_a.png) |
 
 Captured on an iPhone SE (2nd generation).
