@@ -10,6 +10,8 @@ name: Build unsigned iOS IPA
 on:
   workflow_dispatch:
   push:
+    branches:
+      - "**"
     tags:
       - "v*"
     paths-ignore:
