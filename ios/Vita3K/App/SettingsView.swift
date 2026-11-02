@@ -51,6 +51,7 @@ struct SettingsView: View {
                            items: SettingsCategory.allCases.map(link),
                            footer: "CPU e Gráficos definem os padrões de todos os jogos. Para ajustar um único jogo, mantenha-o pressionado na biblioteca e escolha Editar Config."),
             SettingSection(id: "about", title: "Sobre o Flowyr", items: [
+                SettingItem(id: "app-version", title: "Versão", kind: .info(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0")),
                 SettingItem(id: "core", title: "Núcleo", kind: .info(controller.version.isEmpty ? L10n.text("Carregando…") : controller.version)),
                 SettingItem(id: "diagnostics", title: "Diagnóstico avançado", symbol: "waveform.path.ecg",
                             kind: .action { showDiagnostics = true }, chevron: true),
