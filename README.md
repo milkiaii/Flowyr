@@ -2,80 +2,34 @@
 
 ![](logo-rounded.png)
 
-Flowyr is a PlayStation Vita emulator for iOS and iPadOS.
-
-Flowyr is an experimental project. Some games run well, some run with graphical glitches, and some don’t run at all.
-
-## Screenshots
+Flowyr is an experimental PlayStation Vita emulator for iOS and iPadOS, based on [Vita3K](https://vita3k.org/) and [Veeb](https://github.com/veebteam/Veeb). Some games run well, some have glitches, and some don't run at all.
 
 | | |
 |:---:|:---:|
-| **Persona 4 Golden** | **Persona 4 Golden** |
 | ![Persona 4 Golden, classroom](_readme/screenshots/persona4_golden_classroom.png) | ![Persona 4 Golden, street](_readme/screenshots/persona4_golden_street.png) |
-| **Hatsune Miku: Project DIVA f** | **Hatsune Miku: Project DIVA f** |
 | ![Project DIVA f, song menu](_readme/screenshots/project_diva_f_menu.png) | ![Project DIVA f, gameplay](_readme/screenshots/project_diva_f_gameplay.png) |
+| ![Touch My Katamari](_readme/screenshots/touch_my_katamari.png) | ![VA-11 Hall-A](_readme/screenshots/va11_hall_a.png) |
 
 Captured on an iPhone SE (2nd generation).
-
-## Where it comes from
-
-Flowyr is a fork of [Veeb](https://github.com/veebteam/Veeb), which is itself a fork of [Vita3K](https://vita3k.org/). Nearly all of the hard work, understanding and emulating the Vita's hardware and operating system, was done by the Vita3K developers and contributors. Veeb brought that core to iOS. Flowyr keeps that foundation and changes the app around it and a few things underneath. The credits at the bottom list the people and projects it depends on.
-
-## What is different
-
-On the app side:
-
-- A rebuilt library with a game carousel, search, favorites and a floating action bar
-- A library and menus you can navigate with a game controller
-- A pause menu with per-game settings, available from inside a running game
-- A trophy browser, plus unlock banners while you play
-- On-screen controls you can move, resize and fade, saved separately for portrait and landscape, globally or per game
-- Dynamic analog sticks that appear under your thumb in empty parts of the screen
-- A performance overlay showing FPS, memory use, battery and device temperature
-- Installing PKG files, `work.bin` and zRIF licenses, firmware and game archives from the in-app import menu
-- Themes: Flowyr, Vita, Dark and Light
-- English and Brazilian Portuguese
-
-On the emulator side:
-
-- A software page-table memory mode that lets the emulator start when iOS will not give it the usual 4 GiB address space reservation. This is what makes 3 GB phones usable. It is selected automatically, and can also be forced per game.
-- GPU memory settings tuned for iOS limits, a half-resolution texture option, and a per-game 30 FPS cap to save memory and heat
-- 
-## 3 GB devices
-
-Flowyr is developed and tested on an iPhone SE (2nd generation), which has 3 GB of RAM and no room to spare. iOS ends an app that uses too much memory, so a heavy game can still be closed by the system after a while. Lowering the internal resolution, turning on half-resolution textures or capping the game at 30 FPS helps. Some games cannot be made to fit.
-
-Newer phones with more memory have more headroom, but they have not had the same amount of testing.
-
-
-## Installing
-
-The GitHub Actions workflow builds an unsigned IPA on every push. Download it from the workflow run's artifacts, then sign and install it with a sideloading tool of your choice. Flowyr uses its own bundle identifier, so it installs next to other builds and does not share their games or saves.
-
-Building it yourself needs full Xcode and a Mac. See [building.md](building.md).
-
-## JIT
-
-Vita emulation needs JIT compilation to be fast enough. iOS does not allow JIT for normal apps, so Flowyr relies on StikDebug to attach a debugger at launch. Open Flowyr through StikDebug with the Universal script. The lightning bolt in the top bar glows green once JIT is connected. Setup and pairing are covered in the StikDebug documentation.
-
-## Getting started
-
-1. Open Flowyr through StikDebug and wait for the bolt to turn green.
-2. Use the plus button to import the PlayStation Vita firmware you obtained from your own console.
-3. Import your games from VPK, ZIP or PKG files, or folders. Games that need a license key can be added with `work.bin` or a zRIF string from the same menu.
-4. Pick a game from the library. Per-game settings are in the pause menu while the game runs.
 
 ## Requirements
 
 - iOS 26 or newer
-- An arm64 iPhone or iPad
-- JIT through StikDebug
+- 3 GB of RAM or more
+- JIT enabled through StikDebug
+
+## Installation
+
+1. Download the unsigned IPA from the latest GitHub Actions run.
+2. Sideload it with SideStore or your preferred method.
+3. Open Flowyr through StikDebug with the `Universal.js` script to enable JIT. The lightning bolt in the top bar turns green when it's connected.
+4. Import your own Vita firmware and games with the plus button.
+
+To build it yourself you need a Mac with Xcode. See [building.md](building.md).
 
 ## Contributing
 
-Bug reports with a log and the game's title ID are the most useful thing you can send. Pull requests are welcome.
-
-Changes to shared emulator behavior should not fix one game at the cost of another. If a workaround only makes sense for one title, scope it to that title's ID and leave a comment saying which game needs it and why.
+Bug reports with a log and the game's title ID are the most useful thing you can send. Pull requests are welcome. Workarounds that only make sense for one game should be scoped to that title ID.
 
 ## Legal
 
@@ -89,12 +43,12 @@ Flowyr is developed by one person with the help of an AI coding assistant. The A
 
 ## Credits
 
-- The [Vita3K](https://vita3k.org/) developers and contributors, for the emulator everything here is built on
+- The [Vita3K](https://vita3k.org/) developers and contributors
 - The [Veeb](https://github.com/veebteam/Veeb) team, for the iOS port Flowyr started from
 - [Vita3K Plus](https://github.com/nckstwrt/Vita3K-Plus) and its contributors, for game-specific compatibility fixes
-- The StikDebug developers, for the JIT workflow it depends on
+- The StikDebug developers, for the JIT workflow
 - Everyone who tests games and reports bugs
 
 ## License
 
-Flowyr is derived from Vita3K and is distributed under the same license, GPLv2. See `COPYING.txt` for the full text and the original copyright notices.
+GPLv2, same as Vita3K. See `COPYING.txt`.
