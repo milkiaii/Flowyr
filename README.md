@@ -40,7 +40,7 @@ PlayStation and PlayStation Vita are trademarks of Sony Interactive Entertainmen
 
 ## How this was made
 
-Flowyr is developed by one person with the help of an AI coding assistant. The AI writes much of the code; the maintainer decides what gets built and tests every change on a real iPhone SE (2nd generation).
+Flowyr is developed by one person with the help of an AI coding assistant. The AI writes much of the code, i decide what gets built and test every change myself.
 
 ## Credits
 
