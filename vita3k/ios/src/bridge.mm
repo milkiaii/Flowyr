@@ -47,7 +47,7 @@
 #if __has_include("gitver.h")
 #include "gitver.h"
 // The commit count is meaningless in CI (shallow clone), so name the release and the upstream base.
-#define VITA3K_VERSION_STRING "1.0 (Vita3K " VITA3K_STR(APP_VER_HI) "." VITA3K_STR(APP_VER_MID) "." VITA3K_STR(APP_VER_LO) " base, Nov 2026)"
+#define VITA3K_VERSION_STRING "1.0 (Vita3K " VITA3K_STR(APP_VER_HI) "." VITA3K_STR(APP_VER_MID) "." VITA3K_STR(APP_VER_LO) " base)"
 #else
 #define VITA3K_VERSION_STRING "unknown"
 #endif
