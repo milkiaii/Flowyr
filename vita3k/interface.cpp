@@ -30,6 +30,7 @@
 #include <emuenv/state.h>
 #include <io/functions.h>
 #include <io/vfs.h>
+#include <cpu/functions.h>
 #include <kernel/state.h>
 #include <lang/state.h>
 #include <packages/pkg.h>
@@ -433,6 +434,7 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv, const
     const int jit_cache_mib = emuenv.cfg.current_config.cpu_jit_cache_mib > 0
         ? emuenv.cfg.current_config.cpu_jit_cache_mib
         : config::get_default_cpu_jit_cache_mib(emuenv.cfg, emuenv.io.app_path);
+    set_fast_cpu(emuenv.cfg.current_config.fast_cpu);
     if (!emuenv.kernel.init(emuenv.mem, call_import, emuenv.cfg.current_config.cpu_opt,
             jit_cache_mib, emuenv.cfg.current_config.cpu_jit_arena_mib)) {
         LOG_WARN("Failed to init kernel!");

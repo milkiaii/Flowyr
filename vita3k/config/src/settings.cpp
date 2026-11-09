@@ -45,6 +45,7 @@ void copy_global_to_current(Config::CurrentConfig &current, const Config &cfg) {
 #endif
     current.cpu_jit_arena_mib = cfg.cpu_jit_arena_mib;
     current.force_software_page_table = cfg.force_software_page_table;
+    current.fast_cpu = cfg.fast_cpu;
     current.modules_mode = cfg.modules_mode;
     current.lle_modules = cfg.lle_modules;
     current.backend_renderer = cfg.backend_renderer;
@@ -93,6 +94,7 @@ void copy_global_to_current(Config::CurrentConfig &current, const Config &cfg) {
 void copy_current_to_global(Config &cfg, const Config::CurrentConfig &current) {
     cfg.cpu_opt = current.cpu_opt;
     cfg.force_software_page_table = current.force_software_page_table;
+    cfg.fast_cpu = current.fast_cpu;
     cfg.modules_mode = current.modules_mode;
     cfg.lle_modules = current.lle_modules;
     cfg.backend_renderer = current.backend_renderer;
@@ -153,6 +155,7 @@ std::vector<RestartRequiredSetting> get_restart_required_settings(
     append_if_changed(before.cpu_opt != after.cpu_opt, RestartRequiredSetting::CpuOpt);
     append_if_changed(before.cpu_jit_cache_mib != after.cpu_jit_cache_mib, RestartRequiredSetting::CpuOpt);
     append_if_changed(before.cpu_jit_arena_mib != after.cpu_jit_arena_mib, RestartRequiredSetting::CpuOpt);
+    append_if_changed(before.fast_cpu != after.fast_cpu, RestartRequiredSetting::CpuOpt);
     append_if_changed(before.force_software_page_table != after.force_software_page_table, RestartRequiredSetting::MemoryMode);
     append_if_changed(before.backend_renderer != after.backend_renderer, RestartRequiredSetting::BackendRenderer);
     append_if_changed(before.gpu_idx != after.gpu_idx, RestartRequiredSetting::GraphicsDevice);
@@ -206,6 +209,8 @@ bool load_custom_config(Config::CurrentConfig &out, const fs::path &config_path,
         // Absent in older per-app configs: keep the global default.
         if (config_child.child("cpu").attribute("force-software-page-table"))
             out.force_software_page_table = config_child.child("cpu").attribute("force-software-page-table").as_bool();
+        if (config_child.child("cpu").attribute("fast-cpu"))
+            out.fast_cpu = config_child.child("cpu").attribute("fast-cpu").as_bool();
     }
 
     if (!config_child.child("gpu").empty()) {
@@ -306,6 +311,7 @@ bool save_custom_config(const Config::CurrentConfig &cc, const fs::path &config_
     cpu_child.append_attribute("cpu-jit-cache-mib") = cc.cpu_jit_cache_mib;
     cpu_child.append_attribute("cpu-jit-arena-mib") = cc.cpu_jit_arena_mib;
     cpu_child.append_attribute("force-software-page-table") = cc.force_software_page_table;
+    cpu_child.append_attribute("fast-cpu") = cc.fast_cpu;
 
     auto gpu_child = config_child.append_child("gpu");
     gpu_child.append_attribute("backend-renderer") = cc.backend_renderer.c_str();

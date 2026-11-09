@@ -16,6 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "cpu/common.h"
+#include <cpu/functions.h>
 #include <cpu/impl/dynarmic_cpu.h>
 #include <cpu/state.h>
 #include <util/log.h>
@@ -26,6 +27,7 @@
 #include <dynarmic/interface/A32/coprocessor.h>
 #include <dynarmic/interface/exclusive_monitor.h>
 
+#include <atomic>
 #include <bit>
 #include <memory>
 #include <optional>
@@ -143,6 +145,13 @@ public:
 };
 
 static constexpr bool LOG_INVALID_ACCESS = false;
+
+static std::atomic_bool fast_cpu_enabled{ false };
+
+void set_fast_cpu(bool enabled) {
+    fast_cpu_enabled = enabled;
+    LOG_INFO("Fast CPU (floating-point shortcuts): {}", enabled ? "on" : "off");
+}
 
 class ArmDynarmicCallback : public Dynarmic::A32::UserCallbacks {
     friend class DynarmicCPU;
@@ -438,6 +447,10 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
     config.coprocessors[15] = cp15;
     config.processor_id = core_id;
     config.optimizations = cpu_opt ? Dynarmic::all_safe_optimizations : Dynarmic::no_optimizations;
+    if (cpu_opt && fast_cpu_enabled.load()) {
+        config.optimizations |= Dynarmic::OptimizationFlag::Unsafe_InaccurateNaN | Dynarmic::OptimizationFlag::Unsafe_ReducedErrorFP
+            | Dynarmic::OptimizationFlag::Unsafe_IgnoreStandardFPCRValue;
+    }
     config.enable_cycle_counting = false;
 
 #if defined(__APPLE__) && defined(TARGET_OS_IOS) && TARGET_OS_IOS

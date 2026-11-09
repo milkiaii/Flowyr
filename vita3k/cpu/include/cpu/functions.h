@@ -27,6 +27,9 @@
 
 struct MemState;
 
+// "Fast CPU": lets the recompiler take floating-point shortcuts (NaN handling, reciprocal and square-root
+// precision, FPCR mode). Faster on CPU-bound games, but can change results. Read when a JIT is created.
+void set_fast_cpu(bool enabled);
 CPUStatePtr init_cpu(bool cpu_opt, SceUID thread_id, std::size_t processor_id, MemState &mem, int cpu_jit_cache_mib = 16, int cpu_jit_arena_mib = jit_config::default_arena_mib);
 int run(CPUState &state);
 int step(CPUState &state);
