@@ -112,7 +112,8 @@ struct GameConfigView: View {
         let gameSection = SettingSection(id: "game", title: "CPU e GPU (este jogo)", items: [
             flag("cpu-opt", "Enable CPU Optimizations", "cpu_opt", $cpuOpt),
             flag("sw-pt", "Force Software Page Table", "force_software_page_table", $forceSoftwarePageTable),
-            flag("fast-cpu", "Fast CPU", "fast_cpu", $fastCPU),
+            flag("fast-cpu", "Fast CPU", "fast_cpu", $fastCPU,
+                 detail: "Trades some floating-point accuracy for speed. May help CPU-bound games; turn it off if a game misbehaves."),
             pick("jit-cache", "Cache JIT por thread", "cpu_jit_cache_mib",
                  Binding(get: { values.firstIndex(of: jitCacheMiB) ?? 0 },
                          set: { jitCacheMiB = values[$0] }),

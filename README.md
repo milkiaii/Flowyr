@@ -48,6 +48,7 @@ Flowyr is developed by one person with the help of an AI coding assistant. The A
 - The [Veeb](https://github.com/veebteam/Veeb) team, for the iOS port Flowyr started from
 - [Vita3K Plus](https://github.com/nckstwrt/Vita3K-Plus) and its contributors, for game-specific compatibility fixes
 - The StikDebug developers, for the JIT workflow
+- [Vita3KiOS](https://github.com/oledz-i/Vita3KiOS) by oledz-i, for the Fast CPU idea
 - Everyone who tests games and reports bugs
 
 ## License

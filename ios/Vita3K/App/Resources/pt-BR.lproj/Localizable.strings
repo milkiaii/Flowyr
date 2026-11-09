@@ -367,3 +367,4 @@
 "Não foi possível instalar o save" = "Não foi possível instalar o save";
 "Versão" = "Versão";
 "Fast CPU" = "CPU rápida";
+"Trades some floating-point accuracy for speed. May help CPU-bound games; turn it off if a game misbehaves." = "Troca um pouco de precisão de ponto flutuante por velocidade. Pode ajudar jogos limitados pela CPU; desative se um jogo se comportar mal.";

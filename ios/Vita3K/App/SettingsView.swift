@@ -296,7 +296,8 @@ struct GlobalConfigPage: View {
             return [SettingSection(id: "cpu", title: "CPU", items: [
                 flag("cpu-opt", "Enable CPU Optimizations", "cpu_opt"),
                 flag("sw-pt", "Force Software Page Table", "force_software_page_table"),
-                flag("fast-cpu", "Fast CPU", "fast_cpu"),
+                flag("fast-cpu", "Fast CPU", "fast_cpu",
+                     detail: "Trades some floating-point accuracy for speed. May help CPU-bound games; turn it off if a game misbehaves."),
                 pick("jit-cache", "Cache JIT por thread", "cpu_jit_cache_mib", current: sizes.firstIndex(of: current) ?? 0,
                      labels: sizes.map { $0 == 0 ? L10n.text("Auto") : "\($0) MiB" }, raw: sizes.map(String.init),
                      detail: "Auto escolhe o tamanho conforme o perfil de cada jogo. Valores menores permitem mais threads, mas podem aumentar a recompilação."),
