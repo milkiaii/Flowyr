@@ -21,6 +21,7 @@
 #include <renderer/render_gate.h>
 #include <renderer/state.h>
 #include <renderer/types.h>
+#include <util/thread_priority.h>
 
 #include <renderer/vulkan/types.h>
 
@@ -191,6 +192,7 @@ void reset_command_list(CommandList &command_list) {
 }
 
 static void render_loop(renderer::State &state, DisplayState &display, GxmState &gxm, MemState &mem, Config &config) {
+    util::set_current_thread_high_priority();
     auto *gate = state.frame ? state.frame->render_gate() : nullptr;
     RenderGate::Binding binding(gate, [&state] { state.wait_idle(); });
     const auto acquire = [&] {

@@ -16,6 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "SceGxm.h"
+#include <util/thread_priority.h>
 
 #include <modules/module_parent.h>
 
@@ -977,6 +978,7 @@ std::string to_debug_str<SceGxmTransferFlags>(const MemState &mem, SceGxmTransfe
 }
 
 static void display_entry_thread(EmuEnvState &emuenv) {
+    util::set_current_thread_high_priority();
     auto &display_queue = emuenv.gxm.display_queue;
     const Address callback_address = emuenv.gxm.params.displayQueueCallback.address();
     const ThreadStatePtr display_thread = emuenv.kernel.get_thread(emuenv.gxm.display_queue_thread);

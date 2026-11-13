@@ -6,6 +6,7 @@
 #pragma once
 
 #include <map>
+#include <memory>
 #include <optional>
 
 #include <mcl/stdint.hpp>
@@ -54,6 +55,15 @@ public:
 
     void ClearCache();
 
+    // Direct-mapped cache used by the dispatcher stub to resolve indirect branches
+    // without a C++ call. Keyed by the raw 64-bit location descriptor.
+    struct FastDispatchEntry {
+        u64 key;
+        u64 code;
+    };
+    static constexpr size_t FastDispatchCount = 8192;
+    void ResetFastDispatch();
+
     void DumpDisassembly() const;
 
 protected:
@@ -89,6 +99,7 @@ protected:
     tsl::robin_map<IR::LocationDescriptor, CodePtr> block_entries;
     std::map<CodePtr, IR::LocationDescriptor> reverse_block_entries;
     tsl::robin_map<CodePtr, EmittedBlockInfo> block_infos;
+    std::unique_ptr<FastDispatchEntry[]> fast_dispatch = std::make_unique<FastDispatchEntry[]>(FastDispatchCount);
     tsl::robin_map<IR::LocationDescriptor, tsl::robin_set<CodePtr>> block_references;
 
     ExceptionHandler exception_handler;

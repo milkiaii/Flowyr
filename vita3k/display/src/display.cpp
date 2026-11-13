@@ -16,6 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <display/functions.h>
+#include <util/thread_priority.h>
 
 #include <dialog/state.h>
 #include <display/state.h>
@@ -36,6 +37,7 @@ static constexpr int predict_threshold = 3;
 static constexpr int max_expected_swapchain_size = 6;
 
 static void vblank_sync_thread(EmuEnvState &emuenv) {
+    util::set_current_thread_high_priority();
     DisplayState &display = emuenv.display;
 
     while (!display.abort.load()) {

@@ -52,6 +52,7 @@
 #include <ios/ime.h>
 #include <ios/import_archive.h>
 #include <ios/save_transfer.h>
+#include <util/thread_priority.h>
 
 #include <app/functions.h>
 #include <app/session_controller.h>
@@ -432,6 +433,7 @@ void log_memory_usage(EmuEnvState &emuenv) {
 // launch applies the pending stop itself (stop_requested, set before the
 // stop thread blocks on the lock).
 void launch_worker(Session &s, const std::string &app_path, int width, int height) {
+    util::set_current_thread_high_priority();
     std::unique_lock<std::mutex> op(s.op_lock);
     diagnostics::begin_game(app_path);
     s.launch_failed.store(false);

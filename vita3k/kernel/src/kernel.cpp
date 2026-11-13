@@ -17,6 +17,7 @@
 
 #ifdef TRACY_ENABLE
 #include <tracy/Tracy.hpp>
+#include <util/thread_priority.h>
 #endif
 
 #include <cpu/common.h>
@@ -60,6 +61,7 @@ struct ThreadParams {
 
 static int SDLCALL thread_function(void *data) {
     assert(data != nullptr);
+    util::set_current_thread_high_priority();
     ThreadParams params = *static_cast<const ThreadParams *>(data);
     SDL_SignalSemaphore(params.host_may_destroy_params);
     ThreadStatePtr thread = std::move(params.thread);

@@ -43,6 +43,7 @@ AddressSpace::AddressSpace(size_t code_cache_size, std::optional<CodeRegion> reg
         ASSERT_MSG(region->rx != 0 && region->rw != 0, "CodeRegion views must be non-null");
     }
 
+    ResetFastDispatch();
     exception_handler.Register(mem, code_cache_size);
     exception_handler.SetFastmemCallback([this](u64 host_pc) {
         return FastmemCallback(host_pc);
@@ -86,8 +87,15 @@ CodePtr AddressSpace::GetOrEmit(IR::LocationDescriptor descriptor) {
     return block_info.entry_point;
 }
 
+void AddressSpace::ResetFastDispatch() {
+    for (size_t i = 0; i < FastDispatchCount; i++) {
+        fast_dispatch[i] = {~u64(0), 0};
+    }
+}
+
 void AddressSpace::InvalidateBasicBlocks(const tsl::robin_set<IR::LocationDescriptor>& descriptors) {
     UnprotectCodeMemory();
+    ResetFastDispatch();
 
     for (const auto& descriptor : descriptors) {
         const auto iter = block_entries.find(descriptor);
@@ -106,6 +114,7 @@ void AddressSpace::InvalidateBasicBlocks(const tsl::robin_set<IR::LocationDescri
 }
 
 void AddressSpace::ClearCache() {
+    ResetFastDispatch();
     block_entries.clear();
     reverse_block_entries.clear();
     block_infos.clear();
