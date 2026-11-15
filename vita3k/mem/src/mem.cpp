@@ -285,7 +285,7 @@ bool init(MemState &state, const bool use_page_table, const bool force_software_
         constexpr struct {
             Address start;
             uint64_t size;
-        } areas[] = { { 0x80000000, GiB(1) }, { 0x60000000, MiB(256) }, { 0x70000000, MiB(256) } };
+        } areas[] = { { 0x80000000, MiB(640) } };
         release_helper_ranges();
         for (const auto &area : areas) {
             void *const host = mmap(nullptr, area.size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
