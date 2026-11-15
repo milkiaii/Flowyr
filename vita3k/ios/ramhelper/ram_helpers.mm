@@ -409,6 +409,8 @@ std::shared_ptr<Helper> helper_with_room(uint64_t length) {
     }
 }
 
+static bool g_map_failed = false;
+
 bool map_chunk(Helper &helper, mach_vm_address_t target, uint64_t length) {
     xpc_object_t reply = send(helper.connection, V3K_RAM_OP_CREATE, length, 20.0);
     if (!reply) {
@@ -431,6 +433,8 @@ bool map_chunk(Helper &helper, mach_vm_address_t target, uint64_t length) {
     if (!scratch || mapped < length) {
         if (scratch)
             mach_vm_deallocate(mach_task_self(), reinterpret_cast<mach_vm_address_t>(scratch), mapped);
+        RAM_LOG_WARN("xpc_shmem_map gave {} bytes at {} for a {} MiB request", mapped, scratch, length / MiB);
+        g_map_failed = true;
         set_status("The memory a RAM helper lent could not be mapped", true);
         return false;
     }
@@ -668,12 +672,22 @@ uint64_t v3k_ram_helpers_back(void *host, uint64_t size, bool last) {
     const mach_vm_address_t base = reinterpret_cast<mach_vm_address_t>(host);
     RAM_LOG_INFO("guest range {:#x}, {} MiB offered to the helpers{}", base, size / MiB, last ? " (last range)" : "");
     uint64_t offset = 0;
+    // If a big chunk can't be mapped here (address space is tight on some devices), retry smaller ones
+    uint64_t chunk = V3K_RAM_HELPER_CHUNK;
     while (offset < size) {
-        const uint64_t length = std::min<uint64_t>(V3K_RAM_HELPER_CHUNK, size - offset);
+        const uint64_t length = std::min<uint64_t>(chunk, size - offset);
         const std::shared_ptr<Helper> helper = helper_with_room(length);
-        if (!helper || !map_chunk(*helper, base + offset, length))
+        if (!helper)
             break;
-        offset += length;
+        g_map_failed = false;
+        if (map_chunk(*helper, base + offset, length)) {
+            offset += length;
+            continue;
+        }
+        if (!g_map_failed || chunk <= 16 * MiB)
+            break;
+        chunk /= 2;
+        RAM_LOG_INFO("mapping {} MiB failed, retrying with {} MiB chunks", length / MiB, chunk / MiB);
     }
     if (offset) {
         std::lock_guard lock(g_lock);
