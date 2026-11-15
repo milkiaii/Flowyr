@@ -203,8 +203,174 @@ static uint8_t *helper_backing_region(const MemState &state, Address addr, uint3
     }
     if (size >= MiB(16))
         LOG_WARN("RAM helpers: {} KiB at {:#x} is outside every helper range", size / 1024, addr);
-#endif
     return nullptr;
+#else
+    return nullptr;
+#endif
+}
+
+bool init(MemState &state, const bool use_page_table, const bool force_software_page_table) {
+#ifdef _WIN32
+    SYSTEM_INFO system_info = {};
+    GetSystemInfo(&system_info);
+    state.host_page_size = system_info.dwPageSize;
+#else
+    state.host_page_size = static_cast<int>(sysconf(_SC_PAGESIZE));
+#endif
+
+    assert(state.host_page_size >= 4096); // Limit imposed by Unicorn.
+
+    state.invalid_access_logged.clear();
+
+    void *preferred_address = reinterpret_cast<void *>(1ULL << 34);
+    // Set when the user forces it, or when the 4 GiB reservation below fails.
+    bool use_software_page_table = force_software_page_table;
+
+#ifdef _WIN32
+    if (!use_software_page_table) {
+        state.memory = Memory(static_cast<uint8_t *>(VirtualAlloc(preferred_address, TOTAL_MEM_SIZE, MEM_RESERVE, PAGE_NOACCESS)), delete_memory);
+        if (!state.memory) {
+            // fallback
+            state.memory = Memory(static_cast<uint8_t *>(VirtualAlloc(nullptr, TOTAL_MEM_SIZE, MEM_RESERVE, PAGE_NOACCESS)), delete_memory);
+
+            if (!state.memory) {
+                LOG_WARN("VirtualAlloc could not reserve the 4 GiB guest arena: {}; selecting software page-table mode", get_error_msg());
+                use_software_page_table = true;
+            }
+        }
+    }
+#else
+    if (use_software_page_table) {
+        state.memory = Memory(nullptr, delete_memory);
+    } else {
+        // http://man7.org/linux/man-pages/man2/mmap.2.html
+        const int prot = PROT_NONE;
+        const int flags = MAP_PRIVATE | MAP_ANONYMOUS;
+        const int fd = 0;
+        const off_t offset = 0;
+        // preferred_address is only a hint for mmap, if it can't use it, the kernel will choose itself the address
+        void *memory = mmap(preferred_address, TOTAL_MEM_SIZE, prot, flags, fd, offset);
+        if (memory == MAP_FAILED) {
+            LOG_WARN("mmap could not reserve the 4 GiB guest arena: {}; selecting software page-table mode", get_error_msg());
+            state.memory = Memory(nullptr, delete_memory);
+            use_software_page_table = true;
+        } else {
+            state.memory = Memory(static_cast<uint8_t *>(memory), delete_memory);
+        }
+    }
+#if defined(__APPLE__) && TARGET_OS_IOS && !TARGET_OS_SIMULATOR
+    if (!use_software_page_table) {
+    // Device experiment: start the guest reservation RW instead of
+    // PROT_NONE. The fault-commit model (guest touches a PROT_NONE page
+    // -> SIGBUS/SIGSEGV with the PC inside JIT-granted code -> the kernel
+    // re-validates the task's JIT regions) is the prime suspect for the
+    // EXC_ARM_CACHE crashes on the sysmodule thread: every guest module
+    // init commits pages while executing JIT code, and our dual-map RX
+    // arena is not a MAP_JIT region the kernel's fault path re-validates
+    // cleanly. A PS2-style pre-committed RAM (the ARMSX2 guest model)
+    // never data-faults from JIT code, which is why that emulator works
+    // on this same device. Physical RAM is unchanged: pages are still
+    // faulted in lazily on first touch.
+    if (mprotect(state.memory.get(), TOTAL_MEM_SIZE, PROT_READ | PROT_WRITE) == -1) {
+        LOG_CRITICAL("mprotect RW failed {}", get_error_msg());
+        return false;
+    }
+    LOG_INFO("mem: guest reservation started RW ({} bytes)", TOTAL_MEM_SIZE);
+    }
+#endif
+#endif
+
+#ifndef _WIN32
+    if (g_backing_provider && use_software_page_table) {
+        // Smaller reservations than the 4 GiB arena, one per guest memory area, for the helpers to back.
+        constexpr struct {
+            Address start;
+            uint64_t size;
+        } areas[] = { { 0x80000000, GiB(1) }, { 0x60000000, MiB(256) }, { 0x70000000, MiB(256) } };
+        release_helper_ranges();
+        for (const auto &area : areas) {
+            void *const host = mmap(nullptr, area.size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+            if (host != MAP_FAILED)
+                g_helper_ranges.push_back({ area.start, area.size, static_cast<uint8_t *>(host), 0 });
+        }
+        uint64_t backed = 0;
+        for (size_t i = 0; i < g_helper_ranges.size(); i++) {
+            HelperRange &range = g_helper_ranges[i];
+            range.backed = g_backing_provider(range.host, range.size, i + 1 == g_helper_ranges.size());
+            backed += range.backed;
+        }
+        if (backed)
+            LOG_INFO("RAM helpers back {} MiB of the guest's memory (software page-table mode)", backed / MiB(1));
+        else
+            release_helper_ranges();
+    }
+    if (g_backing_provider && !use_software_page_table) {
+        // Where a game's memory goes (SceSysmem): main RAM first, then CDRAM and uncached main RAM.
+        // Pages stay inaccessible until the allocator hands them out, exactly as without helpers.
+        struct Range {
+            Address start;
+            uint64_t size;
+        };
+        constexpr Range ranges[] = { { 0x80000000, GiB(1) }, { 0x60000000, MiB(256) }, { 0x70000000, MiB(256) } };
+        uint64_t backed = 0;
+        for (size_t i = 0; i < std::size(ranges); i++)
+            backed += g_backing_provider(state.memory.get() + ranges[i].start, ranges[i].size, i + 1 == std::size(ranges));
+        if (backed)
+            LOG_INFO("RAM helpers back {} MiB of the guest's memory", backed / MiB(1));
+    }
+#endif
+    if (use_software_page_table)
+        LOG_WARN("Guest 4 GiB reservation unavailable or disabled; using software page-table memory mode");
+
+    const size_t table_length = TOTAL_MEM_SIZE / STANDARD_PAGE_SIZE;
+    state.alloc_table = AllocPageTable(new AllocMemPage[table_length]);
+    memset(state.alloc_table.get(), 0, sizeof(AllocMemPage) * table_length);
+
+    state.allocator.set_maximum(table_length);
+
+    // The page table must exist before the first alloc_inner() call below,
+    // because software mode records each allocation's backing in it.
+    state.memory_mode = use_software_page_table ? MemoryMode::SoftwarePageTable : MemoryMode::Fastmem;
+    state.use_page_table = use_page_table || use_software_page_table;
+    if (state.use_page_table) {
+        state.page_table = PageTable(new PagePtr[TOTAL_MEM_SIZE / STANDARD_PAGE_SIZE]);
+        // Absolute offset (faster): in fastmem mode every entry is the arena base;
+        // in software mode an entry is nullptr until its page is allocated.
+        std::fill_n(state.page_table.get(), TOTAL_MEM_SIZE / STANDARD_PAGE_SIZE,
+            use_software_page_table ? nullptr : state.memory.get());
+    }
+
+    const auto handler = [&state](uint8_t *addr, bool write) noexcept {
+        return handle_access_violation(state, addr, write);
+    };
+    register_access_violation_handler(handler);
+
+    const Address null_address = alloc_inner(state, 0, state.host_page_size / STANDARD_PAGE_SIZE, "null", true);
+    assert(null_address == 0);
+    // In software mode the null page has no backing (page table entry stays nullptr).
+    if (!use_software_page_table) {
+#ifdef _WIN32
+        DWORD old_protect = 0;
+        const BOOL ret = VirtualProtect(state.memory.get(), state.host_page_size, PAGE_NOACCESS, &old_protect);
+        LOG_CRITICAL_IF(!ret, "VirtualAlloc failed: {}", get_error_msg());
+#else
+        const int ret = mprotect(state.memory.get(), state.host_page_size, PROT_NONE);
+        LOG_CRITICAL_IF(ret == -1, "mprotect failed: {}", get_error_msg());
+#endif
+    }
+
+    return true;
+}
+
+static void delete_memory(uint8_t *memory) {
+    if (memory != nullptr) {
+#ifdef _WIN32
+        const BOOL ret = VirtualFree(memory, 0, MEM_RELEASE);
+        assert(ret);
+#else
+        munmap(memory, TOTAL_MEM_SIZE);
+#endif
+    }
 }
 
 static void release_backing_region(const BackingRegion &region) {
