@@ -130,11 +130,13 @@ final class BuiltinJIT: ObservableObject {
 
     private func start(pairing: Data, port: UInt16) {
         status = "Starting"
-        // No script: StikJIT attaches and lets go where that is enough, and runs its universal script
-        // (the protocol Flowyr's JIT memory follows, as with StikDebug) where the device needs it.
+        // StikJIT's universal script, always (force): Flowyr prepares its JIT memory through the debugger the way
+        // it does under StikDebug's Universal script, so the debugger has to stay attached and answer, also on
+        // devices without TXM where StikJIT would otherwise attach, detach and skip the script (the prepare then
+        // failed). The script ends the attach when Flowyr is done.
         pairing.withUnsafeBytes { raw in
             let bytes = raw.bindMemory(to: UInt8.self).baseAddress
-            v3k_builtin_jit_start(bytes, pairing.count, nil, false, port, builtinJITProgress, builtinJITDone)
+            v3k_builtin_jit_start(bytes, pairing.count, nil, true, port, builtinJITProgress, builtinJITDone)
         }
     }
 
