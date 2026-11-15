@@ -1,4 +1,5 @@
 import SwiftUI
+import Vita3KCore
 
 struct SettingsView: View {
     @EnvironmentObject var controller: CoreController
@@ -21,6 +22,9 @@ struct SettingsView: View {
     @AppStorage(AppLanguage.preference) private var language = AppLanguage.english.rawValue
 
     @State private var showDiagnostics = false
+    @State private var ramProbe = ""
+    @State private var ramProbing = false
+    @AppStorage("v3k.ramHelpers") private var ramHelpers = false
     @State private var saveRequest: SaveTransferRequest?
     @State private var page: SettingsCategory?
     @State private var poppedAt = Date.distantPast
@@ -152,6 +156,26 @@ struct SettingsView: View {
                 SettingItem(id: "import-saves", title: "Importar saves", symbol: "square.and.arrow.down",
                             kind: .action { saveRequest = .importSaves(titleId: nil, name: nil) }),
             ], footer: "Exporta os saves para um arquivo ZIP que você pode guardar ou levar para outro aparelho. Para um único jogo, mantenha-o pressionado na biblioteca."),
+            SettingSection(id: "ram", title: "Memória", items: [
+                SettingItem(id: "ram-helpers", title: "Helpers de RAM", symbol: "memorychip",
+                            kind: .toggle(Binding(get: { ramHelpers },
+                                                  set: { ramHelpers = $0; if $0 { vita3k_ios_ram_helpers_prepare() } }))),
+                SettingItem(id: "ram-status", title: LocalizedStringKey(String(cString: vita3k_ios_ram_helpers_status())), kind: .info("")),
+                SettingItem(id: "ram-test", title: "Testar um helper", symbol: "checkmark.circle",
+                            kind: .action {
+                                guard !ramProbing else { return }
+                                ramProbing = true
+                                ramProbe = ""
+                                Task {
+                                    let lend = await Task.detached { vita3k_ios_ram_helpers_probe() }.value
+                                    ramProbing = false
+                                    ramProbe = lend > 0
+                                        ? L10n.format("Um helper iniciou e pode emprestar cerca de %d MB.", Int(lend / (1024 * 1024)))
+                                        : String(cString: vita3k_ios_ram_helpers_status())
+                                }
+                            }, enabled: ramHelpers && !ramProbing),
+            ] + (ramProbe.isEmpty ? [] : [SettingItem(id: "ram-probe", title: LocalizedStringKey(ramProbe), kind: .info(""))]),
+                footer: "Processos auxiliares, cada um com seu próprio limite de memória do iOS, emprestam memória para a RAM do PS Vita, e jogos grandes têm menos chance de serem fechados pelo iOS. Vale a partir do próximo jogo iniciado. Alguns assinadores removem extensões de app; a verificação mostra se o helper está presente."),
             SettingSection(id: "system", title: "Sistema e conteúdo", items: [
                 SettingItem(id: "audio", title: "Áudio", kind: .info("SDL · CoreAudio")),
                 SettingItem(id: "gfx", title: "Gráficos", kind: .info("Vulkan · MoltenVK")),

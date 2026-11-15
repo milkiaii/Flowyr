@@ -44,6 +44,8 @@ struct BackingRegion {
     Address guest_address = 0;
     uint32_t size = 0;
     uint8_t *host_address = nullptr;
+    // Lives inside a reserved range lent by the RAM helpers: released by protecting it, never unmapped.
+    bool helper_backed = false;
 };
 
 struct ProtectBlockInfo {

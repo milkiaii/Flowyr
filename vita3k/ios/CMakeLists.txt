@@ -34,7 +34,12 @@ set(SOURCE_LIST
  src/ime.cpp
  include/ios/diagnostics.h
  src/diagnostics_ios.mm
+ ramhelper/ram_helpers.h
+ ramhelper/ram_helpers.mm
+ ramhelper/protocol.h
+ ramhelper/log.cpp
 )
+set_source_files_properties(ramhelper/ram_helpers.mm PROPERTIES COMPILE_FLAGS "-fobjc-arc")
 
 add_library(
 ios
@@ -53,4 +58,5 @@ target_include_directories(ios PRIVATE ${CMAKE_SOURCE_DIR}/vita3k/renderer/inclu
 # installers, compat DB) and miniz for the zip staging extraction.
 # concurrentqueue is linked PRIVATE to renderer, so expose its include here.
 target_link_libraries(ios PUBLIC util mem renderer display gxm config concurrentqueue app packages compat modules io miniz ctrl touch motion ime)
+target_link_libraries(ios PRIVATE "-framework Foundation")
 target_link_libraries(ios PRIVATE dynarmic merry::oaknut dialog)

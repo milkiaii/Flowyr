@@ -30,6 +30,7 @@
 #include <cstring>
 #include <mutex>
 #include <utility>
+#include <vector>
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -57,6 +58,7 @@ static Address alloc_inner(MemState &state, uint32_t start_page, uint32_t page_c
 static void delete_memory(uint8_t *memory);
 static uint8_t *allocate_backing_region(uint32_t size);
 static void delete_backing_region(uint8_t *memory, uint32_t size);
+static void release_backing_region(const BackingRegion &region);
 static void protect_sparse_range(MemState &state, Address addr, uint32_t size, MemPerm perm);
 
 // Page table entry (absolute-offset form: host = entry + guest address) of the
@@ -149,6 +151,49 @@ static std::string get_error_msg() {
 }
 #endif
 
+static GuestBackingProvider g_backing_provider = nullptr;
+
+void set_guest_backing_provider(GuestBackingProvider provider) {
+    g_backing_provider = provider;
+}
+
+// Software page-table mode has no 4 GiB arena, but the RAM helpers still need reserved host ranges to
+// back. They get smaller ranges (one per guest memory area); allocations that fit inside the backed
+// part are carved out of them instead of getting an anonymous mapping.
+struct HelperRange {
+    Address guest_start;
+    uint64_t size;
+    uint8_t *host;
+    uint64_t backed;
+};
+static std::vector<HelperRange> g_helper_ranges;
+
+static void release_helper_ranges() {
+#ifndef _WIN32
+    for (const HelperRange &range : g_helper_ranges)
+        munmap(range.host, range.size);
+#endif
+    g_helper_ranges.clear();
+}
+
+static uint8_t *helper_backing_region(const MemState &state, Address addr, uint32_t size) {
+#ifndef _WIN32
+    const uint32_t host_page = static_cast<uint32_t>(state.host_page_size);
+    if (addr % host_page != 0 || size % host_page != 0)
+        return nullptr;
+    for (const HelperRange &range : g_helper_ranges) {
+        if (addr < range.guest_start || static_cast<uint64_t>(addr) + size > range.guest_start + range.backed)
+            continue;
+        uint8_t *const host = range.host + (addr - range.guest_start);
+        if (mprotect(host, size, PROT_READ | PROT_WRITE) == -1)
+            return nullptr;
+        std::memset(host, 0, size);
+        return host;
+    }
+#endif
+    return nullptr;
+}
+
 bool init(MemState &state, const bool use_page_table, const bool force_software_page_table) {
 #ifdef _WIN32
     SYSTEM_INFO system_info = {};
@@ -220,6 +265,45 @@ bool init(MemState &state, const bool use_page_table, const bool force_software_
 #endif
 #endif
 
+#ifndef _WIN32
+    if (g_backing_provider && use_software_page_table) {
+        // Smaller reservations than the 4 GiB arena, one per guest memory area, for the helpers to back.
+        constexpr struct {
+            Address start;
+            uint64_t size;
+        } areas[] = { { 0x80000000, GiB(1) }, { 0x60000000, MiB(256) }, { 0x70000000, MiB(256) } };
+        release_helper_ranges();
+        for (const auto &area : areas) {
+            void *const host = mmap(nullptr, area.size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+            if (host != MAP_FAILED)
+                g_helper_ranges.push_back({ area.start, area.size, static_cast<uint8_t *>(host), 0 });
+        }
+        uint64_t backed = 0;
+        for (size_t i = 0; i < g_helper_ranges.size(); i++) {
+            HelperRange &range = g_helper_ranges[i];
+            range.backed = g_backing_provider(range.host, range.size, i + 1 == g_helper_ranges.size());
+            backed += range.backed;
+        }
+        if (backed)
+            LOG_INFO("RAM helpers back {} MiB of the guest's memory (software page-table mode)", backed / MiB(1));
+        else
+            release_helper_ranges();
+    }
+    if (g_backing_provider && !use_software_page_table) {
+        // Where a game's memory goes (SceSysmem): main RAM first, then CDRAM and uncached main RAM.
+        // Pages stay inaccessible until the allocator hands them out, exactly as without helpers.
+        struct Range {
+            Address start;
+            uint64_t size;
+        };
+        constexpr Range ranges[] = { { 0x80000000, GiB(1) }, { 0x60000000, MiB(256) }, { 0x70000000, MiB(256) } };
+        uint64_t backed = 0;
+        for (size_t i = 0; i < std::size(ranges); i++)
+            backed += g_backing_provider(state.memory.get() + ranges[i].start, ranges[i].size, i + 1 == std::size(ranges));
+        if (backed)
+            LOG_INFO("RAM helpers back {} MiB of the guest's memory", backed / MiB(1));
+    }
+#endif
     if (use_software_page_table)
         LOG_WARN("Guest 4 GiB reservation unavailable or disabled; using software page-table memory mode");
 
@@ -272,6 +356,17 @@ static void delete_memory(uint8_t *memory) {
         munmap(memory, TOTAL_MEM_SIZE);
 #endif
     }
+}
+
+static void release_backing_region(const BackingRegion &region) {
+#ifndef _WIN32
+    if (region.helper_backed) {
+        mprotect(region.host_address, region.size, PROT_NONE);
+        madvise(region.host_address, region.size, MADV_DONTNEED);
+        return;
+    }
+#endif
+    delete_backing_region(region.host_address, region.size);
 }
 
 static uint8_t *allocate_backing_region(uint32_t size) {
@@ -327,7 +422,10 @@ static Address alloc_inner(MemState &state, uint32_t start_page, uint32_t page_c
         // mappings keep host-page-granular mprotect (protect_sparse_range) from
         // spilling into a neighbouring guest allocation.
         if (addr != 0) {
-            uint8_t *const backing = allocate_backing_region(size);
+            uint8_t *backing = helper_backing_region(state, addr, size);
+            const bool helper_backed = backing != nullptr;
+            if (!backing)
+                backing = allocate_backing_region(size);
             if (!backing) {
                 LOG_ERROR("Guest memory backing allocation of {} KiB failed (host out of memory)", size / 1024);
                 state.allocator.free(static_cast<uint32_t>(page_num), page_count);
@@ -339,7 +437,7 @@ static Address alloc_inner(MemState &state, uint32_t start_page, uint32_t page_c
             // committed lazily on first access, as in fastmem mode.
             {
                 const std::lock_guard lock(state.protect_mutex);
-                state.backing_regions.emplace(static_cast<uint32_t>(page_num), BackingRegion{ addr, size, backing });
+                state.backing_regions.emplace(static_cast<uint32_t>(page_num), BackingRegion{ addr, size, backing, helper_backed });
             }
             const uintptr_t page_entry = reinterpret_cast<uintptr_t>(backing) - addr;
             for (uint32_t page = 0; page < page_count; page++)
@@ -776,7 +874,7 @@ void free(MemState &state, Address address) {
             }
         }
         if (has_backing)
-            delete_backing_region(backing.host_address, backing.size);
+            release_backing_region(backing);
         return;
     }
 
@@ -844,8 +942,9 @@ void deinit_mem(MemState &state) {
 
     state.memory.reset();
     for (const auto &entry : state.backing_regions)
-        delete_backing_region(entry.second.host_address, entry.second.size);
+        release_backing_region(entry.second);
     state.backing_regions.clear();
+    release_helper_ranges();
     state.alloc_table.reset();
     state.allocator.reset();
     state.page_name_map.clear();

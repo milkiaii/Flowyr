@@ -16,7 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "ios/bridge.h"
-
+#include "../ramhelper/ram_helpers.h"
 #include "ios/jit_memory.h"
 #include "ios/test_lock.h"
 
@@ -29,6 +29,8 @@
 #include <spdlog/details/registry.h>
 
 #include <sys/param.h>
+
+#include <atomic>
 #include <unistd.h>
 
 #include <mutex>
@@ -167,12 +169,39 @@ int vita3k_ios_logging_enabled(void) {
     return logging::is_enabled() ? 1 : 0;
 }
 
+// The debugger freezes the whole app while JIT memory is prepared; RAM helper lookups made then time
+// out, so ram_helpers.mm waits on this (weak symbol).
+static std::atomic<bool> g_jit_preparing{ false };
+extern "C" bool v3k_jit_preparing(void) {
+    return g_jit_preparing.load();
+}
+
 int vita3k_ios_jit_prepare(void) {
     const std::lock_guard<std::mutex> lock(vita::ios::heavy_test_lock());
     auto &arena = vita::ios::JitMemory::instance();
     if (arena.validate_alive())
         return 0;
-    return arena.prepare(jit_config::default_arena_bytes) && arena.validate_alive() ? 0 : -1;
+    g_jit_preparing = true;
+    const bool prepared = arena.prepare(jit_config::default_arena_bytes);
+    g_jit_preparing = false;
+    return prepared && arena.validate_alive() ? 0 : -1;
+}
+
+const char *vita3k_ios_ram_helpers_status(void) {
+    static std::string text;
+    static std::mutex text_mutex;
+    const std::lock_guard<std::mutex> lock(text_mutex);
+    const uint64_t backed = v3k_ram_helpers_backed();
+    text = std::string("Helper extension: ") + (v3k_ram_helpers_bundled() ? "included" : "missing") + "\nHelpers running: " + std::to_string(v3k_ram_helpers_live()) + "\nLent to the game: " + std::to_string(backed / (1024 * 1024)) + " MiB (" + std::to_string(v3k_ram_helpers_in_use() / (1024 * 1024)) + " MiB used)\n" + v3k_ram_helpers_status();
+    return text.c_str();
+}
+
+void vita3k_ios_ram_helpers_prepare(void) {
+    v3k_ram_helpers_prepare();
+}
+
+uint64_t vita3k_ios_ram_helpers_probe(void) {
+    return v3k_ram_helpers_probe();
 }
 
 const char *vita3k_ios_jit_report(void) {

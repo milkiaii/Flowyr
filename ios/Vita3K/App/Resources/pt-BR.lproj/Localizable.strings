@@ -368,3 +368,7 @@
 "Versão" = "Versão";
 "Fast CPU" = "CPU rápida";
 "Trades some floating-point accuracy for speed. May help CPU-bound games; turn it off if a game misbehaves." = "Troca um pouco de precisão de ponto flutuante por velocidade. Pode ajudar jogos limitados pela CPU; desative se um jogo se comportar mal.";
+"Helpers de RAM" = "Helpers de RAM";
+"Testar um helper" = "Testar um helper";
+"Um helper iniciou e pode emprestar cerca de %d MB." = "Um helper iniciou e pode emprestar cerca de %d MB.";
+"Processos auxiliares, cada um com seu próprio limite de memória do iOS, emprestam memória para a RAM do PS Vita, e jogos grandes têm menos chance de serem fechados pelo iOS. Vale a partir do próximo jogo iniciado. Alguns assinadores removem extensões de app; a verificação mostra se o helper está presente." = "Processos auxiliares, cada um com seu próprio limite de memória do iOS, emprestam memória para a RAM do PS Vita, e jogos grandes têm menos chance de serem fechados pelo iOS. Vale a partir do próximo jogo iniciado. Alguns assinadores removem extensões de app; a verificação mostra se o helper está presente.";

@@ -95,6 +95,10 @@ targets:
             fi
             xcrun codesign --force --sign "$ID" "$APP/Frameworks/libVita3KCore.dylib"
           fi
+    dependencies:
+      - target: FlowyrRamHelper
+        embed: true
+        codeSign: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: dev.vita3k.Flowyr
@@ -131,6 +135,33 @@ targets:
         com.apple.developer.icloud-container-identifiers: ["$(ICLOUD_CONTAINER_IDENTIFIER)"]
         com.apple.developer.ubiquity-container-identifiers: ["$(ICLOUD_CONTAINER_IDENTIFIER)"]
         com.apple.developer.icloud-services: [CloudDocuments]
+
+  # RAM helpers: an app extension that runs as its own process (with its own iOS memory limit) and
+  # lends memory for the Vita's RAM. See vita3k/ios/ramhelper/protocol.h. The Settings toggle turns
+  # it on; nothing starts it while that is off.
+  FlowyrRamHelper:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: ../../vita3k/ios/ramhelper/extension.mm
+        compilerFlags: ["-fobjc-arc"]
+      - path: ../../vita3k/ios/ramhelper/protocol.h
+        buildPhase: none
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.vita3k.Flowyr.RamHelper
+        INFOPLIST_FILE: RamHelper/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_IDENTITY: "Apple Development"
+        TARGETED_DEVICE_FAMILY: "1,2"
+        ARCHS: arm64
+        SUPPORTED_ARCHS: arm64
+        APPLICATION_EXTENSION_API_ONLY: YES
+        SKIP_INSTALL: YES
+        OTHER_LDFLAGS:
+          - "-framework"
+          - "Foundation"
 
 schemes:
   Vita3K:

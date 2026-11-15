@@ -71,6 +71,16 @@ const char *vita3k_ios_jit_report(void);
 /// This does not prove debugger attachment or guarantee future access.
 int vita3k_ios_jit_validate_alive(void);
 
+/// RAM helpers: helper processes (an app extension, each with its own iOS memory limit) lend memory
+/// for the Vita's RAM. Switched on with the "v3k.ramHelpers" user default.
+/// Multi-line status for the Settings page. The returned pointer is valid until the next call.
+const char *vita3k_ios_ram_helpers_status(void);
+/// Starts a helper in the background so the next game boots without waiting. Cheap when off.
+void vita3k_ios_ram_helpers_prepare(void);
+/// Starts a helper if none runs and asks how much it can lend. Blocks: not on the main thread.
+/// Returns the bytes it can lend (0 when it could not start).
+uint64_t vita3k_ios_ram_helpers_probe(void);
+
 /// Step 5 of the iOS port: validate the Vita3K memory model on the target.
 ///
 /// Exercises the production code paths end to end:

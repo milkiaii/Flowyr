@@ -45,6 +45,7 @@
 // re-resolves base_path on every launch and the core only stores the
 // relative layout under it.
 
+#include "../ramhelper/ram_helpers.h"
 #include "ios/bridge.h"
 #include "ios/diagnostics.h"
 #include "ios/frame_host.h"
@@ -118,6 +119,7 @@ extern "C" void SDL_SetMainReady(void);
 #include <filesystem>
 #include <fstream>
 #include <memory>
+#include <mem/functions.h>
 #include <mutex>
 #include <string>
 #include <thread>
@@ -634,6 +636,10 @@ int vita3k_ios_session_init(const char *base_path, const char *static_assets_pat
     // The app provides its own UIApplicationMain: tell SDL that main is
     // ready (main thread) so SDL_Init/SDL_InitSubSystem work. Idempotent.
     SDL_SetMainReady();
+
+    // RAM helpers lend memory for the guest's RAM; start one now so the first boot doesn't wait
+    set_guest_backing_provider(v3k_ram_helpers_back);
+    v3k_ram_helpers_prepare();
 
     const fs::path base{ base_path };
     const fs::path vita_path = base / "vita" / "";
@@ -1511,6 +1517,7 @@ int vita3k_ios_session_stop(void) {
             s.frame_host.reset();
         }
 
+        v3k_ram_helpers_game_ended();
         s.stop_requested.store(false);
         s.phase.store(FacadePhase::Idle);
         diagnostics::stage("ended");

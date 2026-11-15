@@ -56,6 +56,11 @@ constexpr MemPerm most_restrictive_perm(MemPerm a, MemPerm b) {
     return MemPerm::ReadWrite;
 }
 
+// iOS RAM helpers: backs part of a reserved range with memory from elsewhere and returns how many
+// bytes (from the start of the range) it backed. init() offers it the guest's main RAM, CDRAM and
+// uncached ranges; `last` marks the final range of a boot.
+using GuestBackingProvider = uint64_t (*)(void *host, uint64_t size, bool last);
+void set_guest_backing_provider(GuestBackingProvider provider);
 bool init(MemState &state, const bool use_page_table, const bool force_software_page_table = false);
 // Mode-aware guest <-> host translation. Use these instead of indexing
 // MemState::memory directly: it is null in SoftwarePageTable mode.
