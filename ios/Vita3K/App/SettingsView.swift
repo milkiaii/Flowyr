@@ -77,7 +77,7 @@ struct SettingsView: View {
             case .interface: ["language", "appearance", "library"]
             case .controls: ["controls"]
             case .jit: ["jit"]
-            default: ["system", "backup", "cloud"]
+            default: ["system", "ram", "backup", "cloud"]
             }
             let all = sections
             PadSettingsPage(sections: ids.compactMap { id in all.first { $0.id == id } }, onClose: closeCategory)
