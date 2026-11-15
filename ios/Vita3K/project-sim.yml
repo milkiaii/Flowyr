@@ -43,6 +43,7 @@ targets:
       - path: App/GamepadInput.swift
       - path: App/UISounds.swift
       - path: App/SettingsView.swift
+      - path: App/BuiltinJIT.swift
       - path: App/PadSettings.swift
       - path: App/ActionMenu.swift
       - path: App/Trophies.swift

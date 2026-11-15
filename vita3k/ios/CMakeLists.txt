@@ -34,12 +34,14 @@ set(SOURCE_LIST
  src/ime.cpp
  include/ios/diagnostics.h
  src/diagnostics_ios.mm
+ ramhelper/builtin_jit.h
+ ramhelper/builtin_jit.mm
  ramhelper/ram_helpers.h
  ramhelper/ram_helpers.mm
  ramhelper/protocol.h
  ramhelper/log.cpp
 )
-set_source_files_properties(ramhelper/ram_helpers.mm PROPERTIES COMPILE_FLAGS "-fobjc-arc")
+set_source_files_properties(ramhelper/ram_helpers.mm ramhelper/builtin_jit.mm PROPERTIES COMPILE_FLAGS "-fobjc-arc")
 
 add_library(
 ios

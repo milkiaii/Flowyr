@@ -38,6 +38,7 @@ targets:
       - path: App/GamepadInput.swift
       - path: App/UISounds.swift
       - path: App/SettingsView.swift
+      - path: App/BuiltinJIT.swift
       - path: App/PadSettings.swift
       - path: App/ActionMenu.swift
       - path: App/Trophies.swift
@@ -135,6 +136,8 @@ targets:
         com.apple.developer.icloud-container-identifiers: ["$(ICLOUD_CONTAINER_IDENTIFIER)"]
         com.apple.developer.ubiquity-container-identifiers: ["$(ICLOUD_CONTAINER_IDENTIFIER)"]
         com.apple.developer.icloud-services: [CloudDocuments]
+        # Lets a debugger attach, which is how JIT gets enabled (StikDebug, or the built-in JIT)
+        get-task-allow: true
 
   # RAM helpers: an app extension that runs as its own process (with its own iOS memory limit) and
   # lends memory for the Vita's RAM. See vita3k/ios/ramhelper/protocol.h. The Settings toggle turns
@@ -147,9 +150,22 @@ targets:
         compilerFlags: ["-fobjc-arc"]
       - path: ../../vita3k/ios/ramhelper/protocol.h
         buildPhase: none
+      # Built-in JIT: StikJIT (fetched by scripts/fetch-stikjit.sh) runs in this helper and attaches a
+      # debugger to the app, which can't debug itself.
+      - path: ../../vita3k/ios/ramhelper/builtin_jit_helper.swift
+      - path: Vendor/stikjit/Sources
+      - path: Vendor/stikjit/Scripts
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: dev.vita3k.Flowyr.RamHelper
+        SWIFT_VERSION: "5.0"
+        GCC_PREPROCESSOR_DEFINITIONS: ["$(inherited)", "V3K_HELPER_HAS_STIKJIT=1"]
+        SWIFT_INCLUDE_PATHS: "$(SRCROOT)/Vendor/stikjit/idevice $(SRCROOT)/Vendor/stikjit/iokit"
+        HEADER_SEARCH_PATHS: "$(SRCROOT)/Vendor/stikjit/idevice $(SRCROOT)/Vendor/stikjit/iokit"
+        LIBRARY_SEARCH_PATHS: "$(SRCROOT)/Vendor/stikjit/idevice"
+        DEAD_CODE_STRIPPING: YES
+        LLVM_LTO: NO
         INFOPLIST_FILE: RamHelper/Info.plist
         GENERATE_INFOPLIST_FILE: NO
         CODE_SIGN_STYLE: Automatic
@@ -160,8 +176,22 @@ targets:
         APPLICATION_EXTENSION_API_ONLY: YES
         SKIP_INSTALL: YES
         OTHER_LDFLAGS:
+          - "-L$(SRCROOT)/Vendor/stikjit/idevice"
+          - "-Wl,-hidden-lidevice_ffi"
           - "-framework"
           - "Foundation"
+          - "-framework"
+          - "JavaScriptCore"
+          - "-framework"
+          - "Network"
+          - "-framework"
+          - "Security"
+          - "-framework"
+          - "CFNetwork"
+          - "-framework"
+          - "SystemConfiguration"
+          - "-framework"
+          - "IOKit"
 
 schemes:
   Vita3K:

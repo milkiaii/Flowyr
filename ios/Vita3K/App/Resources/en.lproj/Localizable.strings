@@ -372,3 +372,14 @@
 "Testar um helper" = "Test a helper";
 "Um helper iniciou e pode emprestar cerca de %d MB." = "A helper started and can lend about %d MB.";
 "Processos auxiliares, cada um com seu próprio limite de memória do iOS, emprestam memória para a RAM do PS Vita, e jogos grandes têm menos chance de serem fechados pelo iOS. Vale a partir do próximo jogo iniciado. Alguns assinadores removem extensões de app; a verificação mostra se o helper está presente." = "Helper processes, each with its own iOS memory limit, lend memory for the PS Vita's RAM, so big games are less likely to be closed by iOS. Takes effect at the next game launch. Some signers remove app extensions; the status above shows whether the helper is present.";
+"JIT integrado" = "Built-in JIT";
+"Ativar JIT automaticamente" = "Enable JIT automatically";
+"Arquivo de pareamento" = "Pairing file";
+"Importado" = "Imported";
+"Nenhum" = "None";
+"Importar arquivo de pareamento" = "Import pairing file";
+"Substituir arquivo de pareamento" = "Replace pairing file";
+"Remover arquivo de pareamento" = "Remove pairing file";
+"Ativar JIT agora" = "Enable JIT now";
+"Ativando JIT…" = "Enabling JIT…";
+"Sem app de JIT: importe o arquivo de pareamento (o mesmo do StikDebug) uma vez e o Flowyr ativa o JIT sozinho ao abrir, com o LocalDevVPN conectado. Na primeira vez, a imagem de disco do desenvolvedor é baixada e montada, o que leva cerca de um minuto. Não funciona dentro do LiveContainer: lá, deixe o LiveContainer ativar o JIT." = "No JIT app needed: import your pairing file (the same one StikDebug uses) once and Flowyr enables JIT by itself when it opens, with LocalDevVPN connected. The first time, the Developer Disk Image is downloaded and mounted, which takes about a minute. It doesn't work inside LiveContainer: there, let LiveContainer enable JIT.";

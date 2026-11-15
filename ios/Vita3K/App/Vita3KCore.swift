@@ -380,6 +380,10 @@ final class CoreController: ObservableObject {
             if await Task.detached(operation: { Vita3KCore.jitValidateAlive() == 0 }).value {
                 return true
             }
+            // Built-in JIT (when set up and not inside LiveContainer): the helper attaches the debugger by
+            // itself. Without a pairing file, or inside LiveContainer, this returns at once and the usual
+            // wait for StikDebug / LiveContainer below applies.
+            await BuiltinJIT.shared.enableAndWait()
             // Runs entirely off the main actor so it overlaps with the
             // (main-thread) session init instead of waiting behind it.
             // Poll for the debugger every 100 ms (up to 3 s), then prepare

@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 import Vita3KCore
 
 struct SettingsView: View {
@@ -25,6 +26,9 @@ struct SettingsView: View {
     @State private var ramProbe = ""
     @State private var ramProbing = false
     @AppStorage("v3k.ramHelpers") private var ramHelpers = false
+    @AppStorage(BuiltinJIT.autoKey) private var builtinJITAuto = true
+    @ObservedObject private var builtinJIT = BuiltinJIT.shared
+    @State private var importingPairing = false
     @State private var saveRequest: SaveTransferRequest?
     @State private var page: SettingsCategory?
     @State private var poppedAt = Date.distantPast
@@ -76,14 +80,43 @@ struct SettingsView: View {
             let ids: [String] = switch category {
             case .interface: ["language", "appearance", "library"]
             case .controls: ["controls"]
-            case .jit: ["jit"]
+            case .jit: ["jit", "jit-builtin"]
             default: ["system", "ram", "backup", "cloud"]
             }
             let all = sections
             PadSettingsPage(sections: ids.compactMap { id in all.first { $0.id == id } }, onClose: closeCategory)
                 .navigationTitle(category.title).navigationBarTitleDisplayMode(.inline)
                 .saveTransfer($saveRequest)
+                .background(Color.clear.fileImporter(isPresented: $importingPairing,
+                                                     allowedContentTypes: [.propertyList, .xml, .data, .item]) { result in
+                    if case .success(let url) = result { builtinJIT.importPairingFile(from: url) }
+                })
         }
+    }
+
+    private var builtinJITItems: [SettingItem] {
+        if let reason = BuiltinJIT.unavailableReason {
+            return [SettingItem(id: "bjit-unavailable", title: LocalizedStringKey(reason), kind: .info(""))]
+        }
+        let hasPairing = BuiltinJIT.hasPairingFile
+        var items: [SettingItem] = [
+            SettingItem(id: "bjit-auto", title: "Ativar JIT automaticamente", symbol: "bolt.fill", kind: .toggle($builtinJITAuto)),
+            SettingItem(id: "bjit-file", title: "Arquivo de pareamento",
+                        kind: .info(L10n.text(hasPairing ? "Importado" : "Nenhum"))),
+            SettingItem(id: "bjit-import", title: hasPairing ? "Substituir arquivo de pareamento" : "Importar arquivo de pareamento",
+                        symbol: "doc.badge.plus", kind: .action { importingPairing = true }),
+            SettingItem(id: "bjit-enable", title: builtinJIT.busy ? "Ativando JIT…" : "Ativar JIT agora", symbol: "bolt.circle.fill",
+                        kind: .action { Task { builtinJIT.enable(); _ = await controller.checkJIT() } },
+                        enabled: hasPairing && !builtinJIT.busy && controller.jitStatus != .checking),
+        ]
+        if hasPairing {
+            items.append(SettingItem(id: "bjit-remove", title: "Remover arquivo de pareamento", symbol: "trash",
+                                     kind: .action { builtinJIT.removePairingFile() }, destructive: true))
+        }
+        if !builtinJIT.status.isEmpty {
+            items.append(SettingItem(id: "bjit-status", title: LocalizedStringKey(builtinJIT.status), kind: .info("")))
+        }
+        return items
     }
 
     private var sections: [SettingSection] {
@@ -134,6 +167,8 @@ struct SettingsView: View {
                             enabled: controller.jitStatus != .checking)
             ], footer: "No iPhone, abra o Flowyr pelo StikDebug usando o script Universal. A disponibilidade do JIT é verificada ao abrir o app e antes de iniciar um jogo.",
                            accessory: AnyView(JITBadge(status: controller.jitStatus))),
+            SettingSection(id: "jit-builtin", title: "JIT integrado", items: builtinJITItems,
+                           footer: "Sem app de JIT: importe o arquivo de pareamento (o mesmo do StikDebug) uma vez e o Flowyr ativa o JIT sozinho ao abrir, com o LocalDevVPN conectado. Na primeira vez, a imagem de disco do desenvolvedor é baixada e montada, o que leva cerca de um minuto. Não funciona dentro do LiveContainer: lá, deixe o LiveContainer ativar o JIT."),
             SettingSection(id: "controls", title: "Controles e tela", items: [
                 SettingItem(id: "landscape", title: "Forçar rotacionamento na horizontal", detail: "Mantém a interface e os jogos na horizontal, mesmo com o aparelho em pé.", symbol: "rotate.right.fill", kind: .toggle($forceLandscape)),
                 SettingItem(id: "controls", title: "Controles na tela", detail: "Ocultados automaticamente ao conectar um controle físico.", symbol: "gamecontroller.fill", kind: .toggle($showControls)),

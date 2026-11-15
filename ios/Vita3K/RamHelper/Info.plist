@@ -20,6 +20,12 @@
 	<string>1.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Used to enable JIT on this iPhone (through LocalDevVPN).</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_remotepairing._tcp</string>
+	</array>
 	<key>MinimumOSVersion</key>
 	<string>26.0</string>
 	<key>NSExtension</key>

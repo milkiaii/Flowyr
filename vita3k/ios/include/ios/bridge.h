@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
 
@@ -497,6 +498,20 @@ void vita3k_ios_input_virtual_axes(float lx, float ly, float rx, float ry);
 /// Number of physical gamepads currently attached (the app hides its
 /// on-screen pad while one is connected). -1 when not initialized.
 int vita3k_ios_input_gamepad_count(void);
+
+// Built-in JIT (ramhelper/builtin_jit.mm): the helper extension attaches a debugger to this process
+// with StikJIT, using the player's pairing file. Not available inside LiveContainer.
+
+/// Why built-in JIT can't run here (LiveContainer, helper missing, no get-task-allow), or NULL when it can.
+const char *v3k_builtin_jit_unavailable_reason(void);
+/// Starts a helper and has it enable JIT for this process. Returns at once; `progress` gets status lines
+/// and `done` the result (message NULL on success), both on a background queue. `script_base64`: the
+/// JIT script to run (NULL: StikJIT's own universal script); `force_script`: run it even where the
+/// device's security wouldn't need one. `port`: the device's Remote Pairing port (0: let the helper look).
+void v3k_builtin_jit_start(const uint8_t *pairing, size_t pairing_length, const char *script_base64, bool force_script,
+    uint16_t port, void (*progress)(const char *text), void (*done)(bool ok, const char *message));
+/// An attach is running.
+bool v3k_builtin_jit_busy(void);
 
 #ifdef __cplusplus
 }

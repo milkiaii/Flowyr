@@ -78,6 +78,11 @@ else
   cp "$MKV_SIM" "$VENDOR/MoltenVK-sim/libMoltenVK.a"
 fi
 
+# The helper extension compiles StikJIT for the built-in JIT; the device project needs it on disk.
+if [ "$FLAVOR" = "device" ]; then
+  "$APP/scripts/fetch-stikjit.sh"
+fi
+
 (
   cd "$APP"
   xcodegen generate -s "$PROJECT"

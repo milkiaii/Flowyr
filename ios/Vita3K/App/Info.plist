@@ -41,6 +41,12 @@
 	<!-- Both keys expose Documents (vita/ logs/ config/ shared/ cache/
 	     patch/ imports/) in Files > On My iPhone. File sharing also makes
 	     these documents available through Finder on a Mac. -->
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Used to enable JIT on this iPhone through LocalDevVPN (built-in JIT).</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_remotepairing._tcp</string>
+	</array>
 	<key>UIFileSharingEnabled</key>
 	<true/>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
