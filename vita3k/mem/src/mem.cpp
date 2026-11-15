@@ -180,12 +180,7 @@ static uint8_t *helper_backing_region(const MemState &state, Address addr, uint3
 #ifndef _WIN32
     if (g_helper_ranges.empty())
         return nullptr;
-    const uint32_t host_page = static_cast<uint32_t>(state.host_page_size);
-    if (addr % host_page != 0 || size % host_page != 0) {
-        if (size >= MiB(16))
-            LOG_WARN("RAM helpers: {} KiB at {:#x} is not host-page aligned, not using helper memory", size / 1024, addr);
-        return nullptr;
-    }
+    const uintptr_t host_page = static_cast<uintptr_t>(state.host_page_size);
     for (const HelperRange &range : g_helper_ranges) {
         if (addr < range.guest_start || static_cast<uint64_t>(addr) + size > range.guest_start + range.size)
             continue;
@@ -194,7 +189,11 @@ static uint8_t *helper_backing_region(const MemState &state, Address addr, uint3
             return nullptr;
         }
         uint8_t *const host = range.host + (addr - range.guest_start);
-        if (mprotect(host, size, PROT_READ | PROT_WRITE) == -1) {
+        // Guest allocations can be 4 KiB aligned while host pages are 16 KiB: unprotect the
+        // enclosing host pages (neighbours sharing them are already RW or stay valid).
+        const uintptr_t span_start = reinterpret_cast<uintptr_t>(host) & ~(host_page - 1);
+        const uintptr_t span_end = (reinterpret_cast<uintptr_t>(host) + size + host_page - 1) & ~(host_page - 1);
+        if (mprotect(reinterpret_cast<void *>(span_start), span_end - span_start, PROT_READ | PROT_WRITE) == -1) {
             LOG_WARN("RAM helpers: mprotect of {} KiB at {:#x} failed: {}", size / 1024, addr, strerror(errno));
             return nullptr;
         }
@@ -376,8 +375,15 @@ static void delete_memory(uint8_t *memory) {
 static void release_backing_region(const BackingRegion &region) {
 #ifndef _WIN32
     if (region.helper_backed) {
-        mprotect(region.host_address, region.size, PROT_NONE);
-        madvise(region.host_address, region.size, MADV_DONTNEED);
+        const uintptr_t page = static_cast<uintptr_t>(getpagesize());
+        const uintptr_t start = reinterpret_cast<uintptr_t>(region.host_address);
+        // Only fully owned host pages can be released; unaligned edges may be shared with neighbours.
+        const uintptr_t lo = (start + page - 1) & ~(page - 1);
+        const uintptr_t hi = (start + region.size) & ~(page - 1);
+        if (hi > lo) {
+            mprotect(reinterpret_cast<void *>(lo), hi - lo, PROT_NONE);
+            madvise(reinterpret_cast<void *>(lo), hi - lo, MADV_DONTNEED);
+        }
         return;
     }
 #endif
