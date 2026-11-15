@@ -179,7 +179,12 @@ void Buffer::init_buffer(vk::BufferUsageFlags usage_flags, const vma::Allocation
         .sharingMode = vk::SharingMode::eExclusive
     };
     vma::AllocationInfo alloc_info;
-    std::tie(buffer, allocation) = allocator.createBuffer(buffer_info, alloc_create_info, alloc_info);
+    try {
+        std::tie(buffer, allocation) = allocator.createBuffer(buffer_info, alloc_create_info, alloc_info);
+    } catch (const std::exception &e) {
+        LOG_ERROR("Vulkan buffer of {} KiB (usage {}) could not be created: {}", size / 1024, vk::to_string(usage_flags), e.what());
+        throw;
+    }
     mapped_data = alloc_info.pMappedData;
 }
 
