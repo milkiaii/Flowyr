@@ -17,6 +17,24 @@ final class BuiltinJIT: ObservableObject {
     @Published private(set) var status = ""
     @Published private(set) var busy = false
 
+    /// Always-on log (Documents/logs/builtin-jit.log), independent of the game log: the JIT check runs before any
+    /// game session exists, so nothing else would record it.
+    nonisolated static func log(_ text: String) {
+        guard let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
+        let folder = documents.appendingPathComponent("logs", isDirectory: true)
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let file = folder.appendingPathComponent("builtin-jit.log")
+        let stamp = ISO8601DateFormatter().string(from: Date())
+        let line = "[\(stamp)] \(text)\n"
+        if let handle = try? FileHandle(forWritingTo: file) {
+            defer { try? handle.close() }
+            _ = try? handle.seekToEnd()
+            try? handle.write(contentsOf: Data(line.utf8))
+        } else {
+            try? Data(line.utf8).write(to: file)
+        }
+    }
+
     /// Where StikJIT's guide keeps it (Files and Finder can reach Documents)
     static var pairingURL: URL {
         let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -52,7 +70,7 @@ final class BuiltinJIT: ObservableObject {
             let target = Self.pairingURL
             try FileManager.default.createDirectory(at: target.deletingLastPathComponent(), withIntermediateDirectories: true)
             try data.write(to: target, options: .atomic)
-            Probe.mark("built-in JIT: pairing file imported")
+            Self.log("pairing file imported")
             status = "Pairing file imported"
             objectWillChange.send()
         } catch {
@@ -72,12 +90,14 @@ final class BuiltinJIT: ObservableObject {
     /// the helper to finish.
     func enableAndWait(timeout: TimeInterval = 180) async {
         // busy: the player started it by hand (Settings), so wait for that even if automatic is off
+        Self.log("enableAndWait: usable=\(Self.usable) pairing=\(Self.hasPairingFile) reason=\(Self.unavailableReason ?? "none") auto=\(Self.autoEnabled) busy=\(busy) cs_debugged=\(vita3k_ios_cs_debugged())")
         guard Self.usable, busy || Self.autoEnabled, vita3k_ios_cs_debugged() != 1 else { return }
         if !busy { enable() }
         let deadline = Date().addingTimeInterval(timeout)
         while busy, vita3k_ios_cs_debugged() != 1, Date() < deadline {
             try? await Task.sleep(for: .milliseconds(250))
         }
+        Self.log("enableAndWait done: busy=\(busy) cs_debugged=\(vita3k_ios_cs_debugged()) timedOut=\(Date() >= deadline)")
     }
 
     func enable() {
@@ -92,13 +112,13 @@ final class BuiltinJIT: ObservableObject {
         }
         busy = true
         status = "Looking for the device (LocalDevVPN)"
-        Probe.mark("built-in JIT: started")
+        Self.log("enable: started")
         // The device's developer services are found from the app first: iOS only asks for Local Network
         // access from the app, and newer iOS versions move the Remote Pairing port away from 49152
         DeviceTunnel.find { found in
             Task { @MainActor in
                 let this = BuiltinJIT.shared
-                Probe.mark("built-in JIT: \(found.log)")
+                Self.log("tunnel: \(found.log)")
                 if let port = found.port {
                     this.start(pairing: pairing, port: port)
                 } else {
@@ -119,6 +139,7 @@ final class BuiltinJIT: ObservableObject {
     }
 
     fileprivate func update(_ text: String) {
+        Self.log("progress: \(text)")
         status = text
     }
 
@@ -139,7 +160,7 @@ final class BuiltinJIT: ObservableObject {
             }
         }
         let outcome = ok ? "done" : "failed: \(status)"
-        Probe.mark("built-in JIT: \(outcome)")
+        Self.log("finished: \(outcome) (helper message: \(message ?? "none"))")
     }
 }
 

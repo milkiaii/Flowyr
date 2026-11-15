@@ -383,6 +383,7 @@ final class CoreController: ObservableObject {
             // Built-in JIT (when set up and not inside LiveContainer): the helper attaches the debugger by
             // itself. Without a pairing file, or inside LiveContainer, this returns at once and the usual
             // wait for StikDebug / LiveContainer below applies.
+            BuiltinJIT.log("checkJIT: started")
             await BuiltinJIT.shared.enableAndWait()
             // Runs entirely off the main actor so it overlaps with the
             // (main-thread) session init instead of waiting behind it.
@@ -393,9 +394,12 @@ final class CoreController: ObservableObject {
                     if vita3k_ios_cs_debugged() == 1 { break }
                     try? await Task.sleep(for: .milliseconds(100))
                 }
+                BuiltinJIT.log("checkJIT: after wait cs_debugged=\(vita3k_ios_cs_debugged())")
                 guard vita3k_ios_cs_debugged() == 1 else { return false }
                 for attempt in 0..<15 {
-                    if vita3k_ios_jit_prepare() == 0 { return true }
+                    let prepared = vita3k_ios_jit_prepare()
+                    BuiltinJIT.log("checkJIT: prepare attempt \(attempt) -> \(prepared)")
+                    if prepared == 0 { return true }
                     if attempt < 14 { try? await Task.sleep(for: .milliseconds(200)) }
                 }
                 return false
